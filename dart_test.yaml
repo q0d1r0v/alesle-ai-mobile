@@ -1,0 +1,9 @@
+# Declared so `flutter test` does not warn about unknown tags.
+tags:
+  # Pixel comparisons against committed goldens. Excluded from the commit hook
+  # because font rasterisation differs across machines; CI runs them.
+  golden:
+    description: Pixel-comparison tests against committed golden files.
+  # Source-scanning architecture guards. Fast; part of the default run.
+  arch:
+    description: Architecture rules enforced by reading the source.

@@ -1,0 +1,20 @@
+swagger_parser:
+  # The COMMITTED snapshot, never a live URL: the build must not depend on a
+  # running server, and everyone generates against the same contract.
+  # `../alesle-ai-api` owns the file; `yarn contract:sync` there copies it here.
+  schema_path: openapi/alesle-ai-api.json
+  output_directory: lib/core/api/generated
+
+  language: dart
+  json_serializer: freezed
+  use_freezed3: true
+
+  # One retrofit client per OpenAPI tag (health -> HealthApi).
+  put_clients_in_folder: true
+  client_postfix: Api
+  # Paths in the document already carry /v1; AppConfig.apiBaseUrl is the origin only.
+  root_client: false
+  squash_clients: false
+  enums_to_json: true
+  unknown_enum_value: true
+  original_http_response: false

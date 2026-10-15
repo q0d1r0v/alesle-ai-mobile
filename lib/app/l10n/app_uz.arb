@@ -1,0 +1,21 @@
+{
+  "@@locale": "uz",
+  "appTitle": "Alesle AI",
+  "serverStatusTitle": "Server",
+  "serverReady": "Ishlayapti",
+  "serverChecking": "Tekshirilmoqda…",
+  "serverUnavailable": "Server bilan aloqa yo'q",
+  "errorNetwork": "Internet aloqasini tekshiring",
+  "errorServer": "Serverda xatolik ({code})",
+  "@errorServer": {
+    "placeholders": { "code": { "type": "String" } }
+  },
+  "errorUnexpected": "Kutilmagan xatolik",
+  "retry": "Qayta urinish",
+  "agentStatusTitle": "Agent ruxsati",
+  "accessibilityEnabled": "Maxsus imkoniyatlar yoqilgan",
+  "accessibilityDisabled": "Agent ishlashi uchun \"Maxsus imkoniyatlar\"da Alesle AI ni yoqing",
+  "enableAccessibility": "Yoqish",
+  "policyConfirm": "Har bir muhim amal sizning tasdig'ingiz bilan bajariladi",
+  "policyAutonomous": "Agent vazifalarni mustaqil bajaradi"
+}

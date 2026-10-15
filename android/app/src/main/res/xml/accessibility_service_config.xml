@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  isAccessibilityTool is false on purpose: Alesle is an assistant, not a
+  verified accessibility tool, and claiming otherwise violates Google Play
+  policy. Autonomy is therefore limited by ExecutionPolicy in the play flavor.
+-->
+<!-- isAccessibilityTool only exists from API 31; on API 30 it is ignored, which is fine. -->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="UnusedAttribute"
+    android:description="@string/accessibility_service_description"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagReportViewIds|flagRetrieveInteractiveWindows|flagIncludeNotImportantViews"
+    android:canRetrieveWindowContent="true"
+    android:canPerformGestures="true"
+    android:canTakeScreenshot="true"
+    android:isAccessibilityTool="false"
+    android:notificationTimeout="100" />

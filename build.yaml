@@ -1,0 +1,7 @@
+targets:
+  $default:
+    builders:
+      # Generated API code is consumed through freezed/json_serializable/retrofit.
+      json_serializable:
+        options:
+          explicit_to_json: true

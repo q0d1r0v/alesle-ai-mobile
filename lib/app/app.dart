@@ -1,0 +1,43 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'l10n/app_localizations.dart';
+import 'router/app_router.dart';
+import 'theme/app_theme.dart';
+
+/// Uzbek first: it is the product's primary language and the fallback for
+/// any device locale the app does not ship.
+const Locale fallbackLocale = Locale('uz');
+
+Locale resolveLocale(Locale? device, Iterable<Locale> supported) {
+  if (device == null) return fallbackLocale;
+  for (final Locale locale in supported) {
+    if (locale.languageCode == device.languageCode) return locale;
+  }
+  return fallbackLocale;
+}
+
+class AlesleApp extends ConsumerWidget {
+  const AlesleApp({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return MaterialApp.router(
+      onGenerateTitle: (BuildContext context) =>
+          AppLocalizations.of(context).appTitle,
+      theme: buildTheme(Brightness.light),
+      darkTheme: buildTheme(Brightness.dark),
+      routerConfig: ref.watch(routerProvider),
+      localizationsDelegates: const <LocalizationsDelegate<Object?>>[
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      localeResolutionCallback: resolveLocale,
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}

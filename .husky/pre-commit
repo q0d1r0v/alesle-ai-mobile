@@ -1,0 +1,3 @@
+# Fast gate: format, analyze, unit/widget/arch tests and coverage floors.
+# Goldens, Gradle and on-device suites run in CI and tool/verify.sh.
+tool/verify.sh --fast

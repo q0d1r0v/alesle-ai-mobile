@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_service_label">Alesle AI agent</string>
+    <string name="accessibility_service_description">Alesle AI siz bergan buyruqlarni bajarish uchun ekrandagi elementlarni o\'qiydi va tugmalarni bosadi. Ma\'lumotlaringiz faqat vazifani bajarish uchun ishlatiladi.</string>
+</resources>

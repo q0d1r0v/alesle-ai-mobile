@@ -1,0 +1,18 @@
+{
+  "@@locale": "ru",
+  "appTitle": "Alesle AI",
+  "serverStatusTitle": "Сервер",
+  "serverReady": "Работает",
+  "serverChecking": "Проверка…",
+  "serverUnavailable": "Нет связи с сервером",
+  "errorNetwork": "Проверьте подключение к интернету",
+  "errorServer": "Ошибка сервера ({code})",
+  "errorUnexpected": "Непредвиденная ошибка",
+  "retry": "Повторить",
+  "agentStatusTitle": "Доступ агента",
+  "accessibilityEnabled": "Специальные возможности включены",
+  "accessibilityDisabled": "Чтобы агент работал, включите Alesle AI в «Специальных возможностях»",
+  "enableAccessibility": "Включить",
+  "policyConfirm": "Каждое важное действие выполняется с вашего подтверждения",
+  "policyAutonomous": "Агент выполняет задачи самостоятельно"
+}

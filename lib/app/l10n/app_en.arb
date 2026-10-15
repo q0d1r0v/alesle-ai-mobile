@@ -1,0 +1,18 @@
+{
+  "@@locale": "en",
+  "appTitle": "Alesle AI",
+  "serverStatusTitle": "Server",
+  "serverReady": "Online",
+  "serverChecking": "Checking…",
+  "serverUnavailable": "Can't reach the server",
+  "errorNetwork": "Check your internet connection",
+  "errorServer": "Server error ({code})",
+  "errorUnexpected": "Unexpected error",
+  "retry": "Retry",
+  "agentStatusTitle": "Agent access",
+  "accessibilityEnabled": "Accessibility access is on",
+  "accessibilityDisabled": "Turn on Alesle AI under Accessibility so the agent can work",
+  "enableAccessibility": "Turn on",
+  "policyConfirm": "Every important action waits for your confirmation",
+  "policyAutonomous": "The agent completes tasks on its own"
+}
