@@ -19,6 +19,9 @@ import com.alesle.ai.agent.snapshot.CapturedScreen
 import com.alesle.ai.agent.snapshot.Orientation
 import com.alesle.ai.agent.snapshot.SnapshotBuilder
 import com.alesle.ai.agent.snapshot.SnapshotContext
+import com.alesle.ai.agent.vision.Screenshot
+import com.alesle.ai.agent.vision.ScreenshotSource
+import com.alesle.ai.agent.vision.ServiceScreenshotSource
 
 /**
  * The agent's eyes and hands on the device.
@@ -47,6 +50,8 @@ class AlesleAccessibilityService :
     override var deviceControl: DeviceControl? = null
         private set
 
+    private var screenshots: ScreenshotSource? = null
+
     /** System intents (calls, alarms, searches…); null until connected. */
     @Volatile
     override var intentLauncher: IntentLauncher? = null
@@ -57,6 +62,7 @@ class AlesleAccessibilityService :
         val thread = HandlerThread("alesle-gestures").apply { start() }
         gestureThread = thread
         deviceControl = ServiceDeviceControl(this, Handler(thread.looper), ::capture)
+        screenshots = ServiceScreenshotSource(this, Handler(thread.looper))
         intentLauncher =
             IntentLauncher(ContentResolverContacts(contentResolver), PackageManagerApps(packageManager), ContextActivityStarter(this))
         instance = this
@@ -65,6 +71,7 @@ class AlesleAccessibilityService :
     override fun onDestroy() {
         if (instance === this) instance = null
         deviceControl = null
+        screenshots = null
         intentLauncher = null
         gestureThread?.quitSafely()
         gestureThread = null
@@ -83,6 +90,8 @@ class AlesleAccessibilityService :
     override fun onInterrupt() {
         // Nothing in flight to cancel yet.
     }
+
+    override fun screenshot(): Screenshot = screenshots?.take() ?: Screenshot.Unavailable
 
     override fun capture(): CapturedScreen? {
         val root = rootInActiveWindow ?: return null

@@ -2,8 +2,10 @@ package com.alesle.ai.agent.loop
 
 import com.alesle.ai.agent.action.ActionResult
 import com.alesle.ai.agent.action.Choice
+import com.alesle.ai.agent.vision.Screenshot
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -15,7 +17,8 @@ class LoopFramesTest {
     @Test
     fun `decodes every server frame`() {
         assertEquals(ServerFrame.Accepted("t1"), LoopFrames.decode("""{"type":"task.accepted","taskId":"t1"}"""))
-        assertEquals(ServerFrame.Observe, LoopFrames.decode("""{"type":"observe"}"""))
+        assertEquals(ServerFrame.Observe(false), LoopFrames.decode("""{"type":"observe"}"""))
+        assertEquals(ServerFrame.Observe(true), LoopFrames.decode("""{"type":"observe","screenshot":true}"""))
         val act =
             LoopFrames.decode(
                 """{"type":"act","stepId":"s1","action":{"type":"back"},"say":"Orqaga","confirm":{"title":"T","detail":"D","always":true}}""",
@@ -78,5 +81,17 @@ class LoopFramesTest {
         assertEquals("s2", later.getString("stepId"))
         assertEquals("node_gone", later.getJSONObject("result").getString("reason"))
         assertEquals("p", later.getJSONObject("snapshot").getString("package"))
+        assertFalse(later.has("screenshot") || later.has("secure"))
+    }
+
+    @Test
+    fun `encodes the answer to a screenshot request`() {
+        val image = JSONObject(LoopFrames.lookObservation(null, Screenshot.Image("QUJD")))
+        assertEquals("QUJD", image.getString("screenshot"))
+        assertTrue(image.isNull("stepId") && image.isNull("snapshot"))
+        val secure = JSONObject(LoopFrames.lookObservation(JSONObject(), Screenshot.Secure))
+        assertTrue(secure.getBoolean("secure") && secure.isNull("screenshot"))
+        val none = JSONObject(LoopFrames.lookObservation(null, Screenshot.Unavailable))
+        assertTrue(none.isNull("screenshot") && !none.has("secure"))
     }
 }

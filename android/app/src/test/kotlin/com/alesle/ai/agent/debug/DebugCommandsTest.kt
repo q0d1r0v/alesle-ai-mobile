@@ -12,6 +12,7 @@ import com.alesle.ai.agent.snapshot.Orientation
 import com.alesle.ai.agent.snapshot.SnapshotBuilder
 import com.alesle.ai.agent.snapshot.SnapshotContext
 import com.alesle.ai.agent.snapshot.UiNode
+import com.alesle.ai.agent.vision.Screenshot
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -158,4 +159,6 @@ private class FakeRuntime(
     override val intentLauncher: IntentLauncher?,
 ) : AgentRuntime {
     override fun capture() = screen
+
+    override fun screenshot(): Screenshot = Screenshot.Unavailable
 }

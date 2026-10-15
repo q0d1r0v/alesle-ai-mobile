@@ -5,6 +5,7 @@ import com.alesle.ai.agent.action.ActionExecutor
 import com.alesle.ai.agent.action.ActionResult
 import com.alesle.ai.agent.protocol.DecodedAction
 import com.alesle.ai.agent.snapshot.CapturedScreen
+import com.alesle.ai.agent.vision.Screenshot
 
 /** [LoopDevice] on the connected AccessibilityService; every call finds it anew, it may come and go. */
 class RuntimeLoopDevice(
@@ -14,6 +15,8 @@ class RuntimeLoopDevice(
     private val sleep: (Long) -> Unit = Thread::sleep,
 ) : LoopDevice {
     override fun capture(): CapturedScreen? = runtime()?.capture()
+
+    override fun screenshot(): Screenshot = runtime()?.screenshot() ?: Screenshot.Unavailable
 
     override fun execute(
         action: DecodedAction,

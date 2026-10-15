@@ -6,6 +6,7 @@ import com.alesle.ai.agent.protocol.ActionDecodeException
 import com.alesle.ai.agent.protocol.ActionJson
 import com.alesle.ai.agent.protocol.DecodedAction
 import com.alesle.ai.agent.snapshot.CapturedScreen
+import com.alesle.ai.agent.vision.Screenshot
 import java.util.concurrent.atomic.AtomicBoolean
 
 /** One connection to `/v1/agent/ws`; [send] and [close] may be called from any thread. */
@@ -41,6 +42,9 @@ interface LoopDevice {
 
     /** Waits until the screen stops changing after an action. */
     fun settle()
+
+    /** The screen as a picture (SOW 03 §3). */
+    fun screenshot(): Screenshot
 }
 
 /** What the user sees while a task runs: the overlay. Answers may come back on any thread. */
@@ -61,6 +65,12 @@ interface LoopUi {
     )
 
     fun hide()
+
+    /**
+     * Runs [capture] with the overlay out of the picture: the glow and the
+     * pill would otherwise cover the app's own header in the screenshot.
+     */
+    fun <T> concealed(capture: () -> T): T
 }
 
 /** Runs work one item at a time, in order, off the main thread. */
@@ -176,7 +186,7 @@ class AgentLoop(
                 taskId = frame.taskId
                 if (first) events(LoopEvent.Started)
             }
-            ServerFrame.Observe -> observe(null, null)
+            is ServerFrame.Observe -> if (frame.screenshot) look() else observe(null, null)
             is ServerFrame.Act -> act(frame)
             is ServerFrame.Ask ->
                 ui.ask(frame.question, frame.choices) { ref ->
@@ -250,6 +260,13 @@ class AgentLoop(
         val screen = device.capture()
         lastScreen = screen
         send(LoopFrames.observation(stepId, result, screen?.snapshot?.toJson()))
+    }
+
+    private fun look() {
+        val screen = device.capture()
+        lastScreen = screen
+        val picture = ui.concealed(device::screenshot)
+        send(LoopFrames.lookObservation(screen?.snapshot?.toJson(), picture))
     }
 
     private fun send(text: String) {

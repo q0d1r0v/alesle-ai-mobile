@@ -10,6 +10,7 @@ import com.alesle.ai.agent.snapshot.Bounds
 import com.alesle.ai.agent.snapshot.CapturedScreen
 import com.alesle.ai.agent.snapshot.Orientation
 import com.alesle.ai.agent.snapshot.ScreenSnapshot
+import com.alesle.ai.agent.vision.Screenshot
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -93,6 +94,42 @@ class AgentLoopTest {
         assertEquals("s1", observation.getString("stepId"))
         assertEquals("ok", observation.getJSONObject("result").getString("status"))
         assertFalse(observation.isNull("snapshot"))
+    }
+
+    @Test
+    fun `answers a screenshot request with the picture, taken with the overlay concealed`() {
+        accepted()
+        sockets.receive("""{"type":"observe","screenshot":true}""")
+        val observation = JSONObject(sockets.sent.last())
+        assertEquals("JPEG", observation.getString("screenshot"))
+        assertTrue(observation.isNull("stepId"))
+        assertFalse(observation.has("secure"))
+        assertEquals(1, ui.concealments)
+        assertEquals(1, device.screenshots)
+    }
+
+    @Test
+    fun `reports a window that forbids capture, or no picture at all`() {
+        accepted()
+        device.picture = Screenshot.Secure
+        sockets.receive("""{"type":"observe","screenshot":true}""")
+        val secure = JSONObject(sockets.sent.last())
+        assertTrue(secure.getBoolean("secure"))
+        assertTrue(secure.isNull("screenshot"))
+
+        device.picture = Screenshot.Unavailable
+        sockets.receive("""{"type":"observe","screenshot":true}""")
+        val none = JSONObject(sockets.sent.last())
+        assertTrue(none.has("screenshot") && none.isNull("screenshot"))
+        assertFalse(none.has("secure"))
+    }
+
+    @Test
+    fun `a plain observe takes no picture`() {
+        accepted()
+        sockets.receive("""{"type":"observe"}""")
+        assertFalse(JSONObject(sockets.sent.last()).has("screenshot"))
+        assertEquals(0, device.screenshots)
     }
 
     @Test
@@ -394,6 +431,14 @@ private class FakeDevice : LoopDevice {
         settles++
     }
 
+    var picture: Screenshot = Screenshot.Image("JPEG")
+    var screenshots = 0
+
+    override fun screenshot(): Screenshot {
+        screenshots++
+        return picture
+    }
+
     private fun screen(n: Int = 0) =
         CapturedScreen(
             ScreenSnapshot(
@@ -442,6 +487,13 @@ private class FakeUi : LoopUi {
 
     override fun hide() {
         hides++
+    }
+
+    var concealments = 0
+
+    override fun <T> concealed(capture: () -> T): T {
+        concealments++
+        return capture()
     }
 
     fun answerConfirm(approved: Boolean) = confirmAnswer!!(approved)

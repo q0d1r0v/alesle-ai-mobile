@@ -3,6 +3,7 @@ package com.alesle.ai.agent.loop
 import com.alesle.ai.agent.action.ActionResult
 import com.alesle.ai.agent.action.Choice
 import com.alesle.ai.agent.protocol.ActionJson
+import com.alesle.ai.agent.vision.Screenshot
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -29,7 +30,10 @@ sealed interface ServerFrame {
         val taskId: String,
     ) : ServerFrame
 
-    data object Observe : ServerFrame
+    /** [screenshot]: the server wants to see the screen, not only read it (SOW 03 §3). */
+    data class Observe(
+        val screenshot: Boolean,
+    ) : ServerFrame
 
     data class Act(
         val stepId: String,
@@ -66,7 +70,7 @@ object LoopFrames {
     private fun decode(json: JSONObject): ServerFrame? =
         when (json.optString("type")) {
             "task.accepted" -> json.text("taskId")?.let(ServerFrame::Accepted)
-            "observe" -> ServerFrame.Observe
+            "observe" -> ServerFrame.Observe(json.optBoolean("screenshot", false))
             "act" -> {
                 val stepId = json.text("stepId")
                 val action = json.optJSONObject("action")
@@ -116,18 +120,40 @@ object LoopFrames {
 
     fun stop(): String = JSONObject().put("type", "task.stop").toString()
 
-    /** [snapshot] is SnapshotBuilder JSON, or null when nothing is readable. */
+    /**
+     * [snapshot] is SnapshotBuilder JSON, or null when nothing is readable.
+     * [screenshot] (base64 JPEG) and [secure] only answer a screenshot request.
+     */
     fun observation(
         stepId: String?,
         result: ActionResult?,
         snapshot: JSONObject?,
+        screenshot: String? = null,
+        secure: Boolean = false,
+    ): String {
+        val json =
+            JSONObject()
+                .put("type", "observation")
+                .put("stepId", stepId ?: JSONObject.NULL)
+                .put("result", result?.let(ActionJson::encode) ?: JSONObject.NULL)
+                .put("snapshot", snapshot ?: JSONObject.NULL)
+        if (screenshot != null) json.put("screenshot", screenshot)
+        if (secure) json.put("secure", true)
+        return json.toString()
+    }
+
+    /** The answer to a screenshot request: the image, or null with why there is none. */
+    fun lookObservation(
+        snapshot: JSONObject?,
+        screenshot: Screenshot,
     ): String =
-        JSONObject()
-            .put("type", "observation")
-            .put("stepId", stepId ?: JSONObject.NULL)
-            .put("result", result?.let(ActionJson::encode) ?: JSONObject.NULL)
-            .put("snapshot", snapshot ?: JSONObject.NULL)
-            .toString()
+        when (screenshot) {
+            is Screenshot.Image -> observation(null, null, snapshot, screenshot = screenshot.jpegBase64)
+            Screenshot.Secure -> observation(null, null, snapshot, secure = true).withNullScreenshot()
+            Screenshot.Unavailable -> observation(null, null, snapshot).withNullScreenshot()
+        }
+
+    private fun String.withNullScreenshot(): String = JSONObject(this).put("screenshot", JSONObject.NULL).toString()
 
     fun reply(
         askId: String,

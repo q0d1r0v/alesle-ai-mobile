@@ -37,7 +37,8 @@ class AgentOverlayTest {
             every { wm.removeViewImmediate(any()) } answers { windows.removeAll { it.first === firstArg<View>() } }
         }
     private var stops = 0
-    private val overlay = AgentOverlay(context, onStop = { stops++ }, windowManager = windowManager, main = Handler(Looper.getMainLooper()))
+    private val overlay =
+        AgentOverlay(context, onStop = { stops++ }, windowManager = windowManager, main = Handler(Looper.getMainLooper()), sleepFor = {})
 
     private fun idle() = shadowOf(Looper.getMainLooper()).idle()
 
@@ -148,6 +149,33 @@ class AgentOverlayTest {
         idle()
         clickText("Bekor qilish")
         assertEquals(listOf("contact:2", null), answers)
+    }
+
+    @Test
+    fun `hides its windows while a screenshot is taken, then shows them again`() {
+        overlay.showStep("Ishlayapman")
+        idle()
+        val seen = mutableListOf<List<Int>>()
+        val worker =
+            Thread {
+                overlay.concealed { seen += windows.map { it.first.visibility } }
+            }
+        worker.start()
+        // The worker waits for the main thread to hide the windows.
+        while (worker.isAlive) {
+            idle()
+            Thread.sleep(5)
+        }
+        idle()
+        assertEquals(listOf(listOf(View.INVISIBLE, View.INVISIBLE)), seen)
+        assertTrue(windows.all { it.first.visibility == View.VISIBLE })
+    }
+
+    @Test
+    fun `on the main thread it captures without hiding`() {
+        overlay.showStep("Ishlayapman")
+        idle()
+        assertEquals(View.VISIBLE, overlay.concealed { windows.first().first.visibility })
     }
 
     @Test

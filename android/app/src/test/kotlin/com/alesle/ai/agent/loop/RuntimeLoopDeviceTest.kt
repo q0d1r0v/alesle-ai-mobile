@@ -13,6 +13,7 @@ import com.alesle.ai.agent.snapshot.Bounds
 import com.alesle.ai.agent.snapshot.CapturedScreen
 import com.alesle.ai.agent.snapshot.Orientation
 import com.alesle.ai.agent.snapshot.ScreenSnapshot
+import com.alesle.ai.agent.vision.Screenshot
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
@@ -50,6 +51,8 @@ class RuntimeLoopDeviceTest {
     ) = object : AgentRuntime {
         override fun capture() = screen
 
+        override fun screenshot(): Screenshot = Screenshot.Image("JPEG")
+
         override val deviceControl = control
         override val intentLauncher = launcher
     }
@@ -58,6 +61,12 @@ class RuntimeLoopDeviceTest {
     fun `captures through the connected service`() {
         assertSame(screen, RuntimeLoopDevice({ runtime() }, { 0 }, { 0 }).capture())
         assertNull(RuntimeLoopDevice({ null }, { 0 }, { 0 }).capture())
+    }
+
+    @Test
+    fun `takes screenshots through the connected service`() {
+        assertEquals(Screenshot.Image("JPEG"), RuntimeLoopDevice({ runtime() }, { 0 }, { 0 }).screenshot())
+        assertEquals(Screenshot.Unavailable, RuntimeLoopDevice({ null }, { 0 }, { 0 }).screenshot())
     }
 
     @Test

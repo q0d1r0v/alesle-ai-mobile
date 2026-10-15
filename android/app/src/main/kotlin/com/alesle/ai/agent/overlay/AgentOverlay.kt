@@ -24,6 +24,8 @@ import com.alesle.ai.R
 import com.alesle.ai.agent.action.Choice
 import com.alesle.ai.agent.loop.Confirmation
 import com.alesle.ai.agent.loop.LoopUi
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * What the user sees while Alesle works in other apps (SOW 03 §8, design
@@ -39,6 +41,7 @@ class AgentOverlay(
     private val onStop: () -> Unit,
     private val windowManager: WindowManager = context.getSystemService(WindowManager::class.java),
     private val main: Handler = Handler(Looper.getMainLooper()),
+    private val sleepFor: (Long) -> Unit = Thread::sleep,
 ) : LoopUi {
     private val added = mutableSetOf<View>()
     private var glow: View? = null
@@ -69,6 +72,33 @@ class AgentOverlay(
         answer: (ref: String?) -> Unit,
     ) {
         main.post { showAsk(question, choices, once(answer)) }
+    }
+
+    override fun <T> concealed(capture: () -> T): T {
+        // Never block the main thread on itself.
+        if (Looper.myLooper() == Looper.getMainLooper()) return capture()
+        setVisibleAndWait(false)
+        try {
+            return capture()
+        } finally {
+            main.post { setVisible(true) }
+        }
+    }
+
+    private fun setVisibleAndWait(visible: Boolean) {
+        val applied = CountDownLatch(1)
+        main.post {
+            setVisible(visible)
+            applied.countDown()
+        }
+        applied.await(CONCEAL_WAIT_MS, TimeUnit.MILLISECONDS)
+        // One composited frame without our windows before the capture.
+        sleepFor(CONCEAL_FRAME_MS)
+    }
+
+    private fun setVisible(visible: Boolean) {
+        val state = if (visible) View.VISIBLE else View.INVISIBLE
+        listOf(glow, pill, sheet).forEach { it?.visibility = state }
     }
 
     override fun hide() {
@@ -440,6 +470,8 @@ class AgentOverlay(
 
     companion object {
         const val COUNTDOWN_SECONDS = 3
+        private const val CONCEAL_WAIT_MS = 500L
+        private const val CONCEAL_FRAME_MS = 120L
         const val SECOND_MS = 1_000L
         private const val TOP_INSET_DP = 36
 
