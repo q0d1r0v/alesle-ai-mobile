@@ -6,6 +6,8 @@ import 'package:alesle_ai/features/agent_debug/domain/agent_console.dart';
 import 'package:alesle_ai/features/agent_debug/presentation/agent_debug_screen.dart';
 import 'package:alesle_ai/features/home/presentation/home_providers.dart';
 import 'package:alesle_ai/features/home/presentation/home_screen.dart';
+import 'package:alesle_ai/features/onboarding/data/onboarding_data_providers.dart';
+import 'package:alesle_ai/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -53,8 +55,13 @@ void main() {
             FakeHealthRepository(() async => readyHealth),
           ),
           agentRepositoryProvider.overrideWithValue(
-            FakeAgentRepository(() async => disabledAgent),
+            FakeAgentRepository(() async => enabledAgent),
           ),
+          appSettingsStoreProvider.overrideWithValue(await testSettingsStore()),
+          assistantRepositoryProvider.overrideWithValue(
+            FakeAssistantRepository(),
+          ),
+          voiceRepositoryProvider.overrideWithValue(FakeVoiceRepository()),
         ],
         child: const AlesleApp(),
       ),
@@ -62,7 +69,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(HomeScreen), findsOneWidget);
-    expect(find.text('Нажмите и напишите'), findsOneWidget);
+    expect(find.text('Нажмите и говорите'), findsOneWidget);
   });
 
   testWidgets('a long press on the title opens the agent console (debug)', (
@@ -79,6 +86,11 @@ void main() {
             FakeAgentRepository(() async => disabledAgent),
           ),
           agentConsoleRepositoryProvider.overrideWithValue(_SilentConsole()),
+          appSettingsStoreProvider.overrideWithValue(await testSettingsStore()),
+          assistantRepositoryProvider.overrideWithValue(
+            FakeAssistantRepository(),
+          ),
+          voiceRepositoryProvider.overrideWithValue(FakeVoiceRepository()),
         ],
         child: const AlesleApp(),
       ),
@@ -88,6 +100,61 @@ void main() {
     await tester.longPress(find.byKey(const Key('home-title')));
     await tester.pumpAndSettle();
     expect(find.byType(AgentDebugScreen), findsOneWidget);
+  });
+
+  testWidgets('a new install starts with onboarding', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appConfigProvider.overrideWithValue(config),
+          appSettingsStoreProvider.overrideWithValue(
+            await testSettingsStore(onboardingDone: false),
+          ),
+          deviceSetupRepositoryProvider.overrideWithValue(FakeDeviceSetup()),
+        ],
+        child: const AlesleApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(OnboardingScreen), findsOneWidget);
+  });
+
+  testWidgets('the chosen language wins over the phone', (
+    WidgetTester tester,
+  ) async {
+    tester.platformDispatcher.localesTestValue = const <Locale>[Locale('ru')];
+    addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appConfigProvider.overrideWithValue(config),
+          healthRepositoryProvider.overrideWithValue(
+            FakeHealthRepository(() async => readyHealth),
+          ),
+          agentRepositoryProvider.overrideWithValue(
+            FakeAgentRepository(() async => enabledAgent),
+          ),
+          appSettingsStoreProvider.overrideWithValue(
+            await testSettingsStore(language: 'en'),
+          ),
+          assistantRepositoryProvider.overrideWithValue(
+            FakeAssistantRepository(),
+          ),
+          voiceRepositoryProvider.overrideWithValue(FakeVoiceRepository()),
+        ],
+        child: const AlesleApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Tap and speak'), findsOneWidget);
+  });
+
+  test('appSettingsStoreProvider must be overridden', () {
+    final ProviderContainer container = ProviderContainer();
+    addTearDown(container.dispose);
+    expect(() => container.read(appSettingsStoreProvider), throwsA(anything));
   });
 
   test('appConfigProvider must be overridden', () {
@@ -108,6 +175,8 @@ void main() {
       expect(container.read(dioProvider).options.baseUrl, 'http://api.test');
       expect(container.read(healthRepositoryProvider), isNotNull);
       expect(container.read(agentRepositoryProvider), isNotNull);
+      expect(container.read(voiceRepositoryProvider), isNotNull);
+      expect(container.read(deviceSetupRepositoryProvider), isNotNull);
     },
   );
 }

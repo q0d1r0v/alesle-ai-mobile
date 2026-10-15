@@ -6,6 +6,7 @@ import '../domain/home_repositories.dart';
 import 'agent_repository_impl.dart';
 import 'assistant_repository_impl.dart';
 import 'health_repository_impl.dart';
+import 'voice_repository_impl.dart';
 
 /// Wiring of the data layer. Presentation depends on the domain interfaces
 /// these expose, never on the generated clients behind them.
@@ -23,4 +24,9 @@ final Provider<AssistantRepository> assistantRepositoryProvider =
         config: ref.watch(appConfigProvider),
         bridge: ref.watch(agentEventsBridgeProvider),
       ),
+    );
+
+final Provider<VoiceRepository> voiceRepositoryProvider =
+    Provider<VoiceRepository>(
+      (Ref ref) => VoiceRepositoryImpl(dio: ref.watch(dioProvider)),
     );

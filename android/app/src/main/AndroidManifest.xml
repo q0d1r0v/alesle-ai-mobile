@@ -22,6 +22,14 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Push-to-talk (SOW 04 §4.1), asked for in onboarding. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!--
+      Onboarding step 8: an assistant Android stops mid-task fails the user.
+      Allowed outside Google Play (ADR 0005).
+    -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
     <application
         android:label="@string/app_name"
         android:name="${applicationName}"

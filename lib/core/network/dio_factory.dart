@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../config/app_config.dart';
+import 'auth_interceptor.dart';
 import 'request_id_interceptor.dart';
 
 /// The one Dio instance configuration the app uses.
@@ -15,6 +16,8 @@ Dio createDio(AppConfig config) {
       headers: <String, Object>{'Accept': 'application/json'},
     ),
   );
-  dio.interceptors.add(RequestIdInterceptor());
+  dio.interceptors
+    ..add(RequestIdInterceptor())
+    ..add(AuthInterceptor(() => config.devAuthToken));
   return dio;
 }

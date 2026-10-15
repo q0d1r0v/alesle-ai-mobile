@@ -1,8 +1,11 @@
+import 'package:alesle_ai/app/bootstrap/core_providers.dart';
 import 'package:alesle_ai/app/widgets/alesle_orb.dart';
 import 'package:alesle_ai/core/agent/agent_task.dart';
 import 'package:alesle_ai/core/api/generated/models/error_code.dart';
 import 'package:alesle_ai/core/errors/failure.dart';
+import 'package:alesle_ai/core/storage/app_settings.dart';
 import 'package:alesle_ai/features/home/domain/agent_status.dart';
+import 'package:alesle_ai/features/home/domain/home_repositories.dart';
 import 'package:alesle_ai/features/home/domain/server_health.dart';
 import 'package:alesle_ai/features/home/presentation/home_providers.dart';
 import 'package:alesle_ai/features/home/presentation/home_screen.dart';
@@ -17,17 +20,23 @@ void main() {
   late FakeHealthRepository health;
   late FakeAgentRepository agent;
   late FakeAssistantRepository assistant;
+  late FakeVoiceRepository voice;
+  late AppSettingsStore settings;
 
-  setUp(() {
+  setUp(() async {
     health = FakeHealthRepository(() async => readyHealth);
     agent = FakeAgentRepository(() async => enabledAgent);
     assistant = FakeAssistantRepository();
+    voice = FakeVoiceRepository();
+    settings = await testSettingsStore();
   });
 
   List<Override> overrides({ExecutionPolicy? policy}) => <Override>[
     healthRepositoryProvider.overrideWithValue(health),
     agentRepositoryProvider.overrideWithValue(agent),
     assistantRepositoryProvider.overrideWithValue(assistant),
+    voiceRepositoryProvider.overrideWithValue(voice),
+    appSettingsStoreProvider.overrideWithValue(settings),
     if (policy != null) executionPolicyProvider.overrideWithValue(policy),
   ];
 
@@ -50,9 +59,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// Opens the command sheet from the orb, types, and sends.
+  /// Opens the command sheet by "type instead", types, and sends.
   Future<void> sendCommand(WidgetTester tester, String text) async {
-    await tester.tap(find.byKey(const Key('orb')));
+    await tester.tap(find.byKey(const Key('type-instead')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('command-field')), text);
     await tester.pump();
@@ -68,11 +77,11 @@ void main() {
     ) async {
       await pumpHome(tester);
       expect(find.text('Xayrli kech'), findsOneWidget);
-      expect(find.text('Bosing va yozing'), findsOneWidget);
+      expect(find.text('Bosing va gapiring'), findsOneWidget);
       expect(find.text('Masalan: “Onamga qo‘ng‘iroq qil”'), findsOneWidget);
       expect(find.byType(AlesleOrb), findsOneWidget);
       expect(find.byKey(const Key('server-problem')), findsNothing);
-      expect(find.byKey(const Key('turn-on-card')), findsNothing);
+      expect(find.byKey(const Key('off-view')), findsNothing);
     });
 
     testWidgets('fits a short screen without overflowing', (
@@ -95,9 +104,9 @@ void main() {
 
     testWidgets('speaks Russian and English', (WidgetTester tester) async {
       await pumpHome(tester, locale: const Locale('ru'));
-      expect(find.text('Нажмите и напишите'), findsOneWidget);
+      expect(find.text('Нажмите и говорите'), findsOneWidget);
       await pumpHome(tester, locale: const Locale('en'));
-      expect(find.text('Tap and type'), findsOneWidget);
+      expect(find.text('Tap and speak'), findsOneWidget);
     });
 
     testWidgets('asks to turn accessibility on and opens the settings', (
@@ -105,7 +114,9 @@ void main() {
     ) async {
       agent.next = () async => disabledAgent;
       await pumpHome(tester);
-      expect(find.text('Alesle’ni yoqing'), findsOneWidget);
+      expect(find.byKey(const Key('off-view')), findsOneWidget);
+      expect(find.text('Alesle o‘chiq'), findsOneWidget);
+      expect(find.byKey(const Key('orb')), findsNothing);
       await tester.tap(find.byKey(const Key('enable-accessibility-button')));
       expect(agent.openSettingsCalls, 1);
     });
@@ -205,7 +216,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await pumpHome(tester);
-      await tester.tap(find.byKey(const Key('orb')));
+      await tester.tap(find.byKey(const Key('type-instead')));
       await tester.pumpAndSettle();
       await tester.tapAt(const Offset(20, 20));
       await tester.pumpAndSettle();
@@ -253,7 +264,7 @@ void main() {
 
       await tester.tap(find.byKey(const Key('done-button')));
       await tester.pumpAndSettle();
-      expect(find.text('Bosing va yozing'), findsOneWidget);
+      expect(find.text('Bosing va gapiring'), findsOneWidget);
     });
 
     testWidgets('a quick answer shows what was said and the answer', (
@@ -336,6 +347,141 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('To‘xtatildi'), findsOneWidget);
       expect(find.byKey(const Key('result-explanation')), findsNothing);
+    });
+  });
+
+  group('voice', () {
+    testWidgets('tap to listen, tap to finish: the transcript opens editable', (
+      WidgetTester tester,
+    ) async {
+      await pumpHome(tester);
+      await tester.tap(find.byKey(const Key('orb')));
+      await tester.pump();
+      expect(voice.starts, 1);
+      expect(find.text('Eshityapman'), findsOneWidget);
+      expect(
+        tester.widget<AlesleOrb>(find.byType(AlesleOrb)).state,
+        OrbState.listening,
+      );
+
+      await tester.tap(find.byKey(const Key('voice-stop-chip')));
+      await tester.pumpAndSettle();
+      expect(voice.languages, <String?>['uz']);
+      final TextField field = tester.widget(
+        find.byKey(const Key('command-field')),
+      );
+      expect(field.controller?.text, 'Onamga qo‘ng‘iroq qil');
+
+      await tester.enterText(
+        find.byKey(const Key('command-field')),
+        'Onamga qo‘ng‘iroq qil, iltimos',
+      );
+      await tester.tap(find.byKey(const Key('send-button')));
+      await tester.pump();
+      expect(assistant.commands.single.text, 'Onamga qo‘ng‘iroq qil, iltimos');
+    });
+
+    testWidgets('tells the user when the microphone is not allowed', (
+      WidgetTester tester,
+    ) async {
+      voice.microphone = false;
+      await pumpHome(tester);
+      await tester.tap(find.byKey(const Key('orb')));
+      await tester.pump();
+      expect(find.text('Mikrofonga ruxsat kerak.'), findsOneWidget);
+      expect(voice.starts, 0);
+    });
+
+    testWidgets('asks again when nothing was heard', (
+      WidgetTester tester,
+    ) async {
+      voice.heard = const Transcript(text: ' ', language: 'uz', confidence: 0);
+      await pumpHome(tester);
+      await tester.tap(find.byKey(const Key('orb')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('orb')));
+      await tester.pumpAndSettle();
+      expect(find.text('Eshitmadim. Yana bir bor ayting.'), findsOneWidget);
+      expect(find.byKey(const Key('command-field')), findsNothing);
+    });
+
+    testWidgets('a too-short tap gives nothing to send', (
+      WidgetTester tester,
+    ) async {
+      voice.heard = null;
+      await pumpHome(tester);
+      await tester.tap(find.byKey(const Key('orb')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('orb')));
+      await tester.pumpAndSettle();
+      expect(find.text('Eshitmadim. Yana bir bor ayting.'), findsOneWidget);
+    });
+
+    testWidgets('says plainly when the speech service is down', (
+      WidgetTester tester,
+    ) async {
+      await pumpHome(tester);
+      await tester.tap(find.byKey(const Key('orb')));
+      await tester.pump();
+      voice.failure = const ServerFailure(
+        code: ErrorCode.voiceUnavailable,
+        statusCode: 503,
+      );
+      await tester.tap(find.byKey(const Key('orb')));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Ovoz xizmati hozir ishlamayapti. Yozib yuboring.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('reads the reply aloud', (WidgetTester tester) async {
+      await pumpHome(tester);
+      await sendCommand(tester, 'Poytaxt?');
+      assistant.push(
+        const TaskUpdate(
+          TaskUpdateKind.finished,
+          text: 'Toshkent',
+          status: 'done',
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(voice.spoken, <String>['Toshkent']);
+    });
+
+    testWidgets('stays silent when the user turned voice replies off', (
+      WidgetTester tester,
+    ) async {
+      settings = await testSettingsStore(voiceReplies: false);
+      await pumpHome(tester);
+      await sendCommand(tester, 'Poytaxt?');
+      assistant.push(
+        const TaskUpdate(
+          TaskUpdateKind.finished,
+          text: 'Toshkent',
+          status: 'done',
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(voice.spoken, isEmpty);
+    });
+
+    testWidgets('a reply that cannot be spoken stays quiet', (
+      WidgetTester tester,
+    ) async {
+      await pumpHome(tester);
+      await sendCommand(tester, 'Salom');
+      voice.failure = const NetworkFailure();
+      assistant.push(
+        const TaskUpdate(
+          TaskUpdateKind.finished,
+          text: 'Salom',
+          status: 'done',
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(SnackBar), findsNothing);
     });
   });
 }

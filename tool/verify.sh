@@ -17,8 +17,9 @@ echo "▶ coverage"; dart run tool/check_coverage.dart
 if [[ "$fast" == false ]]; then
   echo "▶ goldens"; flutter test --tags golden
   echo "▶ android: Kotlin unit tests, ktlint, Android Lint"
+  # :app only: an unqualified task also runs third-party plugins' own suites.
   (cd android && ./gradlew --console=plain -q \
-    testDebugUnitTest :app:ktlintCheck :app:lintDebug)
+    :app:testDebugUnitTest :app:ktlintCheck :app:lintDebug)
   echo "▶ build"
   flutter build apk --debug --dart-define-from-file=env/dev.json
 fi

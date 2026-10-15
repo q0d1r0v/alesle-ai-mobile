@@ -216,6 +216,31 @@ enum class StepEventKind(val raw: Int) {
   }
 }
 
+enum class PermissionKind(val raw: Int) {
+  MICROPHONE(0),
+  CONTACTS(1),
+  NOTIFICATIONS(2);
+
+  companion object {
+    fun ofRaw(raw: Int): PermissionKind? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
+enum class PermissionState(val raw: Int) {
+  GRANTED(0),
+  DENIED(1),
+  /** Denied with "don't ask again": only the app's settings page can change it. */
+  PERMANENTLY_DENIED(2);
+
+  companion object {
+    fun ofRaw(raw: Int): PermissionState? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
 /** Generated class from Pigeon that represents data sent in messages. */
 data class AgentStatusMessage (
   /** Whether the user has switched on Alesle's AccessibilityService. */
@@ -410,6 +435,53 @@ data class StepEvent (
     return "StepEvent(kind=$kind, text=$text, status=$status, reason=$reason)"
   }
 }
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class DeviceSetupMessage (
+  /** Android will not stop Alesle to save battery. */
+  val batteryOptimizationIgnored: Boolean,
+  /** `Build.MANUFACTURER`, lower-cased: picks the OEM autostart guide. */
+  val manufacturer: String,
+  val sdkInt: Long
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): DeviceSetupMessage {
+      val batteryOptimizationIgnored = pigeonVar_list[0] as Boolean
+      val manufacturer = pigeonVar_list[1] as String
+      val sdkInt = pigeonVar_list[2] as Long
+      return DeviceSetupMessage(batteryOptimizationIgnored, manufacturer, sdkInt)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      batteryOptimizationIgnored,
+      manufacturer,
+      sdkInt,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as DeviceSetupMessage
+    return AgentApiPigeonUtils.deepEquals(this.batteryOptimizationIgnored, other.batteryOptimizationIgnored) && AgentApiPigeonUtils.deepEquals(this.manufacturer, other.manufacturer) && AgentApiPigeonUtils.deepEquals(this.sdkInt, other.sdkInt)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.batteryOptimizationIgnored)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.manufacturer)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.sdkInt)
+    return result
+  }
+  override fun toString(): String {
+    return "DeviceSetupMessage(batteryOptimizationIgnored=$batteryOptimizationIgnored, manufacturer=$manufacturer, sdkInt=$sdkInt)"
+  }
+}
 private open class AgentApiPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
@@ -419,23 +491,38 @@ private open class AgentApiPigeonCodec : StandardMessageCodec() {
         }
       }
       130.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let {
-          AgentStatusMessage.fromList(it)
+        return (readValue(buffer) as Long?)?.let {
+          PermissionKind.ofRaw(it.toInt())
         }
       }
       131.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let {
-          TaskRequest.fromList(it)
+        return (readValue(buffer) as Long?)?.let {
+          PermissionState.ofRaw(it.toInt())
         }
       }
       132.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StartTaskResult.fromList(it)
+          AgentStatusMessage.fromList(it)
         }
       }
       133.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
+          TaskRequest.fromList(it)
+        }
+      }
+      134.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          StartTaskResult.fromList(it)
+        }
+      }
+      135.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
           StepEvent.fromList(it)
+        }
+      }
+      136.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          DeviceSetupMessage.fromList(it)
         }
       }
       else -> super.readValueOfType(type, buffer)
@@ -447,26 +534,39 @@ private open class AgentApiPigeonCodec : StandardMessageCodec() {
         stream.write(129)
         writeValue(stream, value.raw.toLong())
       }
-      is AgentStatusMessage -> {
+      is PermissionKind -> {
         stream.write(130)
-        writeValue(stream, value.toList())
+        writeValue(stream, value.raw.toLong())
       }
-      is TaskRequest -> {
+      is PermissionState -> {
         stream.write(131)
-        writeValue(stream, value.toList())
+        writeValue(stream, value.raw.toLong())
       }
-      is StartTaskResult -> {
+      is AgentStatusMessage -> {
         stream.write(132)
         writeValue(stream, value.toList())
       }
-      is StepEvent -> {
+      is TaskRequest -> {
         stream.write(133)
+        writeValue(stream, value.toList())
+      }
+      is StartTaskResult -> {
+        stream.write(134)
+        writeValue(stream, value.toList())
+      }
+      is StepEvent -> {
+        stream.write(135)
+        writeValue(stream, value.toList())
+      }
+      is DeviceSetupMessage -> {
+        stream.write(136)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
     }
   }
 }
+
 
 /** Generated interface from Pigeon that represents a handler of messages from Flutter. */
 interface AgentHostApi {
@@ -621,6 +721,221 @@ class AgentEventsApi(private val binaryMessenger: BinaryMessenger, private val m
         } else {
           continuation.resumeWithException(AgentApiPigeonUtils.createConnectionError(channelName))
         } 
+      }
+    }
+  }
+}
+/** Generated interface from Pigeon that represents a handler of messages from Flutter. */
+interface DeviceHostApi {
+  fun permissionState(kind: PermissionKind): PermissionState
+  /** Shows the system permission dialog (when Android still allows it). */
+  suspend fun requestPermission(kind: PermissionKind): PermissionState
+  fun setupState(): DeviceSetupMessage
+  /** App info: where "Allow restricted settings" lives (Android 13+, sideloaded). */
+  fun openAppDetails()
+  /** The system dialog that exempts Alesle from battery optimisation. */
+  fun requestIgnoreBatteryOptimizations()
+  /**
+   * The OEM's autostart screen when known (Xiaomi, Oppo, Vivo, Huawei…);
+   * false when there is none and app info was opened instead.
+   */
+  fun openAutostartSettings(): Boolean
+  /** Starts recording the microphone: AAC, 16 kHz mono, into the app cache. */
+  fun startRecording()
+  /** Stops and returns the recording's file path; null when nothing was recorded. */
+  fun stopRecording(): String?
+  fun cancelRecording()
+  /** Plays an audio file (the agent's spoken reply); stops any earlier one. */
+  fun playAudio(path: String)
+  fun stopAudio()
+
+  companion object {
+    /** The codec used by DeviceHostApi. */
+    val codec: MessageCodec<Any?> by lazy {
+      AgentApiPigeonCodec()
+    }
+    /** Sets up an instance of `DeviceHostApi` to handle messages through the `binaryMessenger`. */
+    @JvmOverloads
+    fun setUp(binaryMessenger: BinaryMessenger, api: DeviceHostApi?, messageChannelSuffix: String = "") {
+      val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.DeviceHostApi.permissionState$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val kindArg = args[0] as PermissionKind
+            val wrapped: List<Any?> = try {
+              listOf(api.permissionState(kindArg))
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.DeviceHostApi.requestPermission$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val kindArg = args[0] as PermissionKind
+            CoroutineScope(Dispatchers.Main).launch {
+              val wrapped: List<Any?> = try {
+                listOf(api.requestPermission(kindArg))
+              } catch (exception: Throwable) {
+                AgentApiPigeonUtils.wrapError(exception)
+              }
+              reply.reply(wrapped)
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.DeviceHostApi.setupState$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              listOf(api.setupState())
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.DeviceHostApi.openAppDetails$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.openAppDetails()
+              listOf(null)
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.DeviceHostApi.requestIgnoreBatteryOptimizations$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.requestIgnoreBatteryOptimizations()
+              listOf(null)
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.DeviceHostApi.openAutostartSettings$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              listOf(api.openAutostartSettings())
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.DeviceHostApi.startRecording$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.startRecording()
+              listOf(null)
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.DeviceHostApi.stopRecording$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              listOf(api.stopRecording())
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.DeviceHostApi.cancelRecording$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.cancelRecording()
+              listOf(null)
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.DeviceHostApi.playAudio$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val pathArg = args[0] as String
+            val wrapped: List<Any?> = try {
+              api.playAudio(pathArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.DeviceHostApi.stopAudio$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.stopAudio()
+              listOf(null)
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
       }
     }
   }

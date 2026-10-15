@@ -5,18 +5,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/bootstrap/core_providers.dart';
 import '../../../app/l10n/l10n.dart';
 import '../../../app/router/app_router.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../app/widgets/alesle_orb.dart';
 import '../../../app/widgets/capsule_button.dart';
 import '../../../core/agent/agent_task.dart';
+import '../../../core/errors/failure.dart';
 import '../domain/agent_status.dart';
 import '../domain/server_health.dart';
 import 'failure_message.dart';
 import 'home_providers.dart';
 import 'home_task_controller.dart';
 import 'task_messages.dart';
+import 'voice_controller.dart';
 
 /// Home (design "Home", "Working", "Done", "Couldn't do it", "Quick answer"):
 /// the orb takes a command, follows the task, and shows how it ended.
@@ -50,8 +53,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
+  /// The agent's reply, read aloud unless the user chose silence.
+  void _speakResult(HomeTask? previous, HomeTask next) {
+    if (next is! TaskResult || previous is TaskResult) return;
+    final String? reply = next.reply;
+    if (reply == null || reply.trim().isEmpty) return;
+    if (!ref.read(appSettingsProvider).voiceReplies) return;
+    unawaited(
+      ref.read(voiceRepositoryProvider).speak(reply).catchError((Object _) {
+        // A silent reply is still on screen; nothing to tell the user.
+      }),
+    );
+  }
+
+  void _showVoiceProblem(VoiceState? previous, VoiceState next) {
+    final VoiceProblem? problem = next.problem;
+    if (problem == null || problem == previous?.problem) return;
+    final String message = switch (problem) {
+      VoiceProblem.microphoneDenied => context.l10n.voiceMicDenied,
+      VoiceProblem.notHeard => context.l10n.voiceNotHeard,
+      VoiceProblem.failed => failureMessage(
+        context.l10n,
+        next.failure ?? const UnexpectedFailure('voice'),
+      ),
+    };
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+    ref.read(voiceProvider.notifier).clearProblem();
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref
+      ..listen<HomeTask>(homeTaskProvider, _speakResult)
+      ..listen<VoiceState>(voiceProvider, _showVoiceProblem);
     final HomeTask task = ref.watch(homeTaskProvider);
     return Scaffold(
       body: DecoratedBox(
@@ -84,7 +120,12 @@ class _IdleView extends ConsumerWidget {
 
   final DateTime Function() now;
 
-  Future<void> _askForCommand(BuildContext context, WidgetRef ref) async {
+  /// The editable command sheet; [initial] is what voice heard (R6, EC-13).
+  Future<void> _askForCommand(
+    BuildContext context,
+    WidgetRef ref, {
+    String initial = '',
+  }) async {
     final String? text = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
@@ -93,7 +134,7 @@ class _IdleView extends ConsumerWidget {
           top: Radius.circular(AlesleRadii.sheet),
         ),
       ),
-      builder: (BuildContext context) => const _CommandSheet(),
+      builder: (BuildContext context) => _CommandSheet(initial: initial),
     );
     if (text == null || text.trim().isEmpty || !context.mounted) return;
     await ref
@@ -109,10 +150,24 @@ class _IdleView extends ConsumerWidget {
         );
   }
 
+  Future<void> _onOrb(BuildContext context, WidgetRef ref) async {
+    final String language = Localizations.localeOf(context).languageCode;
+    final String? heard = await ref
+        .read(voiceProvider.notifier)
+        .toggle(language: language);
+    if (heard != null && context.mounted) {
+      await _askForCommand(context, ref, initial: heard);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final TextTheme text = Theme.of(context).textTheme;
     final AsyncValue<AgentStatus> status = ref.watch(agentStatusProvider);
+    final VoicePhase phase = ref.watch(
+      voiceProvider.select((VoiceState state) => state.phase),
+    );
+    final bool off = status.value?.needsSetup ?? false;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -131,38 +186,73 @@ class _IdleView extends ConsumerWidget {
           ),
         ),
         Expanded(
-          child: _Centered(
-            builder: (double orb) => Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Semantics(
-                  button: true,
-                  label: context.l10n.homeTapToType,
-                  child: GestureDetector(
-                    key: const Key('orb'),
-                    onTap: () => unawaited(_askForCommand(context, ref)),
-                    child: AlesleOrb(size: orb),
+          child: off
+              ? const _OffView()
+              : _Centered(
+                  builder: (double orb) => Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Semantics(
+                        button: true,
+                        label: phase == VoicePhase.listening
+                            ? context.l10n.homeTapToStop
+                            : context.l10n.homeTapToSpeak,
+                        child: GestureDetector(
+                          key: const Key('orb'),
+                          onTap: () => unawaited(_onOrb(context, ref)),
+                          child: AlesleOrb(
+                            size: orb,
+                            state: switch (phase) {
+                              VoicePhase.idle => OrbState.idle,
+                              VoicePhase.listening => OrbState.listening,
+                              VoicePhase.transcribing => OrbState.working,
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      Text(
+                        switch (phase) {
+                          VoicePhase.idle => context.l10n.homeTapToSpeak,
+                          VoicePhase.listening => context.l10n.homeListening,
+                          VoicePhase.transcribing =>
+                            context.l10n.homeUnderstanding,
+                        },
+                        key: const Key('voice-title'),
+                        style: text.headlineSmall?.copyWith(
+                          color: phase == VoicePhase.listening
+                              ? AlesleColors.violet
+                              : null,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 14),
+                      if (phase == VoicePhase.listening)
+                        _Chip(
+                          key: const Key('voice-stop-chip'),
+                          label: context.l10n.homeTapToStop,
+                          onTap: () => unawaited(_onOrb(context, ref)),
+                        )
+                      else if (phase == VoicePhase.idle) ...<Widget>[
+                        _Chip(
+                          key: const Key('example-chip'),
+                          label: context.l10n.homeExample,
+                          onTap: () => unawaited(_askForCommand(context, ref)),
+                        ),
+                        TextButton.icon(
+                          key: const Key('type-instead'),
+                          onPressed: () =>
+                              unawaited(_askForCommand(context, ref)),
+                          icon: const Icon(Icons.keyboard_outlined, size: 18),
+                          label: Text(context.l10n.homeTypeInstead),
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      const _ServerProblem(),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 32),
-                Text(
-                  context.l10n.homeTapToType,
-                  style: text.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 14),
-                _Chip(
-                  key: const Key('example-chip'),
-                  label: context.l10n.homeExample,
-                  onTap: () => unawaited(_askForCommand(context, ref)),
-                ),
-                const SizedBox(height: 16),
-                const _ServerProblem(),
-              ],
-            ),
-          ),
         ),
-        if (status.value?.needsSetup ?? false) const _TurnOnCard(),
         if (status.error case final Object error)
           Text(
             failureMessage(context.l10n, error),
@@ -170,6 +260,61 @@ class _IdleView extends ConsumerWidget {
             textAlign: TextAlign.center,
             style: text.bodyMedium?.copyWith(color: AlesleColors.danger),
           ),
+      ],
+    );
+  }
+}
+
+/// Design "Alesle is off": the accessibility switch is off (AC-APP-2, EC-11).
+class _OffView extends ConsumerWidget {
+  const _OffView();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final TextTheme text = Theme.of(context).textTheme;
+    return Column(
+      key: const Key('off-view'),
+      children: <Widget>[
+        Expanded(
+          child: _Centered(
+            builder: (double orb) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Opacity(
+                  opacity: 0.35,
+                  child: ColorFiltered(
+                    colorFilter: const ColorFilter.matrix(<double>[
+                      0.33, 0.33, 0.33, 0, 0, //
+                      0.33, 0.33, 0.33, 0, 0, //
+                      0.33, 0.33, 0.33, 0, 0, //
+                      0, 0, 0, 1, 0,
+                    ]),
+                    child: AlesleOrb(size: orb),
+                  ),
+                ),
+                const SizedBox(height: 28),
+                Text(
+                  context.l10n.offTitle,
+                  style: text.headlineSmall,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  context.l10n.offBody,
+                  style: text.bodyLarge?.copyWith(color: AlesleColors.text2),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+        CapsuleButton(
+          key: const Key('enable-accessibility-button'),
+          label: context.l10n.offButton,
+          onPressed: () => unawaited(
+            ref.read(agentRepositoryProvider).openAccessibilitySettings(),
+          ),
+        ),
       ],
     );
   }
@@ -218,55 +363,20 @@ class _ServerProblem extends ConsumerWidget {
   }
 }
 
-/// Design "Turn on Alesle", as a card on home until onboarding exists (Sprint 4).
-class _TurnOnCard extends ConsumerWidget {
-  const _TurnOnCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final TextTheme text = Theme.of(context).textTheme;
-    return DecoratedBox(
-      key: const Key('turn-on-card'),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AlesleRadii.card),
-        boxShadow: AlesleShadows.card,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Text(context.l10n.turnOnTitle, style: text.titleLarge),
-            const SizedBox(height: 4),
-            Text(
-              context.l10n.turnOnBody,
-              style: text.bodyMedium?.copyWith(color: AlesleColors.text2),
-            ),
-            const SizedBox(height: 14),
-            CapsuleButton(
-              key: const Key('enable-accessibility-button'),
-              label: context.l10n.turnOnButton,
-              onPressed: () => unawaited(
-                ref.read(agentRepositoryProvider).openAccessibilitySettings(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _CommandSheet extends StatefulWidget {
-  const _CommandSheet();
+  const _CommandSheet({this.initial = ''});
+
+  /// What voice heard; the user can correct it before sending.
+  final String initial;
 
   @override
   State<_CommandSheet> createState() => _CommandSheetState();
 }
 
 class _CommandSheetState extends State<_CommandSheet> {
-  final TextEditingController _controller = TextEditingController();
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initial,
+  );
 
   @override
   void dispose() {

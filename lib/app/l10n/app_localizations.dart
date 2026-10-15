@@ -345,6 +345,282 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Sozlamalarni ochish'**
   String get turnOnButton;
+
+  /// No description provided for @onboardingWelcomeTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telefoningizga nima qilishni ayting'**
+  String get onboardingWelcomeTitle;
+
+  /// No description provided for @onboardingWelcomeBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Alesle uni siz uchun bajaradi.'**
+  String get onboardingWelcomeBody;
+
+  /// No description provided for @onboardingGetStarted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshlash'**
+  String get onboardingGetStarted;
+
+  /// No description provided for @onboardingContinue.
+  ///
+  /// In uz, this message translates to:
+  /// **'Davom etish'**
+  String get onboardingContinue;
+
+  /// No description provided for @onboardingLater.
+  ///
+  /// In uz, this message translates to:
+  /// **'Keyinroq'**
+  String get onboardingLater;
+
+  /// No description provided for @onboardingLanguageTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tilingiz'**
+  String get onboardingLanguageTitle;
+
+  /// No description provided for @onboardingLanguageBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Alesle ham shu tilda gapiradi.'**
+  String get onboardingLanguageBody;
+
+  /// No description provided for @onboardingPrivacyTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Alesle qanday ishlaydi'**
+  String get onboardingPrivacyTitle;
+
+  /// No description provided for @onboardingPrivacyPoint1.
+  ///
+  /// In uz, this message translates to:
+  /// **'Vazifangiz davomida ekranni o‘qiydi va siz uchun bosadi.'**
+  String get onboardingPrivacyPoint1;
+
+  /// No description provided for @onboardingPrivacyPoint2.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ekran rasmlari va mazmuni saqlanmaydi.'**
+  String get onboardingPrivacyPoint2;
+
+  /// No description provided for @onboardingPrivacyPoint3.
+  ///
+  /// In uz, this message translates to:
+  /// **'Muhim amaldan oldin so‘raydi; istalgan payt to‘xtatish mumkin.'**
+  String get onboardingPrivacyPoint3;
+
+  /// No description provided for @onboardingPermissionsTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uchta tez ruxsat'**
+  String get onboardingPermissionsTitle;
+
+  /// No description provided for @onboardingPermissionsBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telefon so‘raydi — har safar «Ruxsat berish»ni bosing.'**
+  String get onboardingPermissionsBody;
+
+  /// No description provided for @permissionMicrophone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mikrofon'**
+  String get permissionMicrophone;
+
+  /// No description provided for @permissionMicrophoneWhy.
+  ///
+  /// In uz, this message translates to:
+  /// **'sizni eshitish uchun'**
+  String get permissionMicrophoneWhy;
+
+  /// No description provided for @permissionContacts.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kontaktlar'**
+  String get permissionContacts;
+
+  /// No description provided for @permissionContactsWhy.
+  ///
+  /// In uz, this message translates to:
+  /// **'kerakli odamni topish uchun'**
+  String get permissionContactsWhy;
+
+  /// No description provided for @permissionNotifications.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bildirishnomalar'**
+  String get permissionNotifications;
+
+  /// No description provided for @permissionNotificationsWhy.
+  ///
+  /// In uz, this message translates to:
+  /// **'To‘xtatish tugmasini ko‘rsatish uchun'**
+  String get permissionNotificationsWhy;
+
+  /// No description provided for @permissionAllow.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ruxsat berish'**
+  String get permissionAllow;
+
+  /// No description provided for @permissionOpenSettings.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sozlamalarda yoqish'**
+  String get permissionOpenSettings;
+
+  /// No description provided for @turnOnGreyHelp.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tugma kulrangmi? Ko‘rsataman'**
+  String get turnOnGreyHelp;
+
+  /// No description provided for @restrictedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Cheklangan sozlamalarga ruxsat bering'**
+  String get restrictedTitle;
+
+  /// No description provided for @restrictedStep1.
+  ///
+  /// In uz, this message translates to:
+  /// **'«Ilova haqida»ni oching'**
+  String get restrictedStep1;
+
+  /// No description provided for @restrictedStep2.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yuqoridagi ⋮ menyusini bosing'**
+  String get restrictedStep2;
+
+  /// No description provided for @restrictedStep3.
+  ///
+  /// In uz, this message translates to:
+  /// **'«Cheklangan sozlamalarga ruxsat»ni tanlang'**
+  String get restrictedStep3;
+
+  /// No description provided for @restrictedStep4.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qaytib, Alesle’ni yoqing'**
+  String get restrictedStep4;
+
+  /// No description provided for @restrictedOpen.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ilova haqida'**
+  String get restrictedOpen;
+
+  /// No description provided for @onboardingBatteryTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Alesle to‘xtab qolmasin'**
+  String get onboardingBatteryTitle;
+
+  /// No description provided for @onboardingBatteryBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telefon batareyani tejash uchun Alesle’ni to‘xtatib qo‘yishi mumkin. Unga ishlashga ruxsat bering.'**
+  String get onboardingBatteryBody;
+
+  /// No description provided for @onboardingBatteryButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Batareya cheklovini olib tashlash'**
+  String get onboardingBatteryButton;
+
+  /// No description provided for @onboardingAutostartButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avtoishga tushirishni yoqish'**
+  String get onboardingAutostartButton;
+
+  /// No description provided for @onboardingDoneTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hammasi tayyor'**
+  String get onboardingDoneTitle;
+
+  /// No description provided for @onboardingDoneBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Doirani bosing va gapiring.'**
+  String get onboardingDoneBody;
+
+  /// No description provided for @onboardingDoneButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshladik'**
+  String get onboardingDoneButton;
+
+  /// No description provided for @offTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Alesle o‘chiq'**
+  String get offTitle;
+
+  /// No description provided for @offBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telefon uni o‘chirib qo‘ydi. Davom etish uchun qayta yoqing.'**
+  String get offBody;
+
+  /// No description provided for @offButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yoqish'**
+  String get offButton;
+
+  /// No description provided for @homeTapToSpeak.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bosing va gapiring'**
+  String get homeTapToSpeak;
+
+  /// No description provided for @homeListening.
+  ///
+  /// In uz, this message translates to:
+  /// **'Eshityapman'**
+  String get homeListening;
+
+  /// No description provided for @homeTapToStop.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tugatish uchun bosing'**
+  String get homeTapToStop;
+
+  /// No description provided for @homeUnderstanding.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tushunyapman…'**
+  String get homeUnderstanding;
+
+  /// No description provided for @homeTypeInstead.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yozib yuborish'**
+  String get homeTypeInstead;
+
+  /// No description provided for @voiceNotHeard.
+  ///
+  /// In uz, this message translates to:
+  /// **'Eshitmadim. Yana bir bor ayting.'**
+  String get voiceNotHeard;
+
+  /// No description provided for @voiceUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ovoz xizmati hozir ishlamayapti. Yozib yuboring.'**
+  String get voiceUnavailable;
+
+  /// No description provided for @voiceMicDenied.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mikrofonga ruxsat kerak.'**
+  String get voiceMicDenied;
 }
 
 class _AppLocalizationsDelegate

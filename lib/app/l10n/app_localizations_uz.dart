@@ -138,4 +138,150 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get turnOnButton => 'Sozlamalarni ochish';
+
+  @override
+  String get onboardingWelcomeTitle => 'Telefoningizga nima qilishni ayting';
+
+  @override
+  String get onboardingWelcomeBody => 'Alesle uni siz uchun bajaradi.';
+
+  @override
+  String get onboardingGetStarted => 'Boshlash';
+
+  @override
+  String get onboardingContinue => 'Davom etish';
+
+  @override
+  String get onboardingLater => 'Keyinroq';
+
+  @override
+  String get onboardingLanguageTitle => 'Tilingiz';
+
+  @override
+  String get onboardingLanguageBody => 'Alesle ham shu tilda gapiradi.';
+
+  @override
+  String get onboardingPrivacyTitle => 'Alesle qanday ishlaydi';
+
+  @override
+  String get onboardingPrivacyPoint1 =>
+      'Vazifangiz davomida ekranni o‘qiydi va siz uchun bosadi.';
+
+  @override
+  String get onboardingPrivacyPoint2 =>
+      'Ekran rasmlari va mazmuni saqlanmaydi.';
+
+  @override
+  String get onboardingPrivacyPoint3 =>
+      'Muhim amaldan oldin so‘raydi; istalgan payt to‘xtatish mumkin.';
+
+  @override
+  String get onboardingPermissionsTitle => 'Uchta tez ruxsat';
+
+  @override
+  String get onboardingPermissionsBody =>
+      'Telefon so‘raydi — har safar «Ruxsat berish»ni bosing.';
+
+  @override
+  String get permissionMicrophone => 'Mikrofon';
+
+  @override
+  String get permissionMicrophoneWhy => 'sizni eshitish uchun';
+
+  @override
+  String get permissionContacts => 'Kontaktlar';
+
+  @override
+  String get permissionContactsWhy => 'kerakli odamni topish uchun';
+
+  @override
+  String get permissionNotifications => 'Bildirishnomalar';
+
+  @override
+  String get permissionNotificationsWhy =>
+      'To‘xtatish tugmasini ko‘rsatish uchun';
+
+  @override
+  String get permissionAllow => 'Ruxsat berish';
+
+  @override
+  String get permissionOpenSettings => 'Sozlamalarda yoqish';
+
+  @override
+  String get turnOnGreyHelp => 'Tugma kulrangmi? Ko‘rsataman';
+
+  @override
+  String get restrictedTitle => 'Cheklangan sozlamalarga ruxsat bering';
+
+  @override
+  String get restrictedStep1 => '«Ilova haqida»ni oching';
+
+  @override
+  String get restrictedStep2 => 'Yuqoridagi ⋮ menyusini bosing';
+
+  @override
+  String get restrictedStep3 => '«Cheklangan sozlamalarga ruxsat»ni tanlang';
+
+  @override
+  String get restrictedStep4 => 'Qaytib, Alesle’ni yoqing';
+
+  @override
+  String get restrictedOpen => 'Ilova haqida';
+
+  @override
+  String get onboardingBatteryTitle => 'Alesle to‘xtab qolmasin';
+
+  @override
+  String get onboardingBatteryBody =>
+      'Telefon batareyani tejash uchun Alesle’ni to‘xtatib qo‘yishi mumkin. Unga ishlashga ruxsat bering.';
+
+  @override
+  String get onboardingBatteryButton => 'Batareya cheklovini olib tashlash';
+
+  @override
+  String get onboardingAutostartButton => 'Avtoishga tushirishni yoqish';
+
+  @override
+  String get onboardingDoneTitle => 'Hammasi tayyor';
+
+  @override
+  String get onboardingDoneBody => 'Doirani bosing va gapiring.';
+
+  @override
+  String get onboardingDoneButton => 'Boshladik';
+
+  @override
+  String get offTitle => 'Alesle o‘chiq';
+
+  @override
+  String get offBody =>
+      'Telefon uni o‘chirib qo‘ydi. Davom etish uchun qayta yoqing.';
+
+  @override
+  String get offButton => 'Yoqish';
+
+  @override
+  String get homeTapToSpeak => 'Bosing va gapiring';
+
+  @override
+  String get homeListening => 'Eshityapman';
+
+  @override
+  String get homeTapToStop => 'Tugatish uchun bosing';
+
+  @override
+  String get homeUnderstanding => 'Tushunyapman…';
+
+  @override
+  String get homeTypeInstead => 'Yozib yuborish';
+
+  @override
+  String get voiceNotHeard => 'Eshitmadim. Yana bir bor ayting.';
+
+  @override
+  String get voiceUnavailable =>
+      'Ovoz xizmati hozir ishlamayapti. Yozib yuboring.';
+
+  @override
+  String get voiceMicDenied => 'Mikrofonga ruxsat kerak.';
 }

@@ -137,4 +137,149 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get turnOnButton => 'Open settings';
+
+  @override
+  String get onboardingWelcomeTitle => 'Tell your phone what to do';
+
+  @override
+  String get onboardingWelcomeBody => 'Alesle does it for you.';
+
+  @override
+  String get onboardingGetStarted => 'Get started';
+
+  @override
+  String get onboardingContinue => 'Continue';
+
+  @override
+  String get onboardingLater => 'Later';
+
+  @override
+  String get onboardingLanguageTitle => 'Your language';
+
+  @override
+  String get onboardingLanguageBody => 'Alesle will speak it too.';
+
+  @override
+  String get onboardingPrivacyTitle => 'How Alesle works';
+
+  @override
+  String get onboardingPrivacyPoint1 =>
+      'While doing your task it reads the screen and taps for you.';
+
+  @override
+  String get onboardingPrivacyPoint2 =>
+      'Screenshots and screen contents are never stored.';
+
+  @override
+  String get onboardingPrivacyPoint3 =>
+      'It asks before anything important, and you can stop it any time.';
+
+  @override
+  String get onboardingPermissionsTitle => 'Three quick yeses';
+
+  @override
+  String get onboardingPermissionsBody =>
+      'Your phone will ask. Tap Allow each time.';
+
+  @override
+  String get permissionMicrophone => 'Microphone';
+
+  @override
+  String get permissionMicrophoneWhy => 'to hear you';
+
+  @override
+  String get permissionContacts => 'Contacts';
+
+  @override
+  String get permissionContactsWhy => 'to find the right person';
+
+  @override
+  String get permissionNotifications => 'Notifications';
+
+  @override
+  String get permissionNotificationsWhy => 'to show a Stop button';
+
+  @override
+  String get permissionAllow => 'Allow';
+
+  @override
+  String get permissionOpenSettings => 'Turn on in Settings';
+
+  @override
+  String get turnOnGreyHelp => 'Switch is grey? Show me how';
+
+  @override
+  String get restrictedTitle => 'Allow restricted settings';
+
+  @override
+  String get restrictedStep1 => 'Open App info';
+
+  @override
+  String get restrictedStep2 => 'Tap ⋮ in the top corner';
+
+  @override
+  String get restrictedStep3 => 'Choose “Allow restricted settings”';
+
+  @override
+  String get restrictedStep4 => 'Come back and turn on Alesle';
+
+  @override
+  String get restrictedOpen => 'Open App info';
+
+  @override
+  String get onboardingBatteryTitle => 'Keep Alesle running';
+
+  @override
+  String get onboardingBatteryBody =>
+      'Your phone may stop Alesle to save battery. Let it keep running.';
+
+  @override
+  String get onboardingBatteryButton => 'Remove the battery limit';
+
+  @override
+  String get onboardingAutostartButton => 'Turn on autostart';
+
+  @override
+  String get onboardingDoneTitle => 'You’re all set';
+
+  @override
+  String get onboardingDoneBody => 'Tap the circle and speak.';
+
+  @override
+  String get onboardingDoneButton => 'Let’s go';
+
+  @override
+  String get offTitle => 'Alesle is off';
+
+  @override
+  String get offBody =>
+      'Your phone switched it off. Turn it back on to keep going.';
+
+  @override
+  String get offButton => 'Turn on';
+
+  @override
+  String get homeTapToSpeak => 'Tap and speak';
+
+  @override
+  String get homeListening => 'Listening';
+
+  @override
+  String get homeTapToStop => 'Tap to finish';
+
+  @override
+  String get homeUnderstanding => 'Understanding…';
+
+  @override
+  String get homeTypeInstead => 'Type instead';
+
+  @override
+  String get voiceNotHeard => 'I didn’t catch that. Please say it again.';
+
+  @override
+  String get voiceUnavailable =>
+      'Voice is unavailable right now. Please type instead.';
+
+  @override
+  String get voiceMicDenied => 'Microphone access is needed.';
 }

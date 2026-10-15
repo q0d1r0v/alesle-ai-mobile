@@ -76,7 +76,7 @@ jobs:
         working-directory: android
         run: >-
           ./gradlew --console=plain
-          testDebugUnitTest
+          :app:testDebugUnitTest
           :app:ktlintCheck :app:lintDebug
 
       - uses: actions/upload-artifact@v4

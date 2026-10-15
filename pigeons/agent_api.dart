@@ -109,3 +109,64 @@ abstract class AgentHostApi {
 abstract class AgentEventsApi {
   void onStepEvent(StepEvent event);
 }
+
+// ── Device setup and voice (Sprint 4) ───────────────────────────────────────
+
+enum PermissionKind { microphone, contacts, notifications }
+
+enum PermissionState {
+  granted,
+  denied,
+
+  /// Denied with "don't ask again": only the app's settings page can change it.
+  permanentlyDenied,
+}
+
+class DeviceSetupMessage {
+  DeviceSetupMessage({
+    required this.batteryOptimizationIgnored,
+    required this.manufacturer,
+    required this.sdkInt,
+  });
+
+  /// Android will not stop Alesle to save battery.
+  final bool batteryOptimizationIgnored;
+
+  /// `Build.MANUFACTURER`, lower-cased: picks the OEM autostart guide.
+  final String manufacturer;
+  final int sdkInt;
+}
+
+@HostApi()
+abstract class DeviceHostApi {
+  PermissionState permissionState(PermissionKind kind);
+
+  /// Shows the system permission dialog (when Android still allows it).
+  @async
+  PermissionState requestPermission(PermissionKind kind);
+
+  DeviceSetupMessage setupState();
+
+  /// App info: where "Allow restricted settings" lives (Android 13+, sideloaded).
+  void openAppDetails();
+
+  /// The system dialog that exempts Alesle from battery optimisation.
+  void requestIgnoreBatteryOptimizations();
+
+  /// The OEM's autostart screen when known (Xiaomi, Oppo, Vivo, Huawei…);
+  /// false when there is none and app info was opened instead.
+  bool openAutostartSettings();
+
+  /// Starts recording the microphone: AAC, 16 kHz mono, into the app cache.
+  void startRecording();
+
+  /// Stops and returns the recording's file path; null when nothing was recorded.
+  String? stopRecording();
+
+  void cancelRecording();
+
+  /// Plays an audio file (the agent's spoken reply); stops any earlier one.
+  void playAudio(String path);
+
+  void stopAudio();
+}

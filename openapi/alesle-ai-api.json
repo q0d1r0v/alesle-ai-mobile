@@ -1,6 +1,113 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/v1/voice/transcribe": {
+      "post": {
+        "operationId": "voiceTranscribe",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "audio"
+                ],
+                "properties": {
+                  "audio": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "AAC, M4A, WAV, OGG, MP3 or FLAC; up to 2 MB."
+                  },
+                  "language": {
+                    "type": "string",
+                    "description": "App language hint (BCP-47)."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "VOICE_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "voice"
+        ]
+      }
+    },
+    "/v1/voice/speak": {
+      "post": {
+        "operationId": "voiceSpeak",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpeakDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The reply as a WAV file.",
+            "content": {
+              "audio/wav": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "VOICE_UNAVAILABLE",
+            "content": {
+              "audio/wav": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "voice"
+        ]
+      }
+    },
     "/v1/health/live": {
       "get": {
         "operationId": "healthLive",
@@ -71,54 +178,39 @@
       }
     },
     "schemas": {
-      "LivenessDto": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "ok"
-            ]
-          },
-          "commit": {
-            "type": "string",
-            "description": "Short git SHA of the running build, or \"unknown\"."
-          },
-          "uptimeSeconds": {
-            "type": "number",
-            "description": "Process uptime in whole seconds."
-          }
-        },
-        "required": [
-          "status",
-          "commit",
-          "uptimeSeconds"
+      "SpeechLanguage": {
+        "type": "string",
+        "enum": [
+          "en",
+          "uz",
+          "ru",
+          "other"
         ]
       },
-      "ReadinessDto": {
+      "TranscriptDto": {
         "type": "object",
         "properties": {
-          "status": {
+          "text": {
             "type": "string",
-            "enum": [
-              "ok"
+            "description": "What was said, in the language and script it was said in; \"\" when nothing was understood."
+          },
+          "language": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SpeechLanguage"
+              }
             ]
           },
-          "dependencies": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "example": {
-              "database": "up",
-              "pgvector": "up",
-              "redis": "up"
-            }
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
           }
         },
         "required": [
-          "status",
-          "dependencies"
+          "text",
+          "language",
+          "confidence"
         ]
       },
       "ErrorCode": {
@@ -134,6 +226,7 @@
           "PAYLOAD_TOO_LARGE",
           "RATE_LIMITED",
           "SERVICE_UNAVAILABLE",
+          "VOICE_UNAVAILABLE",
           "INTERNAL"
         ]
       },
@@ -208,6 +301,69 @@
         },
         "required": [
           "error"
+        ]
+      },
+      "SpeakDto": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "The reply to read aloud.",
+            "maxLength": 600
+          }
+        },
+        "required": [
+          "text"
+        ]
+      },
+      "LivenessDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "commit": {
+            "type": "string",
+            "description": "Short git SHA of the running build, or \"unknown\"."
+          },
+          "uptimeSeconds": {
+            "type": "number",
+            "description": "Process uptime in whole seconds."
+          }
+        },
+        "required": [
+          "status",
+          "commit",
+          "uptimeSeconds"
+        ]
+      },
+      "ReadinessDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "dependencies": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "example": {
+              "database": "up",
+              "pgvector": "up",
+              "redis": "up"
+            }
+          }
+        },
+        "required": [
+          "status",
+          "dependencies"
         ]
       }
     }

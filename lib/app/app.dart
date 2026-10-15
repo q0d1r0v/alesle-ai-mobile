@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'bootstrap/core_providers.dart';
 import 'l10n/app_localizations.dart';
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
@@ -23,7 +24,12 @@ class AlesleApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final String? language = ref.watch(
+      appSettingsProvider.select((settings) => settings.language),
+    );
     return MaterialApp.router(
+      // null follows the phone; a choice made in onboarding or settings wins.
+      locale: language == null ? null : Locale(language),
       onGenerateTitle: (BuildContext context) =>
           AppLocalizations.of(context).appTitle,
       // The design system is light-only for now ("Design system v3 · Light").

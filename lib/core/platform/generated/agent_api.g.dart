@@ -122,6 +122,16 @@ enum StepEventKind {
   finished,
 }
 
+enum PermissionKind { microphone, contacts, notifications }
+
+enum PermissionState {
+  granted,
+  denied,
+
+  /// Denied with "don't ask again": only the app's settings page can change it.
+  permanentlyDenied,
+}
+
 class AgentStatusMessage {
   AgentStatusMessage({required this.accessibilityEnabled});
 
@@ -345,6 +355,65 @@ class StepEvent {
   }
 }
 
+class DeviceSetupMessage {
+  DeviceSetupMessage({
+    required this.batteryOptimizationIgnored,
+    required this.manufacturer,
+    required this.sdkInt,
+  });
+
+  /// Android will not stop Alesle to save battery.
+  bool batteryOptimizationIgnored;
+
+  /// `Build.MANUFACTURER`, lower-cased: picks the OEM autostart guide.
+  String manufacturer;
+
+  int sdkInt;
+
+  List<Object?> _toList() {
+    return <Object?>[batteryOptimizationIgnored, manufacturer, sdkInt];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static DeviceSetupMessage decode(Object result) {
+    result as List<Object?>;
+    return DeviceSetupMessage(
+      batteryOptimizationIgnored: result[0]! as bool,
+      manufacturer: result[1]! as String,
+      sdkInt: result[2]! as int,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! DeviceSetupMessage || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(
+          batteryOptimizationIgnored,
+          other.batteryOptimizationIgnored,
+        ) &&
+        _deepEquals(manufacturer, other.manufacturer) &&
+        _deepEquals(sdkInt, other.sdkInt);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'DeviceSetupMessage(batteryOptimizationIgnored: $batteryOptimizationIgnored, manufacturer: $manufacturer, sdkInt: $sdkInt)';
+  }
+}
+
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
   @override
@@ -355,17 +424,26 @@ class _PigeonCodec extends StandardMessageCodec {
     } else if (value is StepEventKind) {
       buffer.putUint8(129);
       writeValue(buffer, value.index);
-    } else if (value is AgentStatusMessage) {
+    } else if (value is PermissionKind) {
       buffer.putUint8(130);
-      writeValue(buffer, value.encode());
-    } else if (value is TaskRequest) {
+      writeValue(buffer, value.index);
+    } else if (value is PermissionState) {
       buffer.putUint8(131);
-      writeValue(buffer, value.encode());
-    } else if (value is StartTaskResult) {
+      writeValue(buffer, value.index);
+    } else if (value is AgentStatusMessage) {
       buffer.putUint8(132);
       writeValue(buffer, value.encode());
-    } else if (value is StepEvent) {
+    } else if (value is TaskRequest) {
       buffer.putUint8(133);
+      writeValue(buffer, value.encode());
+    } else if (value is StartTaskResult) {
+      buffer.putUint8(134);
+      writeValue(buffer, value.encode());
+    } else if (value is StepEvent) {
+      buffer.putUint8(135);
+      writeValue(buffer, value.encode());
+    } else if (value is DeviceSetupMessage) {
+      buffer.putUint8(136);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -379,13 +457,21 @@ class _PigeonCodec extends StandardMessageCodec {
         final value = readValue(buffer) as int?;
         return value == null ? null : StepEventKind.values[value];
       case 130:
-        return AgentStatusMessage.decode(readValue(buffer)!);
+        final value = readValue(buffer) as int?;
+        return value == null ? null : PermissionKind.values[value];
       case 131:
-        return TaskRequest.decode(readValue(buffer)!);
+        final value = readValue(buffer) as int?;
+        return value == null ? null : PermissionState.values[value];
       case 132:
-        return StartTaskResult.decode(readValue(buffer)!);
+        return AgentStatusMessage.decode(readValue(buffer)!);
       case 133:
+        return TaskRequest.decode(readValue(buffer)!);
+      case 134:
+        return StartTaskResult.decode(readValue(buffer)!);
+      case 135:
         return StepEvent.decode(readValue(buffer)!);
+      case 136:
+        return DeviceSetupMessage.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
     }
@@ -571,5 +657,240 @@ abstract class AgentEventsApi {
         });
       }
     }
+  }
+}
+
+class DeviceHostApi {
+  /// Constructor for [DeviceHostApi]. The [binaryMessenger] named argument is
+  /// available for dependency injection. If it is left null, the default
+  /// BinaryMessenger will be used which routes to the host platform.
+  DeviceHostApi({
+    BinaryMessenger? binaryMessenger,
+    String messageChannelSuffix = '',
+  }) : pigeonVar_binaryMessenger = binaryMessenger,
+       pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty
+           ? '.$messageChannelSuffix'
+           : '';
+
+  final BinaryMessenger? pigeonVar_binaryMessenger;
+  static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
+
+  final String pigeonVar_messageChannelSuffix;
+
+  Future<PermissionState> permissionState(PermissionKind kind) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.DeviceHostApi.permissionState$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[kind],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as PermissionState;
+  }
+
+  /// Shows the system permission dialog (when Android still allows it).
+  Future<PermissionState> requestPermission(PermissionKind kind) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.DeviceHostApi.requestPermission$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[kind],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as PermissionState;
+  }
+
+  Future<DeviceSetupMessage> setupState() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.DeviceHostApi.setupState$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as DeviceSetupMessage;
+  }
+
+  /// App info: where "Allow restricted settings" lives (Android 13+, sideloaded).
+  Future<void> openAppDetails() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.DeviceHostApi.openAppDetails$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  /// The system dialog that exempts Alesle from battery optimisation.
+  Future<void> requestIgnoreBatteryOptimizations() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.DeviceHostApi.requestIgnoreBatteryOptimizations$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  /// The OEM's autostart screen when known (Xiaomi, Oppo, Vivo, Huawei…);
+  /// false when there is none and app info was opened instead.
+  Future<bool> openAutostartSettings() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.DeviceHostApi.openAutostartSettings$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as bool;
+  }
+
+  /// Starts recording the microphone: AAC, 16 kHz mono, into the app cache.
+  Future<void> startRecording() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.DeviceHostApi.startRecording$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  /// Stops and returns the recording's file path; null when nothing was recorded.
+  Future<String?> stopRecording() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.DeviceHostApi.stopRecording$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+    return pigeonVar_replyValue as String?;
+  }
+
+  Future<void> cancelRecording() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.DeviceHostApi.cancelRecording$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  /// Plays an audio file (the agent's spoken reply); stops any earlier one.
+  Future<void> playAudio(String path) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.DeviceHostApi.playAudio$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[path],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  Future<void> stopAudio() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.DeviceHostApi.stopAudio$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
   }
 }

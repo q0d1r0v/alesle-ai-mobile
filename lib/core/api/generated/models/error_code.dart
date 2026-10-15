@@ -26,6 +26,8 @@ enum ErrorCode {
   rateLimited('RATE_LIMITED'),
   @JsonValue('SERVICE_UNAVAILABLE')
   serviceUnavailable('SERVICE_UNAVAILABLE'),
+  @JsonValue('VOICE_UNAVAILABLE')
+  voiceUnavailable('VOICE_UNAVAILABLE'),
   @JsonValue('INTERNAL')
   internal('INTERNAL'),
 
