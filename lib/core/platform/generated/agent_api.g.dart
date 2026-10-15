@@ -97,32 +97,14 @@ int _deepHash(Object? value) {
   return value.hashCode;
 }
 
-/// How much the agent may do without asking (docs/adr/0003 in alesle-ai-api).
-enum ExecutionPolicyMessage {
-  /// `play` flavor: every sensitive action waits for the user's confirmation.
-  confirmSensitiveActions,
-
-  /// `direct` flavor: acts on its own; sensitive actions show a cancellable countdown.
-  autonomous,
-}
-
 class AgentStatusMessage {
-  AgentStatusMessage({
-    required this.accessibilityEnabled,
-    required this.policy,
-    required this.distribution,
-  });
+  AgentStatusMessage({required this.accessibilityEnabled});
 
   /// Whether the user has switched on Alesle's AccessibilityService.
   bool accessibilityEnabled;
 
-  ExecutionPolicyMessage policy;
-
-  /// `play` or `direct`, from BuildConfig — the native source of truth.
-  String distribution;
-
   List<Object?> _toList() {
-    return <Object?>[accessibilityEnabled, policy, distribution];
+    return <Object?>[accessibilityEnabled];
   }
 
   Object encode() {
@@ -131,11 +113,7 @@ class AgentStatusMessage {
 
   static AgentStatusMessage decode(Object result) {
     result as List<Object?>;
-    return AgentStatusMessage(
-      accessibilityEnabled: result[0]! as bool,
-      policy: result[1]! as ExecutionPolicyMessage,
-      distribution: result[2]! as String,
-    );
+    return AgentStatusMessage(accessibilityEnabled: result[0]! as bool);
   }
 
   @override
@@ -147,9 +125,7 @@ class AgentStatusMessage {
     if (identical(this, other)) {
       return true;
     }
-    return _deepEquals(accessibilityEnabled, other.accessibilityEnabled) &&
-        _deepEquals(policy, other.policy) &&
-        _deepEquals(distribution, other.distribution);
+    return _deepEquals(accessibilityEnabled, other.accessibilityEnabled);
   }
 
   @override
@@ -158,7 +134,7 @@ class AgentStatusMessage {
 
   @override
   String toString() {
-    return 'AgentStatusMessage(accessibilityEnabled: $accessibilityEnabled, policy: $policy, distribution: $distribution)';
+    return 'AgentStatusMessage(accessibilityEnabled: $accessibilityEnabled)';
   }
 }
 
@@ -169,11 +145,8 @@ class _PigeonCodec extends StandardMessageCodec {
     if (value is int) {
       buffer.putUint8(4);
       buffer.putInt64(value);
-    } else if (value is ExecutionPolicyMessage) {
-      buffer.putUint8(129);
-      writeValue(buffer, value.index);
     } else if (value is AgentStatusMessage) {
-      buffer.putUint8(130);
+      buffer.putUint8(129);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -184,9 +157,6 @@ class _PigeonCodec extends StandardMessageCodec {
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
       case 129:
-        final value = readValue(buffer) as int?;
-        return value == null ? null : ExecutionPolicyMessage.values[value];
-      case 130:
         return AgentStatusMessage.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);

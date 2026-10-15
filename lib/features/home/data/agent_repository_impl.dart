@@ -14,15 +14,7 @@ final class AgentRepositoryImpl implements AgentRepository {
   Future<AgentStatus> status() async {
     try {
       final AgentStatusMessage message = await _api.getStatus();
-      return AgentStatus(
-        accessibilityEnabled: message.accessibilityEnabled,
-        policy: switch (message.policy) {
-          ExecutionPolicyMessage.confirmSensitiveActions =>
-            ExecutionPolicy.confirmSensitiveActions,
-          ExecutionPolicyMessage.autonomous => ExecutionPolicy.autonomous,
-        },
-        distribution: message.distribution,
-      );
+      return AgentStatus(accessibilityEnabled: message.accessibilityEnabled);
     } on PlatformException catch (error) {
       throw UnexpectedFailure(error);
     }

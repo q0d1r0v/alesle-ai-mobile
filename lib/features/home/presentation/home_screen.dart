@@ -152,9 +152,9 @@ class _AgentStatusTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final String policy = switch (status.policy) {
+    final String policy = switch (ref.watch(executionPolicyProvider)) {
       ExecutionPolicy.confirmSensitiveActions => context.l10n.policyConfirm,
-      ExecutionPolicy.autonomous => context.l10n.policyAutonomous,
+      ExecutionPolicy.countdown => context.l10n.policyCountdown,
     };
     if (!status.needsSetup) {
       return ListTile(

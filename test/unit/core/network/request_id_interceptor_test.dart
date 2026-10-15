@@ -24,7 +24,6 @@ void main() {
   group('createDio', () {
     const AppConfig config = AppConfig(
       environment: AppEnvironment.dev,
-      distribution: Distribution.play,
       apiBaseUrl: 'http://api.test',
     );
 

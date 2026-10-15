@@ -50,17 +50,9 @@ const ServerHealth readyHealth = ServerHealth(
   },
 );
 
-const AgentStatus disabledPlayAgent = AgentStatus(
-  accessibilityEnabled: false,
-  policy: ExecutionPolicy.confirmSensitiveActions,
-  distribution: 'play',
-);
+const AgentStatus disabledAgent = AgentStatus(accessibilityEnabled: false);
 
-const AgentStatus enabledDirectAgent = AgentStatus(
-  accessibilityEnabled: true,
-  policy: ExecutionPolicy.autonomous,
-  distribution: 'direct',
-);
+const AgentStatus enabledAgent = AgentStatus(accessibilityEnabled: true);
 
 /// A future that never completes, for asserting loading states.
 Future<T> never<T>() => Completer<T>().future;

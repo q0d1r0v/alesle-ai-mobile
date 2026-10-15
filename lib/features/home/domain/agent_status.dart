@@ -1,24 +1,20 @@
-/// How much the agent may do without asking. Mirrors the native
-/// `ExecutionPolicy` (Kotlin); the device build is the source of truth.
+/// How the agent treats sensitive actions (sending, calling, deleting…).
+///
+/// A per-user setting, not a build property (docs/adr/0005 in alesle-ai-api).
+/// Payments, purchases and deletions always ask, whatever the setting.
 enum ExecutionPolicy {
-  /// Google Play build: every sensitive action waits for the user.
+  /// Default: every sensitive action waits for the user's confirmation.
   confirmSensitiveActions,
 
-  /// Direct (APK) build: acts on its own, with a cancellable countdown.
-  autonomous,
+  /// The user switched confirmation off: a cancellable countdown instead.
+  countdown,
 }
 
 /// Whether the device is ready to let the agent act.
 final class AgentStatus {
-  const AgentStatus({
-    required this.accessibilityEnabled,
-    required this.policy,
-    required this.distribution,
-  });
+  const AgentStatus({required this.accessibilityEnabled});
 
   final bool accessibilityEnabled;
-  final ExecutionPolicy policy;
-  final String distribution;
 
   /// The user still has to switch the AccessibilityService on.
   bool get needsSetup => !accessibilityEnabled;

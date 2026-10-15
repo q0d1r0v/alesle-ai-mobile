@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Intent
 import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
-import com.alesle.ai.agent.generated.ExecutionPolicyMessage
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
@@ -19,32 +18,24 @@ import org.robolectric.Shadows.shadowOf
 class AgentHostApiImplTest {
     private val context = ApplicationProvider.getApplicationContext<Application>()
 
-    private fun api(
-        enabled: Boolean,
-        distribution: String,
-    ): AgentHostApiImpl {
+    private fun api(enabled: Boolean): AgentHostApiImpl {
         val status = mockk<AccessibilityStatus> { every { isServiceEnabled() } returns enabled }
-        return AgentHostApiImpl(context, status, distribution)
+        return AgentHostApiImpl(context, status)
     }
 
     @Test
-    fun `reports status for the play build`() {
-        val status = api(enabled = false, distribution = "play").getStatus()
-        assertEquals(false, status.accessibilityEnabled)
-        assertEquals(ExecutionPolicyMessage.CONFIRM_SENSITIVE_ACTIONS, status.policy)
-        assertEquals("play", status.distribution)
+    fun `reports accessibility as off`() {
+        assertEquals(false, api(enabled = false).getStatus().accessibilityEnabled)
     }
 
     @Test
-    fun `reports status for the direct build`() {
-        val status = api(enabled = true, distribution = "direct").getStatus()
-        assertEquals(true, status.accessibilityEnabled)
-        assertEquals(ExecutionPolicyMessage.AUTONOMOUS, status.policy)
+    fun `reports accessibility as on`() {
+        assertEquals(true, api(enabled = true).getStatus().accessibilityEnabled)
     }
 
     @Test
     fun `opens the system accessibility settings in a new task`() {
-        api(enabled = false, distribution = "play").openAccessibilitySettings()
+        api(enabled = false).openAccessibilitySettings()
 
         val started: Intent? = shadowOf(context).nextStartedActivity
         assertNotNull(started)

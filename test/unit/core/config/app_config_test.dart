@@ -5,24 +5,13 @@ void main() {
   AppConfig parse({
     String environment = 'dev',
     String apiBaseUrl = 'http://10.0.2.2:3000',
-    String? flavor = 'play',
-  }) => AppConfig.parse(
-    environment: environment,
-    apiBaseUrl: apiBaseUrl,
-    flavor: flavor,
-  );
+  }) => AppConfig.parse(environment: environment, apiBaseUrl: apiBaseUrl);
 
   group('AppConfig.parse', () {
     test('accepts a valid dev configuration', () {
       final AppConfig config = parse();
       expect(config.environment, AppEnvironment.dev);
-      expect(config.distribution, Distribution.play);
       expect(config.apiBaseUrl, 'http://10.0.2.2:3000');
-    });
-
-    test('maps both flavors', () {
-      expect(parse(flavor: 'direct').distribution, Distribution.direct);
-      expect(parse(flavor: 'play').distribution, Distribution.play);
     });
 
     test('strips a trailing slash from the origin', () {
@@ -38,11 +27,6 @@ void main() {
         () => parse(environment: 'production'),
         throwsA(isA<AppConfigError>()),
       );
-    });
-
-    test('rejects an unknown or missing flavor', () {
-      expect(() => parse(flavor: null), throwsA(isA<AppConfigError>()));
-      expect(() => parse(flavor: 'playDebug'), throwsA(isA<AppConfigError>()));
     });
 
     test('rejects a base URL that is not an absolute http(s) origin', () {

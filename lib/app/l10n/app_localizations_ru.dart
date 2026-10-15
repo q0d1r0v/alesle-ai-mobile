@@ -56,5 +56,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Каждое важное действие выполняется с вашего подтверждения';
 
   @override
-  String get policyAutonomous => 'Агент выполняет задачи самостоятельно';
+  String get policyCountdown =>
+      'Важные действия выполняются после 3-секундного отсчёта, его можно отменить';
 }

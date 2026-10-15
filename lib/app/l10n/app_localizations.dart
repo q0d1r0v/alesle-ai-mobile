@@ -184,11 +184,11 @@ abstract class AppLocalizations {
   /// **'Har bir muhim amal sizning tasdig\'ingiz bilan bajariladi'**
   String get policyConfirm;
 
-  /// No description provided for @policyAutonomous.
+  /// No description provided for @policyCountdown.
   ///
   /// In uz, this message translates to:
-  /// **'Agent vazifalarni mustaqil bajaradi'**
-  String get policyAutonomous;
+  /// **'Muhim amallar 3 soniyalik ortga sanashdan keyin bajariladi, uni bekor qilsa bo\'ladi'**
+  String get policyCountdown;
 }
 
 class _AppLocalizationsDelegate

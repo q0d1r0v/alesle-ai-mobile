@@ -18,9 +18,8 @@ if [[ "$fast" == false ]]; then
   echo "▶ goldens"; flutter test --tags golden
   echo "▶ android: Kotlin unit tests, ktlint, Android Lint"
   (cd android && ./gradlew --console=plain -q \
-    testPlayDebugUnitTest testDirectDebugUnitTest :app:ktlintCheck :app:lintPlayDebug :app:lintDirectDebug)
-  echo "▶ build both flavors"
-  flutter build apk --debug --flavor play --dart-define-from-file=env/dev.json
-  flutter build apk --debug --flavor direct --dart-define-from-file=env/dev.json
+    testDebugUnitTest :app:ktlintCheck :app:lintDebug)
+  echo "▶ build"
+  flutter build apk --debug --dart-define-from-file=env/dev.json
 fi
 echo "✓ verify passed"

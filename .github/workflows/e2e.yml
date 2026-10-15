@@ -19,10 +19,6 @@ jobs:
   emulator:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        flavor: [play, direct]
     steps:
       - uses: actions/checkout@v5
       - name: Enable KVM
@@ -52,5 +48,5 @@ jobs:
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
           disable-animations: true
           script: |
-            flutter test integration_test --flavor ${{ matrix.flavor }} --dart-define-from-file=env/dev.json
-            patrol test --flavor ${{ matrix.flavor }} --dart-define-from-file=env/dev.json ${{ matrix.flavor == 'direct' && '--package-name com.alesle.ai.direct' || '' }}
+            flutter test integration_test --dart-define-from-file=env/dev.json
+            patrol test --dart-define-from-file=env/dev.json

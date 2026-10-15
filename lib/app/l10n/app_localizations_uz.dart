@@ -56,5 +56,6 @@ class AppLocalizationsUz extends AppLocalizations {
       'Har bir muhim amal sizning tasdig\'ingiz bilan bajariladi';
 
   @override
-  String get policyAutonomous => 'Agent vazifalarni mustaqil bajaradi';
+  String get policyCountdown =>
+      'Muhim amallar 3 soniyalik ortga sanashdan keyin bajariladi, uni bekor qilsa bo\'ladi';
 }

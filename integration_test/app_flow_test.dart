@@ -3,7 +3,6 @@ import 'package:alesle_ai/app/bootstrap/core_providers.dart';
 import 'package:alesle_ai/core/config/app_config.dart';
 import 'package:alesle_ai/core/network/dio_factory.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,7 +22,6 @@ void main() {
     final AppConfig config = AppConfig.parse(
       environment: 'dev',
       apiBaseUrl: 'http://api.test',
-      flavor: appFlavor,
     );
     final Dio dio = createDio(config);
     DioAdapter(dio: dio).onGet(

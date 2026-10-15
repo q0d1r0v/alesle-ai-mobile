@@ -29,16 +29,8 @@ void main() {
 
   group('AgentStatus.needsSetup', () {
     test('follows the accessibility switch', () {
-      const AgentStatus off = AgentStatus(
-        accessibilityEnabled: false,
-        policy: ExecutionPolicy.autonomous,
-        distribution: 'direct',
-      );
-      const AgentStatus on = AgentStatus(
-        accessibilityEnabled: true,
-        policy: ExecutionPolicy.confirmSensitiveActions,
-        distribution: 'play',
-      );
+      const AgentStatus off = AgentStatus(accessibilityEnabled: false);
+      const AgentStatus on = AgentStatus(accessibilityEnabled: true);
       expect(off.needsSetup, isTrue);
       expect(on.needsSetup, isFalse);
     });

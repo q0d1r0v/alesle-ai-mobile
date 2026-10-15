@@ -69,17 +69,15 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: flutter pub get
 
-      - name: Build both flavors
-        run: |
-          flutter build apk --debug --flavor play --dart-define-from-file=env/dev.json
-          flutter build apk --debug --flavor direct --dart-define-from-file=env/dev.json
+      - name: Build
+        run: flutter build apk --debug --dart-define-from-file=env/dev.json
 
       - name: Kotlin unit tests, ktlint, Android Lint
         working-directory: android
         run: >-
           ./gradlew --console=plain
-          testPlayDebugUnitTest testDirectDebugUnitTest
-          :app:ktlintCheck :app:lintPlayDebug :app:lintDirectDebug
+          testDebugUnitTest
+          :app:ktlintCheck :app:lintDebug
 
       - uses: actions/upload-artifact@v4
         if: always()

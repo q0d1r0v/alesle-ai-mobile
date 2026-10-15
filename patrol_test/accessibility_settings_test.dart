@@ -3,7 +3,6 @@ import 'package:alesle_ai/app/bootstrap/core_providers.dart';
 import 'package:alesle_ai/core/config/app_config.dart';
 import 'package:alesle_ai/core/network/dio_factory.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http_mock_adapter/http_mock_adapter.dart';
@@ -13,7 +12,7 @@ import 'package:patrol/patrol.dart';
 /// integration_test cannot cross: tapping "Yoqish" must leave the app for the
 /// system Accessibility settings, and coming back must re-check the status.
 ///
-///   patrol test --flavor direct --dart-define-from-file=env/dev.json
+///   patrol test --dart-define-from-file=env/dev.json
 void main() {
   patrolTest('enable button opens system Accessibility settings and returns', (
     $,
@@ -21,7 +20,6 @@ void main() {
     final AppConfig config = AppConfig.parse(
       environment: 'dev',
       apiBaseUrl: 'http://api.test',
-      flavor: appFlavor,
     );
     final Dio dio = createDio(config);
     DioAdapter(dio: dio).onGet(

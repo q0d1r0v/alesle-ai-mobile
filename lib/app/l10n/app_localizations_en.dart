@@ -56,5 +56,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Every important action waits for your confirmation';
 
   @override
-  String get policyAutonomous => 'The agent completes tasks on its own';
+  String get policyCountdown =>
+      'Important actions run after a 3-second countdown you can cancel';
 }

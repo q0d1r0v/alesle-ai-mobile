@@ -19,18 +19,16 @@ yarn install                       # git hooks (husky + commitlint)
 
 # Backend on the host: see ../alesle-ai-api/README.md (listens on :3000).
 # The emulator reaches the host as 10.0.2.2 — that is what env/dev.json uses.
-flutter run --flavor direct --dart-define-from-file=env/dev.json
-flutter run --flavor play   --dart-define-from-file=env/dev.json
+flutter run --dart-define-from-file=env/dev.json
 ```
 
 On a physical device, put your machine's LAN address in a copy of `env/dev.json`.
 
-## Flavors
+## Distribution
 
-| Flavor | Package | Who it's for |
-|---|---|---|
-| `play` | `com.alesle.ai` | Google Play. Every sensitive agent action needs the user's confirmation (Play policy). |
-| `direct` | `com.alesle.ai.direct` | APK from the website. The agent acts autonomously. |
+One build, `com.alesle.ai`, distributed only as a signed APK from our website —
+no Google Play ([ADR 0005](../alesle-ai-api/docs/adr/0005-website-only-distribution.md)).
+"Confirm every sensitive action" is a user setting (on by default), not a build flavor.
 
 ## Code generation
 
@@ -46,9 +44,8 @@ tool/check_codegen_drift.sh                      # all of the above + "is it com
 
 ```bash
 tool/verify.sh                                   # everything except on-device suites
-flutter test integration_test --flavor play --dart-define-from-file=env/dev.json
-patrol test --flavor play --dart-define-from-file=env/dev.json
-patrol test --flavor direct --package-name com.alesle.ai.direct --dart-define-from-file=env/dev.json
+flutter test integration_test --dart-define-from-file=env/dev.json
+patrol test --dart-define-from-file=env/dev.json
 ```
 
 > Headless emulators (`-no-window`, swiftshader) may not render frames with

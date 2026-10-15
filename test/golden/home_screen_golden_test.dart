@@ -29,16 +29,16 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('home — accessibility off (play)', (WidgetTester tester) async {
-    await pumpAt(tester, FakeAgentRepository(() async => disabledPlayAgent));
+  testWidgets('home — accessibility off', (WidgetTester tester) async {
+    await pumpAt(tester, FakeAgentRepository(() async => disabledAgent));
     await expectLater(
       find.byType(HomeScreen),
       matchesGoldenFile('goldens/home_setup_needed.png'),
     );
   });
 
-  testWidgets('home — ready (direct)', (WidgetTester tester) async {
-    await pumpAt(tester, FakeAgentRepository(() async => enabledDirectAgent));
+  testWidgets('home — ready', (WidgetTester tester) async {
+    await pumpAt(tester, FakeAgentRepository(() async => enabledAgent));
     await expectLater(
       find.byType(HomeScreen),
       matchesGoldenFile('goldens/home_ready.png'),

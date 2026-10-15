@@ -14,5 +14,5 @@
   "accessibilityDisabled": "Turn on Alesle AI under Accessibility so the agent can work",
   "enableAccessibility": "Turn on",
   "policyConfirm": "Every important action waits for your confirmation",
-  "policyAutonomous": "The agent completes tasks on its own"
+  "policyCountdown": "Important actions run after a 3-second countdown you can cancel"
 }

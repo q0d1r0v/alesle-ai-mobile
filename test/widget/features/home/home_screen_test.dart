@@ -1,5 +1,6 @@
 import 'package:alesle_ai/core/api/generated/models/error_code.dart';
 import 'package:alesle_ai/core/errors/failure.dart';
+import 'package:alesle_ai/features/home/domain/agent_status.dart';
 import 'package:alesle_ai/features/home/domain/server_health.dart';
 import 'package:alesle_ai/features/home/presentation/home_providers.dart';
 import 'package:alesle_ai/features/home/presentation/home_screen.dart';
@@ -16,16 +17,21 @@ void main() {
 
   setUp(() {
     health = FakeHealthRepository(() async => readyHealth);
-    agent = FakeAgentRepository(() async => disabledPlayAgent);
+    agent = FakeAgentRepository(() async => disabledAgent);
   });
 
-  List<Override> overrides() => <Override>[
+  List<Override> overrides({ExecutionPolicy? policy}) => <Override>[
     healthRepositoryProvider.overrideWithValue(health),
     agentRepositoryProvider.overrideWithValue(agent),
+    if (policy != null) executionPolicyProvider.overrideWithValue(policy),
   ];
 
-  Future<void> pumpHome(WidgetTester tester) async {
-    await pumpLocalized(tester, const HomeScreen(), overrides: overrides());
+  Future<void> pumpHome(WidgetTester tester, {ExecutionPolicy? policy}) async {
+    await pumpLocalized(
+      tester,
+      const HomeScreen(),
+      overrides: overrides(policy: policy),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -96,15 +102,33 @@ void main() {
     expect(agent.openSettingsCalls, 1);
   });
 
-  testWidgets('shows the autonomous policy once accessibility is on', (
+  testWidgets('shows the default confirm policy once accessibility is on', (
     WidgetTester tester,
   ) async {
-    agent.next = () async => enabledDirectAgent;
+    agent.next = () async => enabledAgent;
     await pumpHome(tester);
 
     expect(find.text('Maxsus imkoniyatlar yoqilgan'), findsOneWidget);
-    expect(find.text('Agent vazifalarni mustaqil bajaradi'), findsOneWidget);
+    expect(
+      find.text("Har bir muhim amal sizning tasdig'ingiz bilan bajariladi"),
+      findsOneWidget,
+    );
     expect(find.byKey(const Key('enable-accessibility-button')), findsNothing);
+  });
+
+  testWidgets('shows the countdown policy when confirmation is off', (
+    WidgetTester tester,
+  ) async {
+    agent.next = () async => enabledAgent;
+    await pumpHome(tester, policy: ExecutionPolicy.countdown);
+
+    expect(
+      find.text(
+        'Muhim amallar 3 soniyalik ortga sanashdan keyin bajariladi, '
+        "uni bekor qilsa bo'ladi",
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('re-reads the agent status when the app resumes', (
@@ -113,7 +137,7 @@ void main() {
     await pumpHome(tester);
     expect(agent.statusCalls, 1);
 
-    agent.next = () async => enabledDirectAgent;
+    agent.next = () async => enabledAgent;
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pumpAndSettle();

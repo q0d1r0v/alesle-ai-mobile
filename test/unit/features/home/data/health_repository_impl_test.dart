@@ -56,7 +56,6 @@ void main() {
       dio = createDio(
         const AppConfig(
           environment: AppEnvironment.dev,
-          distribution: Distribution.direct,
           apiBaseUrl: 'http://api.test',
         ),
       );

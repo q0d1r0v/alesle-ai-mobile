@@ -192,42 +192,21 @@ class FlutterError (
   val details: Any? = null
 ) : RuntimeException()
 
-/** How much the agent may do without asking (docs/adr/0003 in alesle-ai-api). */
-enum class ExecutionPolicyMessage(val raw: Int) {
-  /** `play` flavor: every sensitive action waits for the user's confirmation. */
-  CONFIRM_SENSITIVE_ACTIONS(0),
-  /** `direct` flavor: acts on its own; sensitive actions show a cancellable countdown. */
-  AUTONOMOUS(1);
-
-  companion object {
-    fun ofRaw(raw: Int): ExecutionPolicyMessage? {
-      return values().firstOrNull { it.raw == raw }
-    }
-  }
-}
-
 /** Generated class from Pigeon that represents data sent in messages. */
 data class AgentStatusMessage (
   /** Whether the user has switched on Alesle's AccessibilityService. */
-  val accessibilityEnabled: Boolean,
-  val policy: ExecutionPolicyMessage,
-  /** `play` or `direct`, from BuildConfig — the native source of truth. */
-  val distribution: String
+  val accessibilityEnabled: Boolean
 )
  {
   companion object {
     fun fromList(pigeonVar_list: List<Any?>): AgentStatusMessage {
       val accessibilityEnabled = pigeonVar_list[0] as Boolean
-      val policy = pigeonVar_list[1] as ExecutionPolicyMessage
-      val distribution = pigeonVar_list[2] as String
-      return AgentStatusMessage(accessibilityEnabled, policy, distribution)
+      return AgentStatusMessage(accessibilityEnabled)
     }
   }
   fun toList(): List<Any?> {
     return listOf(
       accessibilityEnabled,
-      policy,
-      distribution,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -238,29 +217,22 @@ data class AgentStatusMessage (
       return true
     }
     val other = other as AgentStatusMessage
-    return AgentApiPigeonUtils.deepEquals(this.accessibilityEnabled, other.accessibilityEnabled) && AgentApiPigeonUtils.deepEquals(this.policy, other.policy) && AgentApiPigeonUtils.deepEquals(this.distribution, other.distribution)
+    return AgentApiPigeonUtils.deepEquals(this.accessibilityEnabled, other.accessibilityEnabled)
   }
 
   override fun hashCode(): Int {
     var result = javaClass.hashCode()
     result = 31 * result + AgentApiPigeonUtils.deepHash(this.accessibilityEnabled)
-    result = 31 * result + AgentApiPigeonUtils.deepHash(this.policy)
-    result = 31 * result + AgentApiPigeonUtils.deepHash(this.distribution)
     return result
   }
   override fun toString(): String {
-    return "AgentStatusMessage(accessibilityEnabled=$accessibilityEnabled, policy=$policy, distribution=$distribution)"
+    return "AgentStatusMessage(accessibilityEnabled=$accessibilityEnabled)"
   }
 }
 private open class AgentApiPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
       129.toByte() -> {
-        return (readValue(buffer) as Long?)?.let {
-          ExecutionPolicyMessage.ofRaw(it.toInt())
-        }
-      }
-      130.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
           AgentStatusMessage.fromList(it)
         }
@@ -270,12 +242,8 @@ private open class AgentApiPigeonCodec : StandardMessageCodec() {
   }
   override fun writeValue(stream: ByteArrayOutputStream, value: Any?)   {
     when (value) {
-      is ExecutionPolicyMessage -> {
-        stream.write(129)
-        writeValue(stream, value.raw.toLong())
-      }
       is AgentStatusMessage -> {
-        stream.write(130)
+        stream.write(129)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)

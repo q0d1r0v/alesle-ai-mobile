@@ -15,12 +15,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    buildFeatures {
-        buildConfig = true
-        resValues = true
-    }
-
     defaultConfig {
+        // One build, distributed only as an APK from our website
+        // (docs/adr/0005 in alesle-ai-api). No product flavors.
         applicationId = "com.alesle.ai"
         // 30 (Android 11): AccessibilityService.takeScreenshot() exists from API 30
         // and needs no MediaProjection consent dialog per capture. The agent's
@@ -33,30 +30,9 @@ android {
         testInstrumentationRunnerArguments["clearPackageData"] = "true"
     }
 
-    // One codebase, two distributions (docs/adr/0003 in alesle-ai-api).
-    // The only behavioural difference is ExecutionPolicy, derived from
-    // BuildConfig.DISTRIBUTION — never from a second code path.
-    flavorDimensions += "distribution"
-    productFlavors {
-        create("play") {
-            dimension = "distribution"
-            // Google Play policy (2026-01-28): no autonomous AccessibilityService
-            // agents. Every sensitive action waits for the user.
-            buildConfigField("String", "DISTRIBUTION", "\"play\"")
-            resValue("string", "app_name", "Alesle AI")
-        }
-        create("direct") {
-            dimension = "distribution"
-            // APK from the website. Separate id so both can be installed side by side.
-            applicationIdSuffix = ".direct"
-            buildConfigField("String", "DISTRIBUTION", "\"direct\"")
-            resValue("string", "app_name", "Alesle AI Direct")
-        }
-    }
-
     buildTypes {
         release {
-            // TODO(release): replace with the upload keystore before the first store build.
+            // TODO(release): replace with the release keystore before the first public APK.
             signingConfig = signingConfigs.getByName("debug")
         }
     }

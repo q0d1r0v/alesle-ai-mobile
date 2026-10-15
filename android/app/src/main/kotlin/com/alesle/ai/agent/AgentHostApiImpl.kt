@@ -10,13 +10,10 @@ import com.alesle.ai.agent.generated.AgentStatusMessage
 class AgentHostApiImpl(
     private val context: Context,
     private val accessibilityStatus: AccessibilityStatus,
-    private val distribution: String,
 ) : AgentHostApi {
     override fun getStatus(): AgentStatusMessage =
         AgentStatusMessage(
             accessibilityEnabled = accessibilityStatus.isServiceEnabled(),
-            policy = ExecutionPolicy.forDistribution(distribution).toMessage(),
-            distribution = distribution,
         )
 
     override fun openAccessibilitySettings() {

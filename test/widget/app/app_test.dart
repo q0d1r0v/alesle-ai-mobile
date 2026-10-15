@@ -13,7 +13,6 @@ import '../../helpers/fakes.dart';
 void main() {
   const AppConfig config = AppConfig(
     environment: AppEnvironment.dev,
-    distribution: Distribution.play,
     apiBaseUrl: 'http://api.test',
   );
 
@@ -51,7 +50,7 @@ void main() {
             FakeHealthRepository(() async => readyHealth),
           ),
           agentRepositoryProvider.overrideWithValue(
-            FakeAgentRepository(() async => disabledPlayAgent),
+            FakeAgentRepository(() async => disabledAgent),
           ),
         ],
         child: const AlesleApp(),

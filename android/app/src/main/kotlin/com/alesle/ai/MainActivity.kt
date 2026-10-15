@@ -14,7 +14,6 @@ class MainActivity : FlutterActivity() {
             AgentHostApiImpl(
                 context = applicationContext,
                 accessibilityStatus = AccessibilityStatus(applicationContext),
-                distribution = BuildConfig.DISTRIBUTION,
             ),
         )
     }

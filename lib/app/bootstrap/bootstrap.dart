@@ -1,4 +1,3 @@
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -7,11 +6,10 @@ import '../../core/config/app_config.dart';
 import '../app.dart';
 import 'core_providers.dart';
 
-/// Reads the build configuration from `--dart-define-from-file` and the flavor.
+/// Reads the build configuration from `--dart-define-from-file`.
 AppConfig configFromEnvironment() => AppConfig.parse(
   environment: const String.fromEnvironment('APP_ENV'),
   apiBaseUrl: const String.fromEnvironment('API_BASE_URL'),
-  flavor: appFlavor,
 );
 
 /// App entry: validate configuration, then start. A misconfigured build

@@ -17,5 +17,5 @@
   "accessibilityDisabled": "Agent ishlashi uchun \"Maxsus imkoniyatlar\"da Alesle AI ni yoqing",
   "enableAccessibility": "Yoqish",
   "policyConfirm": "Har bir muhim amal sizning tasdig'ingiz bilan bajariladi",
-  "policyAutonomous": "Agent vazifalarni mustaqil bajaradi"
+  "policyCountdown": "Muhim amallar 3 soniyalik ortga sanashdan keyin bajariladi, uni bekor qilsa bo'ladi"
 }

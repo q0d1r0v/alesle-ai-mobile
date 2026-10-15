@@ -17,29 +17,17 @@ void main() {
     repository = AgentRepositoryImpl(api);
   });
 
-  test('maps a play-build status', () async {
-    when(api.getStatus).thenAnswer(
-      (_) async => AgentStatusMessage(
-        accessibilityEnabled: false,
-        policy: ExecutionPolicyMessage.confirmSensitiveActions,
-        distribution: 'play',
-      ),
-    );
-    final AgentStatus status = await repository.status();
-    expect(status.accessibilityEnabled, isFalse);
-    expect(status.policy, ExecutionPolicy.confirmSensitiveActions);
-    expect(status.distribution, 'play');
-  });
+  test('maps the native status into the domain', () async {
+    when(
+      api.getStatus,
+    ).thenAnswer((_) async => AgentStatusMessage(accessibilityEnabled: false));
+    final AgentStatus off = await repository.status();
+    expect(off.accessibilityEnabled, isFalse);
 
-  test('maps a direct-build status', () async {
-    when(api.getStatus).thenAnswer(
-      (_) async => AgentStatusMessage(
-        accessibilityEnabled: true,
-        policy: ExecutionPolicyMessage.autonomous,
-        distribution: 'direct',
-      ),
-    );
-    expect((await repository.status()).policy, ExecutionPolicy.autonomous);
+    when(
+      api.getStatus,
+    ).thenAnswer((_) async => AgentStatusMessage(accessibilityEnabled: true));
+    expect((await repository.status()).accessibilityEnabled, isTrue);
   });
 
   test('opens accessibility settings through the host API', () async {

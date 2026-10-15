@@ -16,3 +16,10 @@ final FutureProvider<AgentStatus> agentStatusProvider =
     FutureProvider.autoDispose<AgentStatus>(
       (Ref ref) => ref.watch(agentRepositoryProvider).status(),
     );
+
+/// The user's "confirm every sensitive action" setting. On by default; read
+/// from the server profile once accounts exist (SOW sprint 5, AC-APP-4).
+final Provider<ExecutionPolicy> executionPolicyProvider =
+    Provider<ExecutionPolicy>(
+      (Ref ref) => ExecutionPolicy.confirmSensitiveActions,
+    );
