@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:alesle_ai/core/agent/agent_task.dart';
+import 'package:alesle_ai/core/errors/failure.dart';
+
 import 'package:alesle_ai/features/home/domain/agent_status.dart';
 import 'package:alesle_ai/features/home/domain/home_repositories.dart';
 import 'package:alesle_ai/features/home/domain/server_health.dart';
@@ -56,3 +59,31 @@ const AgentStatus enabledAgent = AgentStatus(accessibilityEnabled: true);
 
 /// A future that never completes, for asserting loading states.
 Future<T> never<T>() => Completer<T>().future;
+
+/// Records commands and lets a test push task updates.
+final class FakeAssistantRepository implements AssistantRepository {
+  final StreamController<TaskUpdate> updatesController =
+      StreamController<TaskUpdate>.broadcast();
+  final List<TaskCommand> commands = <TaskCommand>[];
+  TaskStart nextStart = const TaskStart(started: true);
+  Failure? failure;
+  int stops = 0;
+
+  @override
+  Stream<TaskUpdate> get updates => updatesController.stream;
+
+  @override
+  Future<TaskStart> start(TaskCommand command) async {
+    commands.add(command);
+    if (failure case final Failure value) throw value;
+    return nextStart;
+  }
+
+  @override
+  Future<void> stop() async {
+    stops++;
+    if (failure case final Failure value) throw value;
+  }
+
+  void push(TaskUpdate update) => updatesController.add(update);
+}

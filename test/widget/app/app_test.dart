@@ -62,7 +62,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(HomeScreen), findsOneWidget);
-    expect(find.text('Работает'), findsOneWidget);
+    expect(find.text('Нажмите и напишите'), findsOneWidget);
   });
 
   testWidgets('a long press on the title opens the agent console (debug)', (
@@ -114,7 +114,7 @@ void main() {
 
 final class _SilentConsole implements AgentConsoleRepository {
   @override
-  Stream<TaskEvent> get events => const Stream<TaskEvent>.empty();
+  Stream<TaskUpdate> get events => const Stream<TaskUpdate>.empty();
 
   @override
   Future<String> execute(String actionJson) async => '{}';

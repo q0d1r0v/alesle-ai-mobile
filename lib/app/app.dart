@@ -26,8 +26,9 @@ class AlesleApp extends ConsumerWidget {
     return MaterialApp.router(
       onGenerateTitle: (BuildContext context) =>
           AppLocalizations.of(context).appTitle,
-      theme: buildTheme(Brightness.light),
-      darkTheme: buildTheme(Brightness.dark),
+      // The design system is light-only for now ("Design system v3 · Light").
+      theme: buildTheme(),
+      themeMode: ThemeMode.light,
       routerConfig: ref.watch(routerProvider),
       localizationsDelegates: const <LocalizationsDelegate<Object?>>[
         AppLocalizations.delegate,

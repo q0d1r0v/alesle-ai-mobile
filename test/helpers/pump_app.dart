@@ -17,7 +17,7 @@ Future<void> pumpLocalized(
     ProviderScope(
       overrides: overrides,
       child: MaterialApp(
-        theme: buildTheme(Brightness.light),
+        theme: buildTheme(),
         locale: locale,
         localizationsDelegates: const <LocalizationsDelegate<Object?>>[
           AppLocalizations.delegate,

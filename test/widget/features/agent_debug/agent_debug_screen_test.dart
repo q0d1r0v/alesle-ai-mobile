@@ -22,8 +22,8 @@ final class _FakeConsole implements AgentConsoleRepository {
   final List<String> commands = <String>[];
   int snapshots = 0;
   int stops = 0;
-  final StreamController<TaskEvent> controller =
-      StreamController<TaskEvent>.broadcast();
+  final StreamController<TaskUpdate> controller =
+      StreamController<TaskUpdate>.broadcast();
 
   Future<T> _answer<T>(T value) async {
     if (error case final Object e) throw e;
@@ -55,7 +55,7 @@ final class _FakeConsole implements AgentConsoleRepository {
   }
 
   @override
-  Stream<TaskEvent> get events => controller.stream;
+  Stream<TaskUpdate> get events => controller.stream;
 }
 
 void main() {
@@ -163,7 +163,7 @@ void main() {
     expect(find.text('task started'), findsOneWidget);
 
     console.controller.add(
-      const TaskEvent(TaskEventKind.started, text: 'salom'),
+      const TaskUpdate(TaskUpdateKind.started, text: 'salom'),
     );
     await tester.pump();
     expect(find.text('started: salom'), findsOneWidget);

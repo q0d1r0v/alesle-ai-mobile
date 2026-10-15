@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:alesle_ai/app/bootstrap/core_providers.dart';
 import 'package:alesle_ai/core/config/app_config.dart';
 import 'package:alesle_ai/core/errors/failure.dart';
+import 'package:alesle_ai/core/platform/agent_events_bridge.dart';
 import 'package:alesle_ai/core/platform/generated/agent_api.g.dart';
 import 'package:alesle_ai/features/agent_debug/data/agent_console_repository_impl.dart';
 import 'package:alesle_ai/features/agent_debug/data/agent_debug_data_providers.dart';
@@ -29,6 +30,7 @@ const TaskCommand _command = TaskCommand(
 void main() {
   late _MockAgentHostApi api;
   late List<AgentEventsApi?> registrations;
+  late AgentEventsBridge bridge;
   late AgentConsoleRepositoryImpl repository;
 
   setUpAll(() {
@@ -46,10 +48,11 @@ void main() {
   setUp(() {
     api = _MockAgentHostApi();
     registrations = <AgentEventsApi?>[];
+    bridge = AgentEventsBridge(register: registrations.add);
     repository = AgentConsoleRepositoryImpl(
       config: _config,
+      bridge: bridge,
       api: api,
-      registerEvents: registrations.add,
     );
   });
 
@@ -91,8 +94,8 @@ void main() {
         environment: AppEnvironment.dev,
         apiBaseUrl: 'http://127.0.0.1:3000',
       ),
+      bridge: bridge,
       api: api,
-      registerEvents: registrations.add,
     );
     final TaskStart start = await signedOut.startTask(_command);
     expect(start.started, isFalse);
@@ -100,41 +103,17 @@ void main() {
     verifyNever(() => api.startTask(any()));
   });
 
-  test('listens to native events only while someone listens', () async {
-    final List<TaskEvent> seen = <TaskEvent>[];
-    final StreamSubscription<TaskEvent> subscription = repository.events.listen(
-      seen.add,
-    );
-    expect(registrations, <AgentEventsApi?>[repository]);
-
-    repository
-      ..onStepEvent(StepEvent(kind: StepEventKind.started, text: 'salom'))
-      ..onStepEvent(StepEvent(kind: StepEventKind.step, text: 'Telegram'))
-      ..onStepEvent(
-        StepEvent(kind: StepEventKind.finished, text: 'Done', status: 'done'),
-      )
-      ..onStepEvent(
-        StepEvent(
-          kind: StepEventKind.finished,
-          status: 'interrupted',
-          reason: 'connection_lost',
-        ),
-      );
+  test('task updates come from the shared bridge', () async {
+    final List<TaskUpdate> seen = <TaskUpdate>[];
+    final StreamSubscription<TaskUpdate> subscription = repository.events
+        .listen(seen.add);
+    bridge.onStepEvent(StepEvent(kind: StepEventKind.step, text: 'Telegram'));
     await Future<void>.delayed(Duration.zero);
-
-    expect(seen, const <TaskEvent>[
-      TaskEvent(TaskEventKind.started, text: 'salom'),
-      TaskEvent(TaskEventKind.step, text: 'Telegram'),
-      TaskEvent(TaskEventKind.finished, text: 'Done', status: 'done'),
-      TaskEvent(
-        TaskEventKind.finished,
-        status: 'interrupted',
-        reason: 'connection_lost',
-      ),
+    expect(seen, const <TaskUpdate>[
+      TaskUpdate(TaskUpdateKind.step, text: 'Telegram'),
     ]);
-
     await subscription.cancel();
-    expect(registrations, <AgentEventsApi?>[repository, null]);
+    expect(registrations, <AgentEventsApi?>[bridge, null]);
   });
 
   test('wraps platform errors in UnexpectedFailure', () async {

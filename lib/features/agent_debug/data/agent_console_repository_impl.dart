@@ -1,45 +1,24 @@
-import 'dart:async';
-
 import 'package:flutter/services.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/errors/failure.dart';
+import '../../../core/platform/agent_events_bridge.dart';
 import '../../../core/platform/generated/agent_api.g.dart';
 import '../domain/agent_console.dart';
 
-final class AgentConsoleRepositoryImpl
-    implements AgentConsoleRepository, AgentEventsApi {
+final class AgentConsoleRepositoryImpl implements AgentConsoleRepository {
   AgentConsoleRepositoryImpl({
     required this._config,
+    required this._bridge,
     AgentHostApi? api,
-    void Function(AgentEventsApi?)? registerEvents,
-  }) : _api = api ?? AgentHostApi(),
-       _registerEvents = registerEvents ?? AgentEventsApi.setUp {
-    _events = StreamController<TaskEvent>.broadcast(
-      onListen: () => _registerEvents(this),
-      onCancel: () => _registerEvents(null),
-    );
-  }
+  }) : _api = api ?? AgentHostApi();
 
   final AppConfig _config;
+  final AgentEventsBridge _bridge;
   final AgentHostApi _api;
-  final void Function(AgentEventsApi?) _registerEvents;
-  late final StreamController<TaskEvent> _events;
 
   @override
-  Stream<TaskEvent> get events => _events.stream;
-
-  @override
-  void onStepEvent(StepEvent event) {
-    _events.add(
-      TaskEvent(
-        _kinds[event.kind]!,
-        text: event.text,
-        status: event.status,
-        reason: event.reason,
-      ),
-    );
-  }
+  Stream<TaskUpdate> get events => _bridge.updates;
 
   @override
   Future<String> snapshot() => _guard(_api.debugSnapshot);
@@ -78,11 +57,4 @@ final class AgentConsoleRepositoryImpl
       throw UnexpectedFailure(error);
     }
   }
-
-  static const Map<StepEventKind, TaskEventKind> _kinds =
-      <StepEventKind, TaskEventKind>{
-        StepEventKind.started: TaskEventKind.started,
-        StepEventKind.step: TaskEventKind.step,
-        StepEventKind.finished: TaskEventKind.finished,
-      };
 }

@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -17,6 +20,12 @@ AppConfig configFromEnvironment() => AppConfig.parse(
 /// throws [AppConfigError] here instead of failing somewhere later.
 void bootstrap({List<Override> overrides = const <Override>[]}) {
   WidgetsFlutterBinding.ensureInitialized();
+  // The design is a portrait phone layout (390 × 844); the overlay works in any orientation.
+  unawaited(
+    SystemChrome.setPreferredOrientations(<DeviceOrientation>[
+      DeviceOrientation.portraitUp,
+    ]),
+  );
   final AppConfig config = configFromEnvironment();
   runApp(
     ProviderScope(

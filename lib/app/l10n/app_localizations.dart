@@ -189,6 +189,162 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Muhim amallar 3 soniyalik ortga sanashdan keyin bajariladi, uni bekor qilsa bo\'ladi'**
   String get policyCountdown;
+
+  /// No description provided for @greetingMorning.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xayrli tong'**
+  String get greetingMorning;
+
+  /// No description provided for @greetingDay.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xayrli kun'**
+  String get greetingDay;
+
+  /// No description provided for @greetingEvening.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xayrli kech'**
+  String get greetingEvening;
+
+  /// No description provided for @homeTapToType.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bosing va yozing'**
+  String get homeTapToType;
+
+  /// No description provided for @homeExample.
+  ///
+  /// In uz, this message translates to:
+  /// **'Masalan: “Onamga qo‘ng‘iroq qil”'**
+  String get homeExample;
+
+  /// No description provided for @commandHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nima qilay?'**
+  String get commandHint;
+
+  /// No description provided for @commandSend.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yuborish'**
+  String get commandSend;
+
+  /// No description provided for @taskWorking.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bajaryapman…'**
+  String get taskWorking;
+
+  /// No description provided for @taskStop.
+  ///
+  /// In uz, this message translates to:
+  /// **'To‘xtatish'**
+  String get taskStop;
+
+  /// No description provided for @taskDoneButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayyor'**
+  String get taskDoneButton;
+
+  /// No description provided for @taskDoneTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bajarildi'**
+  String get taskDoneTitle;
+
+  /// No description provided for @taskNotDoneTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bajarib bo‘lmadi'**
+  String get taskNotDoneTitle;
+
+  /// No description provided for @taskStoppedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'To‘xtatildi'**
+  String get taskStoppedTitle;
+
+  /// No description provided for @taskYouSaid.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz aytdingiz'**
+  String get taskYouSaid;
+
+  /// No description provided for @reasonGeneric.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nimadir xato ketdi. Qaytadan urinib ko‘ring.'**
+  String get reasonGeneric;
+
+  /// No description provided for @reasonStuck.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ekranda kerakli joyni topa olmadim.'**
+  String get reasonStuck;
+
+  /// No description provided for @reasonTimeout.
+  ///
+  /// In uz, this message translates to:
+  /// **'Juda uzoq davom etdi, to‘xtatdim.'**
+  String get reasonTimeout;
+
+  /// No description provided for @reasonConnection.
+  ///
+  /// In uz, this message translates to:
+  /// **'Internet aloqasi uzildi.'**
+  String get reasonConnection;
+
+  /// No description provided for @reasonServer.
+  ///
+  /// In uz, this message translates to:
+  /// **'Serverga ulana olmadim.'**
+  String get reasonServer;
+
+  /// No description provided for @reasonAi.
+  ///
+  /// In uz, this message translates to:
+  /// **'AI xizmati hozir ishlamayapti. Birozdan keyin urinib ko‘ring.'**
+  String get reasonAi;
+
+  /// No description provided for @reasonSteps.
+  ///
+  /// In uz, this message translates to:
+  /// **'Juda ko‘p qadam kerak bo‘ldi, to‘xtatdim.'**
+  String get reasonSteps;
+
+  /// No description provided for @reasonNotSignedIn.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval tizimga kiring.'**
+  String get reasonNotSignedIn;
+
+  /// No description provided for @reasonAlreadyRunning.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bitta vazifa allaqachon bajarilmoqda.'**
+  String get reasonAlreadyRunning;
+
+  /// No description provided for @turnOnTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Alesle’ni yoqing'**
+  String get turnOnTitle;
+
+  /// No description provided for @turnOnBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bitta tugma — va Alesle siz uchun bosadi va yozadi.'**
+  String get turnOnBody;
+
+  /// No description provided for @turnOnButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sozlamalarni ochish'**
+  String get turnOnButton;
 }
 
 class _AppLocalizationsDelegate

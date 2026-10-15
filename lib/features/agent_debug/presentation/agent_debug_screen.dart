@@ -37,8 +37,8 @@ class _AgentDebugScreenState extends ConsumerState<AgentDebugScreen> {
     text: '{"type":"tap","nodeId":0}',
   );
   final TextEditingController _command = TextEditingController();
-  final List<TaskEvent> _events = <TaskEvent>[];
-  late final StreamSubscription<TaskEvent> _subscription;
+  final List<TaskUpdate> _events = <TaskUpdate>[];
+  late final StreamSubscription<TaskUpdate> _subscription;
 
   int _delay = 3;
   bool _busy = false;
@@ -52,7 +52,7 @@ class _AgentDebugScreenState extends ConsumerState<AgentDebugScreen> {
   void initState() {
     super.initState();
     _subscription = _console.events.listen(
-      (TaskEvent event) => setState(() => _events.insert(0, event)),
+      (TaskUpdate event) => setState(() => _events.insert(0, event)),
     );
   }
 
@@ -206,7 +206,7 @@ class _AgentDebugScreenState extends ConsumerState<AgentDebugScreen> {
               ),
             ],
           ),
-          for (final TaskEvent event in _events)
+          for (final TaskUpdate event in _events)
             Text(event.toString(), style: mono),
         ],
       ),

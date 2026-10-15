@@ -14,7 +14,9 @@ const double overallFloor = 80;
 /// always means a directory moved and the rule silently stopped protecting it.
 const Map<String, double> pathFloors = <String, double>{
   'lib/features/home/domain/': 95,
-  'lib/features/agent_debug/domain/': 95,
+  // The task types every feature's domain shares; the features' own domain
+  // folders hold only interfaces now (no executable lines to measure).
+  'lib/core/agent/': 95,
   'lib/core/': 90,
 };
 

@@ -6,6 +6,8 @@ import 'agent_console_repository_impl.dart';
 
 final Provider<AgentConsoleRepository> agentConsoleRepositoryProvider =
     Provider<AgentConsoleRepository>(
-      (Ref ref) =>
-          AgentConsoleRepositoryImpl(config: ref.watch(appConfigProvider)),
+      (Ref ref) => AgentConsoleRepositoryImpl(
+        config: ref.watch(appConfigProvider),
+        bridge: ref.watch(agentEventsBridgeProvider),
+      ),
     );

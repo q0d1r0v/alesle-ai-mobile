@@ -8,7 +8,11 @@
   "errorNetwork": "Internet aloqasini tekshiring",
   "errorServer": "Serverda xatolik ({code})",
   "@errorServer": {
-    "placeholders": { "code": { "type": "String" } }
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
   },
   "errorUnexpected": "Kutilmagan xatolik",
   "retry": "Qayta urinish",
@@ -17,5 +21,31 @@
   "accessibilityDisabled": "Agent ishlashi uchun \"Maxsus imkoniyatlar\"da Alesle AI ni yoqing",
   "enableAccessibility": "Yoqish",
   "policyConfirm": "Har bir muhim amal sizning tasdig'ingiz bilan bajariladi",
-  "policyCountdown": "Muhim amallar 3 soniyalik ortga sanashdan keyin bajariladi, uni bekor qilsa bo'ladi"
+  "policyCountdown": "Muhim amallar 3 soniyalik ortga sanashdan keyin bajariladi, uni bekor qilsa bo'ladi",
+  "greetingMorning": "Xayrli tong",
+  "greetingDay": "Xayrli kun",
+  "greetingEvening": "Xayrli kech",
+  "homeTapToType": "Bosing va yozing",
+  "homeExample": "Masalan: “Onamga qo‘ng‘iroq qil”",
+  "commandHint": "Nima qilay?",
+  "commandSend": "Yuborish",
+  "taskWorking": "Bajaryapman…",
+  "taskStop": "To‘xtatish",
+  "taskDoneButton": "Tayyor",
+  "taskDoneTitle": "Bajarildi",
+  "taskNotDoneTitle": "Bajarib bo‘lmadi",
+  "taskStoppedTitle": "To‘xtatildi",
+  "taskYouSaid": "Siz aytdingiz",
+  "reasonGeneric": "Nimadir xato ketdi. Qaytadan urinib ko‘ring.",
+  "reasonStuck": "Ekranda kerakli joyni topa olmadim.",
+  "reasonTimeout": "Juda uzoq davom etdi, to‘xtatdim.",
+  "reasonConnection": "Internet aloqasi uzildi.",
+  "reasonServer": "Serverga ulana olmadim.",
+  "reasonAi": "AI xizmati hozir ishlamayapti. Birozdan keyin urinib ko‘ring.",
+  "reasonSteps": "Juda ko‘p qadam kerak bo‘ldi, to‘xtatdim.",
+  "reasonNotSignedIn": "Avval tizimga kiring.",
+  "reasonAlreadyRunning": "Bitta vazifa allaqachon bajarilmoqda.",
+  "turnOnTitle": "Alesle’ni yoqing",
+  "turnOnBody": "Bitta tugma — va Alesle siz uchun bosadi va yozadi.",
+  "turnOnButton": "Sozlamalarni ochish"
 }

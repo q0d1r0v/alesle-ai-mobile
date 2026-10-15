@@ -18,8 +18,12 @@ void main() {
     addTearDown(tester.view.reset);
     await pumpLocalized(
       tester,
-      const HomeScreen(),
+      // A fixed evening: the greeting follows the clock.
+      HomeScreen(now: () => DateTime(2026, 10, 16, 20)),
       overrides: [
+        assistantRepositoryProvider.overrideWithValue(
+          FakeAssistantRepository(),
+        ),
         healthRepositoryProvider.overrideWithValue(
           FakeHealthRepository(() async => readyHealth),
         ),

@@ -7,15 +7,25 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/l10n/l10n.dart';
 import '../../../app/router/app_router.dart';
+import '../../../app/theme/app_theme.dart';
+import '../../../app/widgets/alesle_orb.dart';
+import '../../../app/widgets/capsule_button.dart';
+import '../../../core/agent/agent_task.dart';
 import '../domain/agent_status.dart';
 import '../domain/server_health.dart';
 import 'failure_message.dart';
 import 'home_providers.dart';
+import 'home_task_controller.dart';
+import 'task_messages.dart';
 
-/// Phase-1 home: proves the two integrations every later feature depends on —
-/// the backend (health) and the on-device agent runtime (accessibility).
+/// Home (design "Home", "Working", "Done", "Couldn't do it", "Quick answer"):
+/// the orb takes a command, follows the task, and shows how it ended.
+/// Voice arrives in Sprint 4; until then the orb opens a text field.
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.now = DateTime.now});
+
+  /// Clock for the greeting; tests pin it.
+  final DateTime Function() now;
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -42,37 +52,205 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final HomeTask task = ref.watch(homeTaskProvider);
     return Scaffold(
-      appBar: AppBar(
-        // Debug builds: a long press opens the agent console.
-        title: GestureDetector(
-          key: const Key('home-title'),
-          onLongPress: kDebugMode
-              ? () => unawaited(context.push(AppRoutes.agentDebug))
-              : null,
-          child: Text(context.l10n.appTitle),
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0, -0.25),
+            radius: 0.9,
+            colors: <Color>[Color(0x33A089F0), AlesleColors.canvas],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            child: switch (task) {
+              TaskIdle() => _IdleView(now: widget.now),
+              final TaskRunning running => _RunningView(task: running),
+              final TaskResult result => _ResultView(result: result),
+            },
+          ),
         ),
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref
-            ..invalidate(serverHealthProvider)
-            ..invalidate(agentStatusProvider);
-          await Future.wait(<Future<Object?>>[
-            ref
-                .read(serverHealthProvider.future)
-                .then<Object?>((value) => value, onError: (_) => null),
-            ref
-                .read(agentStatusProvider.future)
-                .then<Object?>((value) => value, onError: (_) => null),
-          ]);
-        },
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: const <Widget>[
-            ServerStatusCard(),
-            SizedBox(height: 12),
-            AgentStatusCard(),
+    );
+  }
+}
+
+// ── Idle ─────────────────────────────────────────────────────────────────────
+
+class _IdleView extends ConsumerWidget {
+  const _IdleView({required this.now});
+
+  final DateTime Function() now;
+
+  Future<void> _askForCommand(BuildContext context, WidgetRef ref) async {
+    final String? text = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AlesleRadii.sheet),
+        ),
+      ),
+      builder: (BuildContext context) => const _CommandSheet(),
+    );
+    if (text == null || text.trim().isEmpty || !context.mounted) return;
+    await ref
+        .read(homeTaskProvider.notifier)
+        .start(
+          TaskCommand(
+            text: text,
+            locale: Localizations.localeOf(context).toLanguageTag(),
+            confirmSensitiveActions:
+                ref.read(executionPolicyProvider) ==
+                ExecutionPolicy.confirmSensitiveActions,
+          ),
+        );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final TextTheme text = Theme.of(context).textTheme;
+    final AsyncValue<AgentStatus> status = ref.watch(agentStatusProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Align(
+          alignment: Alignment.centerLeft,
+          // Debug builds: a long press opens the agent console.
+          child: GestureDetector(
+            key: const Key('home-title'),
+            onLongPress: kDebugMode
+                ? () => unawaited(context.push(AppRoutes.agentDebug))
+                : null,
+            child: Text(
+              greeting(context.l10n, now()),
+              style: text.bodyLarge?.copyWith(color: AlesleColors.text2),
+            ),
+          ),
+        ),
+        Expanded(
+          child: _Centered(
+            builder: (double orb) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Semantics(
+                  button: true,
+                  label: context.l10n.homeTapToType,
+                  child: GestureDetector(
+                    key: const Key('orb'),
+                    onTap: () => unawaited(_askForCommand(context, ref)),
+                    child: AlesleOrb(size: orb),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Text(
+                  context.l10n.homeTapToType,
+                  style: text.headlineSmall,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 14),
+                _Chip(
+                  key: const Key('example-chip'),
+                  label: context.l10n.homeExample,
+                  onTap: () => unawaited(_askForCommand(context, ref)),
+                ),
+                const SizedBox(height: 16),
+                const _ServerProblem(),
+              ],
+            ),
+          ),
+        ),
+        if (status.value?.needsSetup ?? false) const _TurnOnCard(),
+        if (status.error case final Object error)
+          Text(
+            failureMessage(context.l10n, error),
+            key: const Key('agent-status-error'),
+            textAlign: TextAlign.center,
+            style: text.bodyMedium?.copyWith(color: AlesleColors.danger),
+          ),
+      ],
+    );
+  }
+}
+
+/// Shown only when the API cannot be reached; a healthy server is silent.
+class _ServerProblem extends ConsumerWidget {
+  const _ServerProblem();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AsyncValue<ServerHealth> health = ref.watch(serverHealthProvider);
+    // Riverpod retries a failed provider; while it does, the value is
+    // loading *with* the error, which must still show.
+    final Object? error = health.error;
+    final ServerHealth? value = health.value;
+    final String? problem = error != null
+        ? failureMessage(context.l10n, error)
+        : (value != null && !value.isReady
+              ? context.l10n.serverUnavailable
+              : null);
+    if (problem == null) return const SizedBox.shrink();
+    return Row(
+      key: const Key('server-problem'),
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        const Icon(
+          Icons.cloud_off_outlined,
+          size: 18,
+          color: AlesleColors.text2,
+        ),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            problem,
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(color: AlesleColors.text2),
+          ),
+        ),
+        TextButton(
+          onPressed: () => ref.invalidate(serverHealthProvider),
+          child: Text(context.l10n.retry),
+        ),
+      ],
+    );
+  }
+}
+
+/// Design "Turn on Alesle", as a card on home until onboarding exists (Sprint 4).
+class _TurnOnCard extends ConsumerWidget {
+  const _TurnOnCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final TextTheme text = Theme.of(context).textTheme;
+    return DecoratedBox(
+      key: const Key('turn-on-card'),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AlesleRadii.card),
+        boxShadow: AlesleShadows.card,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(context.l10n.turnOnTitle, style: text.titleLarge),
+            const SizedBox(height: 4),
+            Text(
+              context.l10n.turnOnBody,
+              style: text.bodyMedium?.copyWith(color: AlesleColors.text2),
+            ),
+            const SizedBox(height: 14),
+            CapsuleButton(
+              key: const Key('enable-accessibility-button'),
+              label: context.l10n.turnOnButton,
+              onPressed: () => unawaited(
+                ref.read(agentRepositoryProvider).openAccessibilitySettings(),
+              ),
+            ),
           ],
         ),
       ),
@@ -80,124 +258,267 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-class ServerStatusCard extends ConsumerWidget {
-  const ServerStatusCard({super.key});
+class _CommandSheet extends StatefulWidget {
+  const _CommandSheet();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<ServerHealth> health = ref.watch(serverHealthProvider);
-    return Card(
-      key: const Key('server-status-card'),
-      child: switch (health) {
-        AsyncData(:final value) when value.isReady => ListTile(
-          leading: const Icon(Icons.cloud_done_outlined),
-          title: Text(context.l10n.serverStatusTitle),
-          subtitle: Text(context.l10n.serverReady),
-        ),
-        AsyncData() => _ServerProblem(message: context.l10n.serverUnavailable),
-        AsyncError(:final error) => _ServerProblem(
-          message: failureMessage(context.l10n, error),
-        ),
-        _ => ListTile(
-          leading: const SizedBox.square(
-            dimension: 24,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-          title: Text(context.l10n.serverStatusTitle),
-          subtitle: Text(context.l10n.serverChecking),
-        ),
-      },
-    );
-  }
+  State<_CommandSheet> createState() => _CommandSheetState();
 }
 
-class _ServerProblem extends ConsumerWidget {
-  const _ServerProblem({required this.message});
-
-  final String message;
+class _CommandSheetState extends State<_CommandSheet> {
+  final TextEditingController _controller = TextEditingController();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return ListTile(
-      leading: Icon(
-        Icons.cloud_off_outlined,
-        color: Theme.of(context).colorScheme.error,
-      ),
-      title: Text(context.l10n.serverStatusTitle),
-      subtitle: Text(message),
-      trailing: TextButton(
-        onPressed: () => ref.invalidate(serverHealthProvider),
-        child: Text(context.l10n.retry),
-      ),
-    );
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
-}
 
-class AgentStatusCard extends ConsumerWidget {
-  const AgentStatusCard({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<AgentStatus> status = ref.watch(agentStatusProvider);
-    return Card(
-      key: const Key('agent-status-card'),
-      child: switch (status) {
-        AsyncData(:final value) => _AgentStatusTile(status: value),
-        AsyncError(:final error) => ListTile(
-          leading: Icon(
-            Icons.error_outline,
-            color: Theme.of(context).colorScheme.error,
-          ),
-          title: Text(context.l10n.agentStatusTitle),
-          subtitle: Text(failureMessage(context.l10n, error)),
-        ),
-        _ => const ListTile(title: LinearProgressIndicator()),
-      },
-    );
+  void _send() {
+    if (_controller.text.trim().isEmpty) return;
+    Navigator.of(context).pop(_controller.text.trim());
   }
-}
-
-class _AgentStatusTile extends ConsumerWidget {
-  const _AgentStatusTile({required this.status});
-
-  final AgentStatus status;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final String policy = switch (ref.watch(executionPolicyProvider)) {
-      ExecutionPolicy.confirmSensitiveActions => context.l10n.policyConfirm,
-      ExecutionPolicy.countdown => context.l10n.policyCountdown,
-    };
-    if (!status.needsSetup) {
-      return ListTile(
-        leading: const Icon(Icons.verified_user_outlined),
-        title: Text(context.l10n.accessibilityEnabled),
-        subtitle: Text(policy),
-      );
-    }
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        0,
+        20,
+        20 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text(
-            context.l10n.agentStatusTitle,
-            style: Theme.of(context).textTheme.titleMedium,
+          TextField(
+            key: const Key('command-field'),
+            controller: _controller,
+            autofocus: true,
+            minLines: 1,
+            maxLines: 4,
+            textInputAction: TextInputAction.send,
+            onSubmitted: (_) => _send(),
+            style: Theme.of(context).textTheme.bodyLarge,
+            decoration: InputDecoration(hintText: context.l10n.commandHint),
           ),
-          const SizedBox(height: 4),
-          Text(context.l10n.accessibilityDisabled),
-          const SizedBox(height: 4),
-          Text(policy, style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            key: const Key('enable-accessibility-button'),
-            onPressed: () => unawaited(
-              ref.read(agentRepositoryProvider).openAccessibilitySettings(),
+          const SizedBox(height: 14),
+          ListenableBuilder(
+            listenable: _controller,
+            builder: (BuildContext context, Widget? child) => CapsuleButton(
+              key: const Key('send-button'),
+              label: context.l10n.commandSend,
+              onPressed: _controller.text.trim().isEmpty ? null : _send,
             ),
-            icon: const Icon(Icons.accessibility_new),
-            label: Text(context.l10n.enableAccessibility),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Running ──────────────────────────────────────────────────────────────────
+
+class _RunningView extends ConsumerWidget {
+  const _RunningView({required this.task});
+
+  final TaskRunning task;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final TextTheme text = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Expanded(
+          child: _Centered(
+            orbFraction: 0.26,
+            builder: (double orb) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                AlesleOrb(state: OrbState.working, size: orb),
+                const SizedBox(height: 32),
+                Text(
+                  task.step ?? context.l10n.taskWorking,
+                  key: const Key('task-step'),
+                  style: text.titleLarge,
+                  textAlign: TextAlign.center,
+                ),
+                if (task.command.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 12),
+                  _Chip(label: task.command),
+                ],
+              ],
+            ),
+          ),
+        ),
+        CapsuleButton(
+          key: const Key('stop-button'),
+          label: context.l10n.taskStop,
+          icon: Icons.stop_rounded,
+          onPressed: () =>
+              unawaited(ref.read(homeTaskProvider.notifier).stop()),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Result ───────────────────────────────────────────────────────────────────
+
+class _ResultView extends ConsumerWidget {
+  const _ResultView({required this.result});
+
+  final TaskResult result;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final TextTheme text = Theme.of(context).textTheme;
+    final CapsuleButton done = CapsuleButton(
+      key: const Key('done-button'),
+      label: context.l10n.taskDoneButton,
+      onPressed: ref.read(homeTaskProvider.notifier).dismiss,
+    );
+
+    if (result.isQuickAnswer) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          const SizedBox(height: 24),
+          Text(
+            context.l10n.taskYouSaid,
+            style: text.bodyMedium?.copyWith(color: AlesleColors.text2),
+          ),
+          const SizedBox(height: 6),
+          Text('“${result.command}”', style: text.titleLarge),
+          Expanded(
+            child: _Centered(
+              builder: (_) => SizedBox(
+                width: double.infinity,
+                child: DecoratedBox(
+                  key: const Key('quick-answer'),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AlesleRadii.card),
+                    boxShadow: AlesleShadows.card,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(result.reply!, style: text.bodyLarge),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          done,
+        ],
+      );
+    }
+
+    final bool succeeded = result.outcome == TaskOutcome.done;
+    final String? explanation = taskExplanation(
+      context.l10n,
+      outcome: result.outcome,
+      reason: result.reason,
+      reply: result.reply,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Expanded(
+          child: _Centered(
+            orbFraction: 0.2,
+            builder: (double orb) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                AlesleOrb(
+                  state: succeeded ? OrbState.done : OrbState.notDone,
+                  size: orb,
+                ),
+                const SizedBox(height: 28),
+                Text(
+                  succeeded
+                      ? (result.reply ?? context.l10n.taskDoneTitle)
+                      : taskTitle(context.l10n, result.outcome),
+                  key: const Key('result-title'),
+                  style: text.headlineSmall,
+                  textAlign: TextAlign.center,
+                ),
+                if (explanation != null) ...<Widget>[
+                  const SizedBox(height: 10),
+                  Text(
+                    explanation,
+                    key: const Key('result-explanation'),
+                    style: text.bodyLarge?.copyWith(color: AlesleColors.text2),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+                if (succeeded && result.command.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 12),
+                  _Chip(label: result.command),
+                ],
+              ],
+            ),
+          ),
+        ),
+        done,
+      ],
+    );
+  }
+}
+
+/// Centers [builder]'s content in the space left; scrolls instead of
+/// overflowing when that space is short (split screen, large fonts). The orb
+/// shrinks with the space: [builder] gets its size.
+class _Centered extends StatelessWidget {
+  const _Centered({required this.builder, this.orbFraction = 0.32});
+
+  final Widget Function(double orbSize) builder;
+  final double orbFraction;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double orb = (constraints.maxHeight * orbFraction).clamp(
+          72.0,
+          200.0,
+        );
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(child: builder(orb)),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// The small white pill under titles: an example, the command, a detail.
+class _Chip extends StatelessWidget {
+  const _Chip({required this.label, super.key, this.onTap});
+
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      shape: const StadiumBorder(),
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
       ),
     );
   }
