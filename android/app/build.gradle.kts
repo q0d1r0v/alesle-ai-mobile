@@ -70,6 +70,8 @@ ktlint {
 }
 
 dependencies {
+    // Same version Flutter's embedding already resolves; declared because the agent code uses it directly.
+    implementation("androidx.core:core-ktx:1.13.1")
     testImplementation("junit:junit:4.13.2")
     testImplementation("io.mockk:mockk:1.14.11")
     testImplementation("org.robolectric:robolectric:4.17")

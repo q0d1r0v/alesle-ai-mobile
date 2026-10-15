@@ -73,16 +73,34 @@ enum class ActionStatus(
 
     /** Refused on purpose by a device-side safety rule. */
     BLOCKED("blocked"),
+
+    /** Several targets fit (two contacts named "Aziz"): the agent must ask, not guess (AC-AG-5). */
+    AMBIGUOUS("ambiguous"),
     ERROR("error"),
 }
 
-/** [reason] is a snake_case code for the backend, never user-facing text. */
+/** One candidate the user can pick; [ref] is resent to choose it, [label] is shown. */
+data class Choice(
+    val ref: String,
+    val label: String,
+)
+
+/**
+ * [reason] is a snake_case code for the backend, never user-facing text.
+ * [choices] is filled only for [ActionStatus.AMBIGUOUS].
+ */
 data class ActionResult(
     val status: ActionStatus,
     val reason: String? = null,
+    val choices: List<Choice> = emptyList(),
 ) {
     companion object {
         val OK = ActionResult(ActionStatus.OK)
+
+        fun ambiguous(
+            reason: String,
+            choices: List<Choice>,
+        ) = ActionResult(ActionStatus.AMBIGUOUS, reason, choices)
 
         fun notFound(reason: String) = ActionResult(ActionStatus.NOT_FOUND, reason)
 

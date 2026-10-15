@@ -8,6 +8,10 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityWindowInfo
 import com.alesle.ai.agent.action.DeviceControl
 import com.alesle.ai.agent.action.ServiceDeviceControl
+import com.alesle.ai.agent.intent.ContentResolverContacts
+import com.alesle.ai.agent.intent.ContextActivityStarter
+import com.alesle.ai.agent.intent.IntentLauncher
+import com.alesle.ai.agent.intent.PackageManagerApps
 import com.alesle.ai.agent.snapshot.AccessibilityUiNode
 import com.alesle.ai.agent.snapshot.Bounds
 import com.alesle.ai.agent.snapshot.CapturedScreen
@@ -35,17 +39,25 @@ class AlesleAccessibilityService : AccessibilityService() {
     var deviceControl: DeviceControl? = null
         private set
 
+    /** System intents (calls, alarms, searches…); null until connected. */
+    @Volatile
+    var intentLauncher: IntentLauncher? = null
+        private set
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         val thread = HandlerThread("alesle-gestures").apply { start() }
         gestureThread = thread
         deviceControl = ServiceDeviceControl(this, Handler(thread.looper), ::capture)
+        intentLauncher =
+            IntentLauncher(ContentResolverContacts(contentResolver), PackageManagerApps(packageManager), ContextActivityStarter(this))
         instance = this
     }
 
     override fun onDestroy() {
         if (instance === this) instance = null
         deviceControl = null
+        intentLauncher = null
         gestureThread?.quitSafely()
         gestureThread = null
         super.onDestroy()
