@@ -9,6 +9,8 @@ import com.alesle.ai.agent.action.ActionExecutor
 import com.alesle.ai.agent.protocol.ActionDecodeException
 import com.alesle.ai.agent.protocol.ActionJson
 import com.alesle.ai.agent.protocol.DecodedAction
+import com.alesle.ai.agent.service.AgentForegroundService
+import com.alesle.ai.agent.service.StopRequests
 import com.alesle.ai.agent.snapshot.CapturedScreen
 import org.json.JSONObject
 import kotlin.concurrent.thread
@@ -23,7 +25,10 @@ import kotlin.concurrent.thread
  * adb shell am broadcast -n com.alesle.ai/.debug.AgentDebugReceiver --es cmd snapshot
  * adb shell am broadcast -n com.alesle.ai/.debug.AgentDebugReceiver --es cmd action \
  *     --es json "'{\"type\":\"tap\",\"nodeId\":4}'"
+ * adb shell am broadcast -n com.alesle.ai/.debug.AgentDebugReceiver --es cmd fgs_start --es step "'Sinov'"
  * ```
+ *
+ * Commands: `snapshot`, `action`, `fgs_start`, `fgs_step`, `fgs_stop`, `status`.
  *
  * Guarded by the DUMP permission, which the adb shell holds and ordinary apps
  * cannot get.
@@ -36,10 +41,12 @@ class AgentDebugReceiver : BroadcastReceiver() {
         val pending = goAsync()
         val cmd = intent.getStringExtra("cmd")
         val json = intent.getStringExtra("json")
+        val step = intent.getStringExtra("step")
+        val app = context.applicationContext
         thread(name = "alesle-debug") {
             val answer =
                 try {
-                    handle(cmd, json)
+                    service(app, cmd, step) ?: handle(cmd, json)
                 } catch (e: ActionDecodeException) {
                     error(e.reason)
                 } catch (e: RuntimeException) {
@@ -48,6 +55,32 @@ class AgentDebugReceiver : BroadcastReceiver() {
                 }
             pending.resultData = answer.toString()
             pending.finish()
+        }
+    }
+
+    /** Foreground-service commands; null for anything else. */
+    private fun service(
+        context: Context,
+        cmd: String?,
+        step: String?,
+    ): JSONObject? {
+        if (stopHandle == null) stopHandle = StopRequests.register { stopRequests++ }
+        return when (cmd) {
+            "fgs_start" -> JSONObject().put("started", AgentForegroundService.start(context, step))
+            "fgs_step" -> {
+                AgentForegroundService.updateStep(context, step)
+                JSONObject().put("status", "ok")
+            }
+            "fgs_stop" -> {
+                AgentForegroundService.stop(context)
+                JSONObject().put("status", "ok")
+            }
+            "status" ->
+                JSONObject()
+                    .put("accessibility", AlesleAccessibilityService.instance != null)
+                    .put("fgsRunning", AgentForegroundService.running)
+                    .put("stopRequests", stopRequests)
+            else -> null
         }
     }
 
@@ -87,6 +120,12 @@ class AgentDebugReceiver : BroadcastReceiver() {
 
     private companion object {
         const val NANOS_PER_MS = 1_000_000L
+
+        /** How often "To'xtatish" was pressed since the first debug command. */
+        @Volatile
+        var stopRequests = 0
+
+        var stopHandle: AutoCloseable? = null
 
         /** The screen node ids refer to; lives only in memory. */
         @Volatile

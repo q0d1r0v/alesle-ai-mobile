@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_service_label">Alesle AI agent</string>
+    <string name="accessibility_service_description">Alesle AI reads what is on the screen and presses buttons to carry out your commands. Your data is used only to complete the task.</string>
+    <string name="notification_channel_agent">Agent tasks</string>
+    <string name="notification_agent_running">Alesle is working</string>
+    <string name="notification_agent_stop">Stop</string>
+</resources>

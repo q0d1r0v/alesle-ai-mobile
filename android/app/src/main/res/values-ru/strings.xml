@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_service_label">Агент Alesle AI</string>
+    <string name="accessibility_service_description">Alesle AI читает элементы на экране и нажимает кнопки, чтобы выполнять ваши команды. Данные используются только для выполнения задачи.</string>
+    <string name="notification_channel_agent">Задачи агента</string>
+    <string name="notification_agent_running">Alesle работает</string>
+    <string name="notification_agent_stop">Остановить</string>
+</resources>
