@@ -2,20 +2,24 @@ package com.alesle.ai.agent
 
 import android.accessibilityservice.AccessibilityService
 import android.content.res.Configuration
+import android.os.Handler
+import android.os.HandlerThread
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityWindowInfo
+import com.alesle.ai.agent.action.DeviceControl
+import com.alesle.ai.agent.action.ServiceDeviceControl
 import com.alesle.ai.agent.snapshot.AccessibilityUiNode
 import com.alesle.ai.agent.snapshot.Bounds
+import com.alesle.ai.agent.snapshot.CapturedScreen
 import com.alesle.ai.agent.snapshot.Orientation
-import com.alesle.ai.agent.snapshot.ScreenSnapshot
 import com.alesle.ai.agent.snapshot.SnapshotBuilder
 import com.alesle.ai.agent.snapshot.SnapshotContext
 
 /**
  * The agent's eyes and hands on the device.
  *
- * Reads the screen only when asked ([captureSnapshot]); events are used just
- * to remember which window class is in front. No screen content is kept.
+ * Reads the screen only when asked ([capture]); events are used just to
+ * remember which window class is in front. No screen content is kept.
  */
 class AlesleAccessibilityService : AccessibilityService() {
     private val snapshotBuilder = SnapshotBuilder()
@@ -24,13 +28,26 @@ class AlesleAccessibilityService : AccessibilityService() {
     @Volatile
     private var foreground: Pair<String, String>? = null
 
+    private var gestureThread: HandlerThread? = null
+
+    /** Eyes and hands for the action executor; null until the system connects the service. */
+    @Volatile
+    var deviceControl: DeviceControl? = null
+        private set
+
     override fun onServiceConnected() {
         super.onServiceConnected()
+        val thread = HandlerThread("alesle-gestures").apply { start() }
+        gestureThread = thread
+        deviceControl = ServiceDeviceControl(this, Handler(thread.looper), ::capture)
         instance = this
     }
 
     override fun onDestroy() {
         if (instance === this) instance = null
+        deviceControl = null
+        gestureThread?.quitSafely()
+        gestureThread = null
         super.onDestroy()
     }
 
@@ -46,7 +63,7 @@ class AlesleAccessibilityService : AccessibilityService() {
     }
 
     /** The current screen, or null when no window is readable (e.g. lock screen). */
-    fun captureSnapshot(): ScreenSnapshot? {
+    fun capture(): CapturedScreen? {
         val root = rootInActiveWindow ?: return null
         val packageName = root.packageName?.toString() ?: return null
         val metrics = resources.displayMetrics

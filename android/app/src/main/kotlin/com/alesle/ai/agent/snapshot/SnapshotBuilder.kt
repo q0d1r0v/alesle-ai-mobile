@@ -32,7 +32,7 @@ class SnapshotBuilder(
     fun build(
         root: UiNode,
         context: SnapshotContext,
-    ): ScreenSnapshot {
+    ): CapturedScreen {
         val (candidates, traversalCut) = collect(root, context.screen)
         val kept =
             if (candidates.size <= maxNodes) {
@@ -46,17 +46,19 @@ class SnapshotBuilder(
                     .sortedBy { it.order }
             }
         val nodes = kept.mapIndexed { index, candidate -> toSnapshotNode(index, candidate.node) }
-        return ScreenSnapshot(
-            snapshotId = newSnapshotId(),
-            packageName = context.packageName,
-            activity = context.activity,
-            screenHash = screenHash(context.packageName, nodes),
-            locale = context.locale,
-            orientation = context.orientation,
-            nodes = nodes,
-            keyboardVisible = context.keyboardVisible,
-            truncated = traversalCut || candidates.size > maxNodes,
-        )
+        val snapshot =
+            ScreenSnapshot(
+                snapshotId = newSnapshotId(),
+                packageName = context.packageName,
+                activity = context.activity,
+                screenHash = screenHash(context.packageName, nodes),
+                locale = context.locale,
+                orientation = context.orientation,
+                nodes = nodes,
+                keyboardVisible = context.keyboardVisible,
+                truncated = traversalCut || candidates.size > maxNodes,
+            )
+        return CapturedScreen(snapshot, kept.map { it.node }, context.screen)
     }
 
     private class Candidate(

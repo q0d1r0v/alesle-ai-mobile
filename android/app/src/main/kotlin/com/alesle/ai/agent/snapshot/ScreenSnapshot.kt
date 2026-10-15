@@ -31,6 +31,19 @@ data class ScreenSnapshot(
             .put("truncated", truncated)
 }
 
+/**
+ * A snapshot together with the live nodes behind it: `nodes[i]` is the node
+ * the snapshot calls `id = i`. Actions resolve node ids through this.
+ */
+class CapturedScreen(
+    val snapshot: ScreenSnapshot,
+    val nodes: List<UiNode>,
+    /** The display area the snapshot was taken against. */
+    val screen: Bounds,
+) {
+    fun node(id: Int): UiNode? = nodes.getOrNull(id)
+}
+
 enum class Orientation(
     val wire: String,
 ) {

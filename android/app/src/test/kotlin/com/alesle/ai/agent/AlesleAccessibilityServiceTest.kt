@@ -25,9 +25,9 @@ class AlesleAccessibilityServiceTest {
     }
 
     @Test
-    fun `has no snapshot while no window is readable`() {
+    fun `has no capture while no window is readable`() {
         val service = Robolectric.setupService(AlesleAccessibilityService::class.java)
-        assertNull(service.captureSnapshot())
+        assertNull(service.capture())
     }
 
     @Test

@@ -25,7 +25,7 @@ class SnapshotBuilderTest {
     private fun build(
         root: UiNode,
         b: SnapshotBuilder = builder,
-    ) = b.build(root, context)
+    ) = b.build(root, context).snapshot
 
     private fun screenRoot(vararg children: UiNode) = FakeNode(className = "android.widget.FrameLayout", children = children.toList())
 
@@ -195,10 +195,11 @@ class SnapshotBuilderTest {
     fun `screen hash ignores clock times and snapshot ids`() {
         val at941 = build(screenRoot(FakeNode(text = "Onam · 9:41"), FakeNode(contentDescription = "Sent at 21:05:33")))
         val at1012 =
-            SnapshotBuilder(newSnapshotId = { "other" }).build(
-                screenRoot(FakeNode(text = "Onam · 10:12"), FakeNode(contentDescription = "Sent at 22:00:01")),
-                context,
-            )
+            SnapshotBuilder(newSnapshotId = { "other" })
+                .build(
+                    screenRoot(FakeNode(text = "Onam · 10:12"), FakeNode(contentDescription = "Sent at 22:00:01")),
+                    context,
+                ).snapshot
         assertEquals(at941.screenHash, at1012.screenHash)
         assertEquals(40, at941.screenHash.length)
     }
@@ -208,7 +209,7 @@ class SnapshotBuilderTest {
         fun hashOf(
             node: FakeNode,
             ctx: SnapshotContext = context,
-        ) = builder.build(screenRoot(node), ctx).screenHash
+        ) = builder.build(screenRoot(node), ctx).snapshot.screenHash
         val base = FakeNode(text = "Salom", isEditable = true)
         val hash = hashOf(base)
         assertNotEquals(hash, hashOf(base.copy(text = "Salom!")))
@@ -216,6 +217,19 @@ class SnapshotBuilderTest {
         assertNotEquals(hash, hashOf(base.copy(bounds = Bounds(0, 100, 1080, 300))))
         assertNotEquals(hash, hashOf(base.copy(isFocused = true)))
         assertNotEquals(hash, hashOf(base, context.copy(packageName = "com.whatsapp")))
+    }
+
+    @Test
+    fun `keeps the live node behind every snapshot id`() {
+        val hidden = FakeNode(text = "hidden", isVisibleToUser = false)
+        val send = FakeNode(text = "Send", isClickable = true)
+        val title = FakeNode(text = "Onam")
+        val captured = builder.build(screenRoot(title, hidden, send), context)
+        assertEquals(listOf(title, send), captured.nodes)
+        assertEquals(send, captured.node(1))
+        assertNull(captured.node(2))
+        assertNull(captured.node(-1))
+        assertEquals(screen, captured.screen)
     }
 
     @Test

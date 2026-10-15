@@ -19,11 +19,16 @@ data class Bounds(
     }
 }
 
+enum class ScrollDirection { UP, DOWN, LEFT, RIGHT }
+
 /**
- * Read-only view of one accessibility node. [SnapshotBuilder] works on this
- * instead of `AccessibilityNodeInfo` so every rule is unit-tested on the JVM.
+ * One accessibility node. [SnapshotBuilder] and the action executor work on
+ * this instead of `AccessibilityNodeInfo` so every rule is unit-tested on
+ * the JVM. Actions return whether the system accepted them; read-only fakes
+ * can rely on the defaults.
  */
 interface UiNode {
+    val packageName: String? get() = null
     val className: String?
     val text: String?
     val contentDescription: String?
@@ -46,4 +51,19 @@ interface UiNode {
     val isChecked: Boolean
     val isPassword: Boolean
     val children: List<UiNode>
+
+    /** Re-reads the node; false when it has left the screen. */
+    fun refresh(): Boolean = true
+
+    fun click(): Boolean = false
+
+    fun longClick(): Boolean = false
+
+    fun setText(text: String): Boolean = false
+
+    /** Presses the keyboard's action key (send, search, done…) for this field. */
+    fun imeEnter(): Boolean = false
+
+    /** [ScrollDirection.DOWN] reveals content below, like a finger swiping up. */
+    fun scroll(direction: ScrollDirection): Boolean = false
 }
