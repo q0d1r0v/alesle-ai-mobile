@@ -237,6 +237,14 @@ class SnapshotBuilderTest {
         assertNull(SnapshotBuilder.clean(null))
         assertNull(SnapshotBuilder.clean(" \n "))
     }
+
+    @Test
+    fun `clean drops invisible direction marks`() {
+        // Seen on a Xiaomi calculator: "\u202D7×6".
+        assertEquals("7×6", SnapshotBuilder.clean("\u202D7×6"))
+        assertEquals("+998 90", SnapshotBuilder.clean("\u2066+998\u2069 \u200E90"))
+        assertNull(SnapshotBuilder.clean("\u202D"))
+    }
 }
 
 private data class FakeNode(

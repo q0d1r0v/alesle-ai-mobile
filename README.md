@@ -51,3 +51,28 @@ patrol test --dart-define-from-file=env/dev.json
 > Headless emulators (`-no-window`, swiftshader) may not render frames with
 > Impeller; tests still pass because they read the widget tree. To *see* the
 > app on such an emulator, run with `--no-enable-impeller`.
+
+## Try the agent runtime on a phone (debug builds)
+
+Until the agent loop exists, a debug-only receiver lets you take snapshots and
+run single actions over adb. Answers come back in the `am broadcast` output;
+nothing is written to disk or logs. Release builds do not contain it.
+
+```bash
+flutter build apk --debug --dart-define-from-file=env/dev.json
+adb install -r build/app/outputs/flutter-apk/app-debug.apk
+# Settings → Accessibility → Alesle AI agent → On (or, over adb:)
+adb shell settings put secure enabled_accessibility_services \
+  com.alesle.ai/com.alesle.ai.agent.AlesleAccessibilityService
+
+R=com.alesle.ai/.debug.AgentDebugReceiver
+adb shell am broadcast -n $R --es cmd snapshot          # {"captureMs":…, "snapshot":{…}}
+adb shell am broadcast -n $R --es cmd action --es json "'{\"type\":\"tap\",\"nodeId\":4}'"
+adb shell am broadcast -n $R --es cmd action --es json "'{\"type\":\"launch_app\",\"name\":\"Calculator\"}'"
+```
+
+Node ids refer to the last `snapshot`. The action format is documented in
+`android/app/src/main/kotlin/com/alesle/ai/agent/protocol/ActionJson.kt`.
+
+Installing over adb skips Android 13+ "Restricted settings". Before a release,
+also install the APK from a browser download and enable accessibility by hand.

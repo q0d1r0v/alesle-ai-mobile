@@ -4,4 +4,15 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <application>
+        <!--
+          Debug-only adb bridge to the agent runtime (see AgentDebugReceiver).
+          DUMP is held by the adb shell, never granted to ordinary apps.
+        -->
+        <receiver
+            android:name=".debug.AgentDebugReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP" />
+    </application>
 </manifest>

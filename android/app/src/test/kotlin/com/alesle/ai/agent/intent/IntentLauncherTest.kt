@@ -231,9 +231,15 @@ class IntentLauncherTest {
     }
 
     @Test
-    fun `searches maps`() {
+    fun `searches Google Maps, falling back to any map app`() {
         assertEquals(ActionResult.OK, launcher.execute(IntentAction.MapsSearch("eng yaqin dorixona")))
         assertEquals(Uri.parse("geo:0,0?q=eng%20yaqin%20dorixona"), started.data)
+        assertEquals(IntentLauncher.MAPS_PACKAGE, started.`package`)
+
+        starter.refuse = { it.`package` == IntentLauncher.MAPS_PACKAGE }
+        assertEquals(ActionResult.OK, launcher.execute(IntentAction.MapsSearch("Chorsu")))
+        assertEquals(Uri.parse("geo:0,0?q=Chorsu"), started.data)
+        assertNull(started.`package`)
     }
 
     @Test

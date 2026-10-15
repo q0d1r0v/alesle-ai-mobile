@@ -135,11 +135,14 @@ class SnapshotBuilder(
 
         private val WHITESPACE = Regex("\\s+")
 
+        /** Invisible direction marks (LRM, RLM, LRE…PDF, LRI…PDI) that apps wrap numbers in. */
+        private val BIDI_CONTROLS = Regex("[\\u200E\\u200F\\u202A-\\u202E\\u2066-\\u2069]")
+
         /** 9:41, 21:05:33, 9:41 PM, 9:41 p.m. */
         private val CLOCK_TIME = Regex("\\b\\d{1,2}:\\d{2}(?::\\d{2})?(?:\\s?[AaPp]\\.?[Mm]\\.?)?(?!\\w)")
 
         internal fun clean(value: String?): String? {
-            val collapsed = value?.replace(WHITESPACE, " ")?.trim()
+            val collapsed = value?.replace(BIDI_CONTROLS, "")?.replace(WHITESPACE, " ")?.trim()
             if (collapsed.isNullOrEmpty()) return null
             return if (collapsed.length <= MAX_TEXT_CHARS) collapsed else collapsed.take(MAX_TEXT_CHARS - 1) + "…"
         }

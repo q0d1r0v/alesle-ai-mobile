@@ -33,8 +33,7 @@ class IntentLauncher(
             is IntentAction.Alarm -> alarm(action)
             is IntentAction.CalendarEvent -> calendarEvent(action)
             is IntentAction.WebSearch -> webSearch(action.query)
-            is IntentAction.MapsSearch ->
-                start(Intent(Intent.ACTION_VIEW, "geo:0,0?q=${Uri.encode(action.query)}".toUri()))
+            is IntentAction.MapsSearch -> mapsSearch(action.query)
             is IntentAction.YouTubeSearch -> youTubeSearch(action.query)
             is IntentAction.ShareText -> shareText(action)
         }
@@ -110,6 +109,15 @@ class IntentLauncher(
         return start(Intent(Intent.ACTION_VIEW, "https://www.google.com/search?q=${Uri.encode(query)}".toUri()))
     }
 
+    private fun mapsSearch(query: String): ActionResult {
+        val geo = "geo:0,0?q=${Uri.encode(query)}".toUri()
+        // Google Earth can be the default geo: handler; "find on the map" means Maps when it is installed.
+        if (starter.start(Intent(Intent.ACTION_VIEW, geo).setPackage(MAPS_PACKAGE).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))) {
+            return ActionResult.OK
+        }
+        return start(Intent(Intent.ACTION_VIEW, geo))
+    }
+
     private fun youTubeSearch(query: String): ActionResult {
         val app = Intent(Intent.ACTION_SEARCH).setPackage(YOUTUBE_PACKAGE).putExtra(SearchManager.QUERY, query)
         if (starter.start(app.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))) return ActionResult.OK
@@ -174,6 +182,7 @@ class IntentLauncher(
     companion object {
         const val MAX_CHOICES = 5
         const val YOUTUBE_PACKAGE = "com.google.android.youtube"
+        const val MAPS_PACKAGE = "com.google.android.apps.maps"
         private const val CONTACT_REF = "contact:"
 
         /** Lower-case, no accents or apostrophes, single spaces: "O'zbek  Telekom" == "ozbek telekom". */
