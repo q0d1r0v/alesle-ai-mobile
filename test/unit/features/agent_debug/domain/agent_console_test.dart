@@ -2,30 +2,68 @@ import 'package:alesle_ai/features/agent_debug/domain/agent_console.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('task events compare by kind and text', () {
-    expect(
-      const TaskEvent(TaskEventKind.started, 'salom'),
-      const TaskEvent(TaskEventKind.started, 'salom'),
+  test('task events compare by every field', () {
+    const TaskEvent done = TaskEvent(
+      TaskEventKind.finished,
+      text: 'Sent',
+      status: 'done',
     );
     expect(
-      const TaskEvent(TaskEventKind.started, 'salom').hashCode,
-      const TaskEvent(TaskEventKind.started, 'salom').hashCode,
+      done,
+      const TaskEvent(TaskEventKind.finished, text: 'Sent', status: 'done'),
     );
     expect(
-      const TaskEvent(TaskEventKind.started, 'salom'),
-      isNot(const TaskEvent(TaskEventKind.step, 'salom')),
+      done.hashCode,
+      const TaskEvent(
+        TaskEventKind.finished,
+        text: 'Sent',
+        status: 'done',
+      ).hashCode,
+    );
+    expect(done, isNot(const TaskEvent(TaskEventKind.finished, text: 'Sent')));
+    expect(
+      done,
+      isNot(
+        const TaskEvent(
+          TaskEventKind.finished,
+          text: 'Sent',
+          status: 'done',
+          reason: 'x',
+        ),
+      ),
+    );
+    expect(
+      const TaskEvent(TaskEventKind.step, text: 'a'),
+      isNot(const TaskEvent(TaskEventKind.started, text: 'a')),
     );
   });
 
   test('task events read well in a log', () {
-    expect(const TaskEvent(TaskEventKind.stopped).toString(), 'stopped');
+    expect(const TaskEvent(TaskEventKind.started).toString(), 'started');
     expect(
-      const TaskEvent(TaskEventKind.step, 'Telegram').toString(),
+      const TaskEvent(TaskEventKind.step, text: 'Telegram').toString(),
       'step: Telegram',
+    );
+    expect(
+      const TaskEvent(
+        TaskEventKind.finished,
+        status: 'failed',
+        reason: 'stuck',
+      ).toString(),
+      'finished failed stuck',
     );
   });
 
-  test('a refused start carries its reason', () {
+  test('commands and refusals carry their fields', () {
+    const TaskCommand command = TaskCommand(
+      text: 'salom',
+      locale: 'uz',
+      confirmSensitiveActions: false,
+    );
+    expect(command.text, 'salom');
+    expect(command.locale, 'uz');
+    expect(command.confirmSensitiveActions, isFalse);
+
     const TaskStart refused = TaskStart(
       started: false,
       reason: 'accessibility_off',

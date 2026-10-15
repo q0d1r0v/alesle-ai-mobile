@@ -5,4 +5,11 @@
     <string name="notification_channel_agent">Agent tasks</string>
     <string name="notification_agent_running">Alesle is working</string>
     <string name="notification_agent_stop">Stop</string>
+    <string name="overlay_stop">Stop</string>
+    <string name="overlay_cancel">Cancel</string>
+    <string name="overlay_confirm">Confirm</string>
+    <plurals name="overlay_countdown">
+        <item quantity="one">Going ahead in %1$d second</item>
+        <item quantity="other">Going ahead in %1$d seconds</item>
+    </plurals>
 </resources>

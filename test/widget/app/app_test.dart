@@ -123,7 +123,7 @@ final class _SilentConsole implements AgentConsoleRepository {
   Future<String> snapshot() async => '{}';
 
   @override
-  Future<TaskStart> startTask(String command) async =>
+  Future<TaskStart> startTask(TaskCommand command) async =>
       const TaskStart(started: true);
 
   @override

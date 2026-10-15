@@ -22,7 +22,18 @@ yarn install                       # git hooks (husky + commitlint)
 flutter run --dart-define-from-file=env/dev.json
 ```
 
-On a physical device, put your machine's LAN address in a copy of `env/dev.json`.
+On a physical phone, forward the API over USB and point the build at it. The
+agent loop needs the API's development token until accounts exist (pass it
+on the command line; never commit it):
+
+```bash
+adb reverse tcp:3000 tcp:3000
+flutter run --dart-define-from-file=env/dev.json \
+  --dart-define=API_BASE_URL=http://127.0.0.1:3000 \
+  --dart-define=DEV_AUTH_TOKEN=<DEV_AUTH_TOKEN from alesle-ai-api/.env>
+```
+
+Debug builds allow plain http only to 127.0.0.1, localhost and 10.0.2.2.
 
 ## Distribution
 
@@ -91,7 +102,8 @@ adb shell am broadcast -n $R --es cmd action --es json "'{\"type\":\"tap\",\"nod
 adb shell am broadcast -n $R --es cmd action --es json "'{\"type\":\"launch_app\",\"name\":\"Calculator\"}'"
 ```
 
-Other commands: `task_start --es step '…'`, `task_stop`, `status`. Node ids
+Other commands: `task_start --es step '…' --es url http://127.0.0.1:3000 --es token <token>`
+(a full task through the API, with the overlay), `task_stop`, `status`. Node ids
 refer to the last `snapshot`. The action format is documented in
 `android/app/src/main/kotlin/com/alesle/ai/agent/protocol/ActionJson.kt`.
 

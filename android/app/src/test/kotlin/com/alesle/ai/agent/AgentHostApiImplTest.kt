@@ -9,6 +9,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.alesle.ai.agent.debug.DebugCommands
 import com.alesle.ai.agent.generated.FlutterError
 import com.alesle.ai.agent.generated.StartTaskResult
+import com.alesle.ai.agent.generated.TaskRequest
 import com.alesle.ai.agent.task.AgentTaskController
 import io.mockk.every
 import io.mockk.mockk
@@ -60,8 +61,9 @@ class AgentHostApiImplTest {
 
     @Test
     fun `starts and stops tasks through the controller`() {
-        every { tasks.start("salom") } returns StartTaskResult(started = true)
-        assertEquals(StartTaskResult(started = true), api(enabled = true).startTask("salom"))
+        val request = TaskRequest("salom", "http://127.0.0.1:3000", "t", "uz", confirmEverySensitiveAction = true)
+        every { tasks.start(request) } returns StartTaskResult(started = true)
+        assertEquals(StartTaskResult(started = true), api(enabled = true).startTask(request))
         api(enabled = true).stopTask()
         verify { tasks.stop() }
     }

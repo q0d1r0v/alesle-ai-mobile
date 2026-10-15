@@ -10,6 +10,7 @@ import 'core_providers.dart';
 AppConfig configFromEnvironment() => AppConfig.parse(
   environment: const String.fromEnvironment('APP_ENV'),
   apiBaseUrl: const String.fromEnvironment('API_BASE_URL'),
+  devAuthToken: const String.fromEnvironment('DEV_AUTH_TOKEN'),
 );
 
 /// App entry: validate configuration, then start. A misconfigured build

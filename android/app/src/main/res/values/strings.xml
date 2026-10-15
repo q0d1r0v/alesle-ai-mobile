@@ -6,4 +6,11 @@
     <string name="notification_channel_agent">Agent vazifalari</string>
     <string name="notification_agent_running">Alesle ishlayapti</string>
     <string name="notification_agent_stop">To\'xtatish</string>
+    <string name="overlay_stop">To\'xtatish</string>
+    <string name="overlay_cancel">Bekor qilish</string>
+    <string name="overlay_confirm">Tasdiqlash</string>
+    <plurals name="overlay_countdown">
+        <item quantity="one">%1$d soniyadan keyin bajariladi</item>
+        <item quantity="other">%1$d soniyadan keyin bajariladi</item>
+    </plurals>
 </resources>

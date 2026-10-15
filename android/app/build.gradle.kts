@@ -95,10 +95,13 @@ dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     // Pigeon's generated Kotlin FlutterApi (AgentEventsApi) uses suspend functions.
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    // WebSocket client for the agent step loop.
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("io.mockk:mockk:1.14.11")
     testImplementation("org.robolectric:robolectric:4.17")
     testImplementation("androidx.test:core-ktx:1.7.0")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     androidTestUtil("androidx.test:orchestrator:1.6.1")
 }
 

@@ -77,6 +77,9 @@ enum class ActionStatus(
     /** Several targets fit (two contacts named "Aziz"): the agent must ask, not guess (AC-AG-5). */
     AMBIGUOUS("ambiguous"),
     ERROR("error"),
+
+    /** The user said no to a confirmation; the server ends the task as stopped. */
+    DECLINED("declined"),
 }
 
 /** One candidate the user can pick; [ref] is resent to choose it, [label] is shown. */
@@ -107,5 +110,7 @@ data class ActionResult(
         fun blocked(reason: String) = ActionResult(ActionStatus.BLOCKED, reason)
 
         fun error(reason: String) = ActionResult(ActionStatus.ERROR, reason)
+
+        val DECLINED = ActionResult(ActionStatus.DECLINED)
     }
 }

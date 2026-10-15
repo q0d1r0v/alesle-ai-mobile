@@ -88,7 +88,13 @@ class _AgentDebugScreenState extends ConsumerState<AgentDebugScreen> {
 
   Future<void> _startTask() async {
     try {
-      final TaskStart start = await _console.startTask(_command.text);
+      final TaskStart start = await _console.startTask(
+        TaskCommand(
+          text: _command.text,
+          locale: Localizations.localeOf(context).toLanguageTag(),
+          confirmSensitiveActions: true,
+        ),
+      );
       setState(
         () => _result = start.started
             ? 'task started'

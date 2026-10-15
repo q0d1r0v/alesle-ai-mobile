@@ -5,6 +5,8 @@ import androidx.test.core.app.ApplicationProvider
 import com.alesle.ai.agent.generated.StartTaskResult
 import com.alesle.ai.agent.generated.StepEvent
 import com.alesle.ai.agent.generated.StepEventKind
+import com.alesle.ai.agent.generated.TaskRequest
+import com.alesle.ai.agent.loop.LoopEvent
 import com.alesle.ai.agent.service.StopRequests
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -20,74 +22,115 @@ class AgentTaskControllerTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
     private var accessibility = true
     private var serviceAllowed = true
+    private var serviceConnected = true
     private val started = mutableListOf<String?>()
+    private val steps = mutableListOf<String>()
     private var stopped = 0
     private val events = mutableListOf<StepEvent>()
+    private val loops = mutableListOf<FakeLoop>()
+
+    private inner class FakeLoop(
+        val request: TaskRequest,
+        val events: (LoopEvent) -> Unit,
+    ) : TaskLoop {
+        var starts = 0
+        var stops = 0
+
+        override fun start() {
+            starts++
+        }
+
+        override fun stop() {
+            stops++
+            events(LoopEvent.Finished("stopped", "user_stopped", null))
+        }
+    }
 
     private val controller =
         AgentTaskController(
             accessibilityEnabled = { accessibility },
             startService = { step -> serviceAllowed.also { if (it) started += step } },
             stopService = { stopped++ },
+            updateStep = { steps += it },
+            loops = { request, events -> if (serviceConnected) FakeLoop(request, events).also { loops += it } else null },
         ).apply { listener = { events += it } }
+
+    private fun request(command: String = "  Onamga qo'ng'iroq qil ") =
+        TaskRequest(command, "http://127.0.0.1:3000", "dev-token", "uz", confirmEverySensitiveAction = true)
 
     @After
     fun tearDown() = controller.stop()
 
     @Test
-    fun `starts the foreground service with the command and reports it`() {
-        assertEquals(StartTaskResult(started = true), controller.start("  Onamga qo'ng'iroq qil "))
+    fun `starts the service and the loop with the trimmed command`() {
+        assertEquals(StartTaskResult(started = true), controller.start(request()))
         assertEquals(listOf<String?>("Onamga qo'ng'iroq qil"), started)
+        assertEquals("Onamga qo'ng'iroq qil", loops.single().request.command)
+        assertEquals(1, loops.single().starts)
         assertEquals(listOf(StepEvent(StepEventKind.STARTED, "Onamga qo'ng'iroq qil")), events)
         assertTrue(controller.isRunning)
     }
 
     @Test
     fun `refuses to start with a reason`() {
-        assertEquals("empty_command", controller.start("   ").reason)
+        assertEquals("empty_command", controller.start(request("   ")).reason)
+        assertEquals("bad_server_url", controller.start(request().copy(apiBaseUrl = "ftp://x")).reason)
 
         accessibility = false
-        assertEquals("accessibility_off", controller.start("salom").reason)
-
+        assertEquals("accessibility_off", controller.start(request()).reason)
         accessibility = true
-        serviceAllowed = false
-        assertEquals("background_start_refused", controller.start("salom").reason)
 
+        serviceConnected = false
+        assertEquals("accessibility_off", controller.start(request()).reason)
+        serviceConnected = true
+
+        serviceAllowed = false
+        assertEquals("background_start_refused", controller.start(request()).reason)
         serviceAllowed = true
-        controller.start("birinchi")
-        assertEquals(StartTaskResult(started = false, reason = "already_running"), controller.start("ikkinchi"))
+
+        controller.start(request("birinchi"))
+        assertEquals(StartTaskResult(started = false, reason = "already_running"), controller.start(request("ikkinchi")))
         assertEquals(listOf<String?>("birinchi"), started)
     }
 
     @Test
-    fun `stop ends the service once and reports it`() {
-        controller.start("salom")
-        controller.stop()
-        controller.stop()
-        assertEquals(1, stopped)
-        assertFalse(controller.isRunning)
-        assertEquals(StepEvent(StepEventKind.STOPPED), events.last())
+    fun `forwards steps to the app and the notification`() {
+        controller.start(request())
+        loops.single().events(LoopEvent.Started)
+        loops.single().events(LoopEvent.Step("Telegram ochilmoqda"))
+        assertEquals(listOf("Telegram ochilmoqda"), steps)
+        assertEquals(StepEvent(StepEventKind.STEP, "Telegram ochilmoqda"), events.last())
+        assertEquals(2, events.size)
     }
 
     @Test
-    fun `the notification's stop reaches the running task only`() {
-        StopRequests.request()
-        assertEquals(0, stopped)
-
-        controller.start("salom")
-        StopRequests.request()
+    fun `ends with the loop's result and stops the service once`() {
+        controller.start(request())
+        loops.single().events(LoopEvent.Finished("done", null, "Bajarildi"))
+        loops.single().events(LoopEvent.Finished("done", null, "again"))
         assertEquals(1, stopped)
         assertFalse(controller.isRunning)
+        assertEquals(StepEvent(StepEventKind.FINISHED, "Bajarildi", "done", null), events.last())
+        assertEquals(1, events.count { it.kind == StepEventKind.FINISHED })
+    }
 
-        // After the task ended its stop listener is gone.
+    @Test
+    fun `stop goes to the loop, from the app or the notification`() {
+        controller.start(request())
         StopRequests.request()
-        assertEquals(1, stopped)
+        assertEquals(1, loops.single().stops)
+        assertEquals(StepEvent(StepEventKind.FINISHED, null, "stopped", "user_stopped"), events.last())
+
+        // Nothing runs any more: further stops do nothing.
+        controller.stop()
+        StopRequests.request()
+        assertEquals(1, loops.single().stops)
     }
 
     @Test
     fun `works without a listener`() {
         controller.listener = null
-        assertTrue(controller.start("salom").started)
+        assertTrue(controller.start(request()).started)
         controller.stop()
         assertTrue(events.isEmpty())
     }
@@ -97,6 +140,13 @@ class AgentTaskControllerTest {
         val first = AgentTaskController.get(app)
         assertSame(first, AgentTaskController.get(app))
         // Accessibility is off under Robolectric, so the real wiring refuses.
-        assertEquals("accessibility_off", first.start("salom").reason)
+        assertEquals("accessibility_off", first.start(request()).reason)
+    }
+
+    @Test
+    fun `accepts only http and https servers`() {
+        assertTrue(AgentTaskController.isServerUrl("http://10.0.2.2:3000"))
+        assertTrue(AgentTaskController.isServerUrl("https://api.alesle.ai"))
+        assertFalse(AgentTaskController.isServerUrl("ws://x"))
     }
 }

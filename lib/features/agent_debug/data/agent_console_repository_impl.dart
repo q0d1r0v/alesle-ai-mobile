@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/errors/failure.dart';
 import '../../../core/platform/generated/agent_api.g.dart';
 import '../domain/agent_console.dart';
@@ -9,6 +10,7 @@ import '../domain/agent_console.dart';
 final class AgentConsoleRepositoryImpl
     implements AgentConsoleRepository, AgentEventsApi {
   AgentConsoleRepositoryImpl({
+    required this._config,
     AgentHostApi? api,
     void Function(AgentEventsApi?)? registerEvents,
   }) : _api = api ?? AgentHostApi(),
@@ -19,6 +21,7 @@ final class AgentConsoleRepositoryImpl
     );
   }
 
+  final AppConfig _config;
   final AgentHostApi _api;
   final void Function(AgentEventsApi?) _registerEvents;
   late final StreamController<TaskEvent> _events;
@@ -28,7 +31,14 @@ final class AgentConsoleRepositoryImpl
 
   @override
   void onStepEvent(StepEvent event) {
-    _events.add(TaskEvent(_kinds[event.kind]!, event.text));
+    _events.add(
+      TaskEvent(
+        _kinds[event.kind]!,
+        text: event.text,
+        status: event.status,
+        reason: event.reason,
+      ),
+    );
   }
 
   @override
@@ -39,10 +49,24 @@ final class AgentConsoleRepositoryImpl
       _guard(() => _api.debugExecute(actionJson));
 
   @override
-  Future<TaskStart> startTask(String command) => _guard(() async {
-    final StartTaskResult result = await _api.startTask(command);
-    return TaskStart(started: result.started, reason: result.reason);
-  });
+  Future<TaskStart> startTask(TaskCommand command) async {
+    final String? token = _config.devAuthToken;
+    if (token == null) {
+      return const TaskStart(started: false, reason: 'not_signed_in');
+    }
+    return _guard(() async {
+      final StartTaskResult result = await _api.startTask(
+        TaskRequest(
+          command: command.text,
+          apiBaseUrl: _config.apiBaseUrl,
+          accessToken: token,
+          locale: command.locale,
+          confirmEverySensitiveAction: command.confirmSensitiveActions,
+        ),
+      );
+      return TaskStart(started: result.started, reason: result.reason);
+    });
+  }
 
   @override
   Future<void> stopTask() => _guard(_api.stopTask);
@@ -60,6 +84,5 @@ final class AgentConsoleRepositoryImpl
         StepEventKind.started: TaskEventKind.started,
         StepEventKind.step: TaskEventKind.step,
         StepEventKind.finished: TaskEventKind.finished,
-        StepEventKind.stopped: TaskEventKind.stopped,
       };
 }

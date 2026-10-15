@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import com.alesle.ai.agent.AlesleAccessibilityService
 import com.alesle.ai.agent.debug.DebugCommands
+import com.alesle.ai.agent.generated.TaskRequest
 import com.alesle.ai.agent.service.AgentForegroundService
 import com.alesle.ai.agent.service.StopRequests
 import com.alesle.ai.agent.task.AgentTaskController
@@ -20,7 +21,8 @@ import kotlin.concurrent.thread
  * adb shell am broadcast -n com.alesle.ai/.debug.AgentDebugReceiver --es cmd snapshot
  * adb shell am broadcast -n com.alesle.ai/.debug.AgentDebugReceiver --es cmd action \
  *     --es json "'{\"type\":\"tap\",\"nodeId\":4}'"
- * adb shell am broadcast -n com.alesle.ai/.debug.AgentDebugReceiver --es cmd task_start --es step "'Sinov'"
+ * adb shell am broadcast -n com.alesle.ai/.debug.AgentDebugReceiver --es cmd task_start \
+ *     --es step "'Budilnik 7:30'" --es url http://127.0.0.1:3000 --es token <DEV_AUTH_TOKEN>
  * ```
  *
  * Commands: `snapshot`, `action`, `task_start`, `task_stop`, `fgs_step`, `status`.
@@ -37,11 +39,13 @@ class AgentDebugReceiver : BroadcastReceiver() {
         val cmd = intent.getStringExtra("cmd")
         val json = intent.getStringExtra("json")
         val step = intent.getStringExtra("step")
+        val url = intent.getStringExtra("url")
+        val token = intent.getStringExtra("token")
         val app = context.applicationContext
         thread(name = "alesle-debug") {
             val answer =
                 try {
-                    handle(app, cmd, json, step)
+                    handle(app, cmd, json, step, url to token)
                 } catch (e: RuntimeException) {
                     // A debug tool should report a crash, not take the app down with it.
                     error("exception:${e.javaClass.simpleName}")
@@ -56,6 +60,7 @@ class AgentDebugReceiver : BroadcastReceiver() {
         cmd: String?,
         json: String?,
         step: String?,
+        server: Pair<String?, String?>,
     ): JSONObject {
         if (stopHandle == null) stopHandle = StopRequests.register { stopRequests++ }
         val tasks = AgentTaskController.get(context)
@@ -63,7 +68,15 @@ class AgentDebugReceiver : BroadcastReceiver() {
             "snapshot" -> DebugCommands.shared.snapshot()
             "action" -> DebugCommands.shared.execute(json ?: return error("missing_json"))
             "task_start" -> {
-                val result = tasks.start(step.orEmpty())
+                val request =
+                    TaskRequest(
+                        command = step.orEmpty(),
+                        apiBaseUrl = server.first ?: return error("missing_url"),
+                        accessToken = server.second ?: return error("missing_token"),
+                        locale = "uz",
+                        confirmEverySensitiveAction = true,
+                    )
+                val result = tasks.start(request)
                 JSONObject().put("started", result.started).put("reason", result.reason)
             }
             "task_stop" -> {

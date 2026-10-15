@@ -9,6 +9,7 @@ import com.alesle.ai.agent.generated.AgentHostApi
 import com.alesle.ai.agent.generated.AgentStatusMessage
 import com.alesle.ai.agent.generated.FlutterError
 import com.alesle.ai.agent.generated.StartTaskResult
+import com.alesle.ai.agent.generated.TaskRequest
 import com.alesle.ai.agent.task.AgentTaskController
 
 /** Kotlin side of the Pigeon `AgentHostApi` contract (pigeons/agent_api.dart). */
@@ -33,7 +34,7 @@ class AgentHostApiImpl(
         context.startActivity(intent)
     }
 
-    override fun startTask(command: String): StartTaskResult = tasks.start(command)
+    override fun startTask(request: TaskRequest): StartTaskResult = tasks.start(request)
 
     override fun stopTask() = tasks.stop()
 

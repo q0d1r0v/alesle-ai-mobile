@@ -23,13 +23,37 @@ class AgentStatusMessage {
   final bool accessibilityEnabled;
 }
 
+/// Everything the Kotlin loop needs to run one command against the API.
+class TaskRequest {
+  TaskRequest({
+    required this.command,
+    required this.apiBaseUrl,
+    required this.accessToken,
+    required this.locale,
+    required this.confirmEverySensitiveAction,
+  });
+
+  final String command;
+
+  /// Origin of the API (`AppConfig.apiBaseUrl`); the socket is `/v1/agent/ws` on it.
+  final String apiBaseUrl;
+  final String accessToken;
+
+  /// BCP-47 tag the agent answers in.
+  final String locale;
+
+  /// The user's setting: false = a cancellable countdown instead of a question.
+  final bool confirmEverySensitiveAction;
+}
+
 class StartTaskResult {
   StartTaskResult({required this.started, this.reason});
 
   final bool started;
 
   /// Why it did not start, as a snake_case code: `empty_command`,
-  /// `already_running`, `accessibility_off`, `background_start_refused`.
+  /// `already_running`, `accessibility_off`, `background_start_refused`,
+  /// `bad_server_url`.
   final String? reason;
 }
 
@@ -40,18 +64,21 @@ enum StepEventKind {
   /// The agent moved on; `text` says what it is doing now.
   step,
 
-  /// The task ended on its own; `text` is the final status.
+  /// The task is over: `status` says how, `text` is the agent's reply.
   finished,
-
-  /// The user stopped it (app, notification or overlay).
-  stopped,
 }
 
 class StepEvent {
-  StepEvent({required this.kind, this.text});
+  StepEvent({required this.kind, this.text, this.status, this.reason});
 
   final StepEventKind kind;
   final String? text;
+
+  /// For `finished`: done, failed, cannot, stopped, interrupted.
+  final String? status;
+
+  /// For `finished`: snake_case code when not done (e.g. `connection_lost`).
+  final String? reason;
 }
 
 @HostApi()
@@ -62,7 +89,7 @@ abstract class AgentHostApi {
   void openAccessibilitySettings();
 
   /// Starts a task for a typed or spoken command.
-  StartTaskResult startTask(String command);
+  StartTaskResult startTask(TaskRequest request);
 
   /// Stops the running task, if any.
   void stopTask();

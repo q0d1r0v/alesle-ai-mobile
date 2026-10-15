@@ -206,10 +206,8 @@ enum class StepEventKind(val raw: Int) {
   STARTED(0),
   /** The agent moved on; `text` says what it is doing now. */
   STEP(1),
-  /** The task ended on its own; `text` is the final status. */
-  FINISHED(2),
-  /** The user stopped it (app, notification or overlay). */
-  STOPPED(3);
+  /** The task is over: `status` says how, `text` is the agent's reply. */
+  FINISHED(2);
 
   companion object {
     fun ofRaw(raw: Int): StepEventKind? {
@@ -256,12 +254,73 @@ data class AgentStatusMessage (
   }
 }
 
+/**
+ * Everything the Kotlin loop needs to run one command against the API.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class TaskRequest (
+  val command: String,
+  /** Origin of the API (`AppConfig.apiBaseUrl`); the socket is `/v1/agent/ws` on it. */
+  val apiBaseUrl: String,
+  val accessToken: String,
+  /** BCP-47 tag the agent answers in. */
+  val locale: String,
+  /** The user's setting: false = a cancellable countdown instead of a question. */
+  val confirmEverySensitiveAction: Boolean
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): TaskRequest {
+      val command = pigeonVar_list[0] as String
+      val apiBaseUrl = pigeonVar_list[1] as String
+      val accessToken = pigeonVar_list[2] as String
+      val locale = pigeonVar_list[3] as String
+      val confirmEverySensitiveAction = pigeonVar_list[4] as Boolean
+      return TaskRequest(command, apiBaseUrl, accessToken, locale, confirmEverySensitiveAction)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      command,
+      apiBaseUrl,
+      accessToken,
+      locale,
+      confirmEverySensitiveAction,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as TaskRequest
+    return AgentApiPigeonUtils.deepEquals(this.command, other.command) && AgentApiPigeonUtils.deepEquals(this.apiBaseUrl, other.apiBaseUrl) && AgentApiPigeonUtils.deepEquals(this.accessToken, other.accessToken) && AgentApiPigeonUtils.deepEquals(this.locale, other.locale) && AgentApiPigeonUtils.deepEquals(this.confirmEverySensitiveAction, other.confirmEverySensitiveAction)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.command)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.apiBaseUrl)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.accessToken)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.locale)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.confirmEverySensitiveAction)
+    return result
+  }
+  override fun toString(): String {
+    return "TaskRequest(command=$command, apiBaseUrl=$apiBaseUrl, accessToken=$accessToken, locale=$locale, confirmEverySensitiveAction=$confirmEverySensitiveAction)"
+  }
+}
+
 /** Generated class from Pigeon that represents data sent in messages. */
 data class StartTaskResult (
   val started: Boolean,
   /**
    * Why it did not start, as a snake_case code: `empty_command`,
-   * `already_running`, `accessibility_off`, `background_start_refused`.
+   * `already_running`, `accessibility_off`, `background_start_refused`,
+   * `bad_server_url`.
    */
   val reason: String? = null
 )
@@ -304,20 +363,28 @@ data class StartTaskResult (
 /** Generated class from Pigeon that represents data sent in messages. */
 data class StepEvent (
   val kind: StepEventKind,
-  val text: String? = null
+  val text: String? = null,
+  /** For `finished`: done, failed, cannot, stopped, interrupted. */
+  val status: String? = null,
+  /** For `finished`: snake_case code when not done (e.g. `connection_lost`). */
+  val reason: String? = null
 )
  {
   companion object {
     fun fromList(pigeonVar_list: List<Any?>): StepEvent {
       val kind = pigeonVar_list[0] as StepEventKind
       val text = pigeonVar_list[1] as String?
-      return StepEvent(kind, text)
+      val status = pigeonVar_list[2] as String?
+      val reason = pigeonVar_list[3] as String?
+      return StepEvent(kind, text, status, reason)
     }
   }
   fun toList(): List<Any?> {
     return listOf(
       kind,
       text,
+      status,
+      reason,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -328,17 +395,19 @@ data class StepEvent (
       return true
     }
     val other = other as StepEvent
-    return AgentApiPigeonUtils.deepEquals(this.kind, other.kind) && AgentApiPigeonUtils.deepEquals(this.text, other.text)
+    return AgentApiPigeonUtils.deepEquals(this.kind, other.kind) && AgentApiPigeonUtils.deepEquals(this.text, other.text) && AgentApiPigeonUtils.deepEquals(this.status, other.status) && AgentApiPigeonUtils.deepEquals(this.reason, other.reason)
   }
 
   override fun hashCode(): Int {
     var result = javaClass.hashCode()
     result = 31 * result + AgentApiPigeonUtils.deepHash(this.kind)
     result = 31 * result + AgentApiPigeonUtils.deepHash(this.text)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.status)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.reason)
     return result
   }
   override fun toString(): String {
-    return "StepEvent(kind=$kind, text=$text)"
+    return "StepEvent(kind=$kind, text=$text, status=$status, reason=$reason)"
   }
 }
 private open class AgentApiPigeonCodec : StandardMessageCodec() {
@@ -356,10 +425,15 @@ private open class AgentApiPigeonCodec : StandardMessageCodec() {
       }
       131.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StartTaskResult.fromList(it)
+          TaskRequest.fromList(it)
         }
       }
       132.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          StartTaskResult.fromList(it)
+        }
+      }
+      133.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
           StepEvent.fromList(it)
         }
@@ -377,12 +451,16 @@ private open class AgentApiPigeonCodec : StandardMessageCodec() {
         stream.write(130)
         writeValue(stream, value.toList())
       }
-      is StartTaskResult -> {
+      is TaskRequest -> {
         stream.write(131)
         writeValue(stream, value.toList())
       }
-      is StepEvent -> {
+      is StartTaskResult -> {
         stream.write(132)
+        writeValue(stream, value.toList())
+      }
+      is StepEvent -> {
+        stream.write(133)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -396,7 +474,7 @@ interface AgentHostApi {
   /** Opens the system Accessibility settings screen. */
   fun openAccessibilitySettings()
   /** Starts a task for a typed or spoken command. */
-  fun startTask(command: String): StartTaskResult
+  fun startTask(request: TaskRequest): StartTaskResult
   /** Stops the running task, if any. */
   fun stopTask()
   /**
@@ -456,9 +534,9 @@ interface AgentHostApi {
         if (api != null) {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
-            val commandArg = args[0] as String
+            val requestArg = args[0] as TaskRequest
             val wrapped: List<Any?> = try {
-              listOf(api.startTask(commandArg))
+              listOf(api.startTask(requestArg))
             } catch (exception: Throwable) {
               AgentApiPigeonUtils.wrapError(exception)
             }

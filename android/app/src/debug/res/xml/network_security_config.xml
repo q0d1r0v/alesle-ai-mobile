@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug builds only: the local API on plain http/ws. A phone reaches the
+  developer's machine through `adb reverse tcp:3000 tcp:3000` (127.0.0.1);
+  the emulator through 10.0.2.2. Everything else stays TLS-only, as in release.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>

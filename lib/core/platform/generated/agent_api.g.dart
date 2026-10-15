@@ -118,11 +118,8 @@ enum StepEventKind {
   /// The agent moved on; `text` says what it is doing now.
   step,
 
-  /// The task ended on its own; `text` is the final status.
+  /// The task is over: `status` says how, `text` is the agent's reply.
   finished,
-
-  /// The user stopped it (app, notification or overlay).
-  stopped,
 }
 
 class AgentStatusMessage {
@@ -166,13 +163,91 @@ class AgentStatusMessage {
   }
 }
 
+/// Everything the Kotlin loop needs to run one command against the API.
+class TaskRequest {
+  TaskRequest({
+    required this.command,
+    required this.apiBaseUrl,
+    required this.accessToken,
+    required this.locale,
+    required this.confirmEverySensitiveAction,
+  });
+
+  String command;
+
+  /// Origin of the API (`AppConfig.apiBaseUrl`); the socket is `/v1/agent/ws` on it.
+  String apiBaseUrl;
+
+  String accessToken;
+
+  /// BCP-47 tag the agent answers in.
+  String locale;
+
+  /// The user's setting: false = a cancellable countdown instead of a question.
+  bool confirmEverySensitiveAction;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      command,
+      apiBaseUrl,
+      accessToken,
+      locale,
+      confirmEverySensitiveAction,
+    ];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static TaskRequest decode(Object result) {
+    result as List<Object?>;
+    return TaskRequest(
+      command: result[0]! as String,
+      apiBaseUrl: result[1]! as String,
+      accessToken: result[2]! as String,
+      locale: result[3]! as String,
+      confirmEverySensitiveAction: result[4]! as bool,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! TaskRequest || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(command, other.command) &&
+        _deepEquals(apiBaseUrl, other.apiBaseUrl) &&
+        _deepEquals(accessToken, other.accessToken) &&
+        _deepEquals(locale, other.locale) &&
+        _deepEquals(
+          confirmEverySensitiveAction,
+          other.confirmEverySensitiveAction,
+        );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'TaskRequest(command: $command, apiBaseUrl: $apiBaseUrl, accessToken: $accessToken, locale: $locale, confirmEverySensitiveAction: $confirmEverySensitiveAction)';
+  }
+}
+
 class StartTaskResult {
   StartTaskResult({required this.started, this.reason});
 
   bool started;
 
   /// Why it did not start, as a snake_case code: `empty_command`,
-  /// `already_running`, `accessibility_off`, `background_start_refused`.
+  /// `already_running`, `accessibility_off`, `background_start_refused`,
+  /// `bad_server_url`.
   String? reason;
 
   List<Object?> _toList() {
@@ -215,14 +290,20 @@ class StartTaskResult {
 }
 
 class StepEvent {
-  StepEvent({required this.kind, this.text});
+  StepEvent({required this.kind, this.text, this.status, this.reason});
 
   StepEventKind kind;
 
   String? text;
 
+  /// For `finished`: done, failed, cannot, stopped, interrupted.
+  String? status;
+
+  /// For `finished`: snake_case code when not done (e.g. `connection_lost`).
+  String? reason;
+
   List<Object?> _toList() {
-    return <Object?>[kind, text];
+    return <Object?>[kind, text, status, reason];
   }
 
   Object encode() {
@@ -234,6 +315,8 @@ class StepEvent {
     return StepEvent(
       kind: result[0]! as StepEventKind,
       text: result[1] as String?,
+      status: result[2] as String?,
+      reason: result[3] as String?,
     );
   }
 
@@ -246,7 +329,10 @@ class StepEvent {
     if (identical(this, other)) {
       return true;
     }
-    return _deepEquals(kind, other.kind) && _deepEquals(text, other.text);
+    return _deepEquals(kind, other.kind) &&
+        _deepEquals(text, other.text) &&
+        _deepEquals(status, other.status) &&
+        _deepEquals(reason, other.reason);
   }
 
   @override
@@ -255,7 +341,7 @@ class StepEvent {
 
   @override
   String toString() {
-    return 'StepEvent(kind: $kind, text: $text)';
+    return 'StepEvent(kind: $kind, text: $text, status: $status, reason: $reason)';
   }
 }
 
@@ -272,11 +358,14 @@ class _PigeonCodec extends StandardMessageCodec {
     } else if (value is AgentStatusMessage) {
       buffer.putUint8(130);
       writeValue(buffer, value.encode());
-    } else if (value is StartTaskResult) {
+    } else if (value is TaskRequest) {
       buffer.putUint8(131);
       writeValue(buffer, value.encode());
-    } else if (value is StepEvent) {
+    } else if (value is StartTaskResult) {
       buffer.putUint8(132);
+      writeValue(buffer, value.encode());
+    } else if (value is StepEvent) {
+      buffer.putUint8(133);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -292,8 +381,10 @@ class _PigeonCodec extends StandardMessageCodec {
       case 130:
         return AgentStatusMessage.decode(readValue(buffer)!);
       case 131:
-        return StartTaskResult.decode(readValue(buffer)!);
+        return TaskRequest.decode(readValue(buffer)!);
       case 132:
+        return StartTaskResult.decode(readValue(buffer)!);
+      case 133:
         return StepEvent.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
@@ -357,7 +448,7 @@ class AgentHostApi {
   }
 
   /// Starts a task for a typed or spoken command.
-  Future<StartTaskResult> startTask(String command) async {
+  Future<StartTaskResult> startTask(TaskRequest request) async {
     final pigeonVar_channelName =
         'dev.flutter.pigeon.alesle_ai.AgentHostApi.startTask$pigeonVar_messageChannelSuffix';
     final pigeonVar_channel = BasicMessageChannel<Object?>(
@@ -366,7 +457,7 @@ class AgentHostApi {
       binaryMessenger: pigeonVar_binaryMessenger,
     );
     final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[command],
+      <Object?>[request],
     );
     final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
 

@@ -5,13 +5,32 @@ void main() {
   AppConfig parse({
     String environment = 'dev',
     String apiBaseUrl = 'http://10.0.2.2:3000',
-  }) => AppConfig.parse(environment: environment, apiBaseUrl: apiBaseUrl);
+    String devAuthToken = '',
+  }) => AppConfig.parse(
+    environment: environment,
+    apiBaseUrl: apiBaseUrl,
+    devAuthToken: devAuthToken,
+  );
 
   group('AppConfig.parse', () {
     test('accepts a valid dev configuration', () {
       final AppConfig config = parse();
       expect(config.environment, AppEnvironment.dev);
       expect(config.apiBaseUrl, 'http://10.0.2.2:3000');
+    });
+
+    test('takes the development token in dev builds only', () {
+      expect(parse().devAuthToken, isNull);
+      expect(parse(devAuthToken: '  ').devAuthToken, isNull);
+      expect(parse(devAuthToken: ' abc ').devAuthToken, 'abc');
+      expect(
+        () => parse(
+          environment: 'staging',
+          apiBaseUrl: 'https://staging.alesle.ai',
+          devAuthToken: 'abc',
+        ),
+        throwsA(isA<AppConfigError>()),
+      );
     });
 
     test('strips a trailing slash from the origin', () {

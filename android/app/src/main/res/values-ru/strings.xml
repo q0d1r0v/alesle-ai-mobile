@@ -5,4 +5,13 @@
     <string name="notification_channel_agent">Задачи агента</string>
     <string name="notification_agent_running">Alesle работает</string>
     <string name="notification_agent_stop">Остановить</string>
+    <string name="overlay_stop">Остановить</string>
+    <string name="overlay_cancel">Отмена</string>
+    <string name="overlay_confirm">Подтвердить</string>
+    <plurals name="overlay_countdown">
+        <item quantity="one">Выполню через %1$d секунду</item>
+        <item quantity="few">Выполню через %1$d секунды</item>
+        <item quantity="many">Выполню через %1$d секунд</item>
+        <item quantity="other">Выполню через %1$d секунды</item>
+    </plurals>
 </resources>

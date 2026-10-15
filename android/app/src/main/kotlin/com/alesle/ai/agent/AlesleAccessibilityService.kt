@@ -4,6 +4,7 @@ import android.accessibilityservice.AccessibilityService
 import android.content.res.Configuration
 import android.os.Handler
 import android.os.HandlerThread
+import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityWindowInfo
 import com.alesle.ai.agent.action.DeviceControl
@@ -36,6 +37,11 @@ class AlesleAccessibilityService :
 
     private var gestureThread: HandlerThread? = null
 
+    /** `SystemClock.uptimeMillis` of the last accessibility event: how the loop knows the screen settled. */
+    @Volatile
+    var lastEventAt: Long = 0L
+        private set
+
     /** Eyes and hands for the action executor; null until the system connects the service. */
     @Volatile
     override var deviceControl: DeviceControl? = null
@@ -66,7 +72,9 @@ class AlesleAccessibilityService :
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+        if (event == null) return
+        lastEventAt = SystemClock.uptimeMillis()
+        if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         val pkg = event.packageName?.toString() ?: return
         val cls = event.className?.toString() ?: return
         foreground = pkg to cls

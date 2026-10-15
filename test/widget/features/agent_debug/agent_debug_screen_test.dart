@@ -43,8 +43,8 @@ final class _FakeConsole implements AgentConsoleRepository {
   }
 
   @override
-  Future<TaskStart> startTask(String command) {
-    commands.add(command);
+  Future<TaskStart> startTask(TaskCommand command) {
+    commands.add(command.text);
     return _answer(start);
   }
 
@@ -162,7 +162,9 @@ void main() {
     expect(console.commands, <String>['salom']);
     expect(find.text('task started'), findsOneWidget);
 
-    console.controller.add(const TaskEvent(TaskEventKind.started, 'salom'));
+    console.controller.add(
+      const TaskEvent(TaskEventKind.started, text: 'salom'),
+    );
     await tester.pump();
     expect(find.text('started: salom'), findsOneWidget);
 
