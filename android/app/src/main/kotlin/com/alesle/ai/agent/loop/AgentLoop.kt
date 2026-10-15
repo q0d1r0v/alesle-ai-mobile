@@ -1,6 +1,7 @@
 package com.alesle.ai.agent.loop
 
 import com.alesle.ai.agent.action.ActionResult
+import com.alesle.ai.agent.action.AgentAction
 import com.alesle.ai.agent.action.Choice
 import com.alesle.ai.agent.protocol.ActionDecodeException
 import com.alesle.ai.agent.protocol.ActionJson
@@ -239,11 +240,24 @@ class AgentLoop(
         action: DecodedAction,
     ) {
         if (ended.get()) return
-        val result = device.execute(action, lastScreen)
+        // A gesture lands on whatever window is on top: with the overlay there,
+        // a tap on an app's top bar would press our own STOP (eval, 2026-10-16).
+        val result =
+            if (touchesScreen(action)) {
+                ui.concealed { device.execute(action, lastScreen) }
+            } else {
+                device.execute(action, lastScreen)
+            }
         if (ended.get()) return
         device.settle()
         finishStep(stepId, result)
     }
+
+    /** Actions that may fall back to a gesture; waits, global keys and intents never touch the screen. */
+    private fun touchesScreen(action: DecodedAction): Boolean =
+        action is DecodedAction.Screen &&
+            action.action !is AgentAction.Wait &&
+            action.action !is AgentAction.Global
 
     private fun finishStep(
         stepId: String,

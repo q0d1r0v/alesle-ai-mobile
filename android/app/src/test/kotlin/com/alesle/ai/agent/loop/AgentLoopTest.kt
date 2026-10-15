@@ -133,6 +133,19 @@ class AgentLoopTest {
     }
 
     @Test
+    fun `hides the overlay while an action may touch the screen, not for keys, waits or intents`() {
+        accepted()
+        sockets.receive(act("s1", """{"type":"tap","nodeId":0}"""))
+        assertEquals(1, ui.concealments)
+        sockets.receive(act("s2", """{"type":"back"}"""))
+        sockets.receive(act("s3", """{"type":"wait","ms":100}"""))
+        sockets.receive(act("s4", """{"type":"intent","kind":"web_search","query":"x"}"""))
+        assertEquals(1, ui.concealments)
+        sockets.receive(act("s5", """{"type":"scroll","direction":"down"}"""))
+        assertEquals(2, ui.concealments)
+    }
+
+    @Test
     fun `sends a null snapshot when nothing is readable`() {
         accepted()
         device.screen = null
