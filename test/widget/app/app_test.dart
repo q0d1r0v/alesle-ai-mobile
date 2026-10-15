@@ -1,6 +1,9 @@
 import 'package:alesle_ai/app/app.dart';
 import 'package:alesle_ai/app/bootstrap/core_providers.dart';
 import 'package:alesle_ai/core/config/app_config.dart';
+import 'package:alesle_ai/features/agent_debug/data/agent_debug_data_providers.dart';
+import 'package:alesle_ai/features/agent_debug/domain/agent_console.dart';
+import 'package:alesle_ai/features/agent_debug/presentation/agent_debug_screen.dart';
 import 'package:alesle_ai/features/home/presentation/home_providers.dart';
 import 'package:alesle_ai/features/home/presentation/home_screen.dart';
 import 'package:dio/dio.dart';
@@ -62,6 +65,31 @@ void main() {
     expect(find.text('Работает'), findsOneWidget);
   });
 
+  testWidgets('a long press on the title opens the agent console (debug)', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appConfigProvider.overrideWithValue(config),
+          healthRepositoryProvider.overrideWithValue(
+            FakeHealthRepository(() async => readyHealth),
+          ),
+          agentRepositoryProvider.overrideWithValue(
+            FakeAgentRepository(() async => disabledAgent),
+          ),
+          agentConsoleRepositoryProvider.overrideWithValue(_SilentConsole()),
+        ],
+        child: const AlesleApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.longPress(find.byKey(const Key('home-title')));
+    await tester.pumpAndSettle();
+    expect(find.byType(AgentDebugScreen), findsOneWidget);
+  });
+
   test('appConfigProvider must be overridden', () {
     final ProviderContainer container = ProviderContainer();
     addTearDown(container.dispose);
@@ -82,4 +110,22 @@ void main() {
       expect(container.read(agentRepositoryProvider), isNotNull);
     },
   );
+}
+
+final class _SilentConsole implements AgentConsoleRepository {
+  @override
+  Stream<TaskEvent> get events => const Stream<TaskEvent>.empty();
+
+  @override
+  Future<String> execute(String actionJson) async => '{}';
+
+  @override
+  Future<String> snapshot() async => '{}';
+
+  @override
+  Future<TaskStart> startTask(String command) async =>
+      const TaskStart(started: true);
+
+  @override
+  Future<void> stopTask() async {}
 }

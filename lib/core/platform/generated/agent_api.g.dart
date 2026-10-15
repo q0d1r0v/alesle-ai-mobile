@@ -34,6 +34,20 @@ Object? _extractReplyValueOrThrow(
   return replyList.firstOrNull;
 }
 
+List<Object?> wrapResponse({
+  Object? result,
+  PlatformException? error,
+  bool empty = false,
+}) {
+  if (empty) {
+    return <Object?>[];
+  }
+  if (error == null) {
+    return <Object?>[result];
+  }
+  return <Object?>[error.code, error.message, error.details];
+}
+
 bool _deepEquals(Object? a, Object? b) {
   if (identical(a, b)) {
     return true;
@@ -97,6 +111,20 @@ int _deepHash(Object? value) {
   return value.hashCode;
 }
 
+enum StepEventKind {
+  /// A task began; `text` is the command.
+  started,
+
+  /// The agent moved on; `text` says what it is doing now.
+  step,
+
+  /// The task ended on its own; `text` is the final status.
+  finished,
+
+  /// The user stopped it (app, notification or overlay).
+  stopped,
+}
+
 class AgentStatusMessage {
   AgentStatusMessage({required this.accessibilityEnabled});
 
@@ -138,6 +166,99 @@ class AgentStatusMessage {
   }
 }
 
+class StartTaskResult {
+  StartTaskResult({required this.started, this.reason});
+
+  bool started;
+
+  /// Why it did not start, as a snake_case code: `empty_command`,
+  /// `already_running`, `accessibility_off`, `background_start_refused`.
+  String? reason;
+
+  List<Object?> _toList() {
+    return <Object?>[started, reason];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static StartTaskResult decode(Object result) {
+    result as List<Object?>;
+    return StartTaskResult(
+      started: result[0]! as bool,
+      reason: result[1] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! StartTaskResult || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(started, other.started) &&
+        _deepEquals(reason, other.reason);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'StartTaskResult(started: $started, reason: $reason)';
+  }
+}
+
+class StepEvent {
+  StepEvent({required this.kind, this.text});
+
+  StepEventKind kind;
+
+  String? text;
+
+  List<Object?> _toList() {
+    return <Object?>[kind, text];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static StepEvent decode(Object result) {
+    result as List<Object?>;
+    return StepEvent(
+      kind: result[0]! as StepEventKind,
+      text: result[1] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! StepEvent || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(kind, other.kind) && _deepEquals(text, other.text);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'StepEvent(kind: $kind, text: $text)';
+  }
+}
+
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
   @override
@@ -145,8 +266,17 @@ class _PigeonCodec extends StandardMessageCodec {
     if (value is int) {
       buffer.putUint8(4);
       buffer.putInt64(value);
-    } else if (value is AgentStatusMessage) {
+    } else if (value is StepEventKind) {
       buffer.putUint8(129);
+      writeValue(buffer, value.index);
+    } else if (value is AgentStatusMessage) {
+      buffer.putUint8(130);
+      writeValue(buffer, value.encode());
+    } else if (value is StartTaskResult) {
+      buffer.putUint8(131);
+      writeValue(buffer, value.encode());
+    } else if (value is StepEvent) {
+      buffer.putUint8(132);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -157,7 +287,14 @@ class _PigeonCodec extends StandardMessageCodec {
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
       case 129:
+        final value = readValue(buffer) as int?;
+        return value == null ? null : StepEventKind.values[value];
+      case 130:
         return AgentStatusMessage.decode(readValue(buffer)!);
+      case 131:
+        return StartTaskResult.decode(readValue(buffer)!);
+      case 132:
+        return StepEvent.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
     }
@@ -217,5 +354,131 @@ class AgentHostApi {
       pigeonVar_channelName,
       isNullValid: true,
     );
+  }
+
+  /// Starts a task for a typed or spoken command.
+  Future<StartTaskResult> startTask(String command) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.AgentHostApi.startTask$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[command],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as StartTaskResult;
+  }
+
+  /// Stops the running task, if any.
+  Future<void> stopTask() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.AgentHostApi.stopTask$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  /// Debug builds only (fails with `debug_only` otherwise): the current
+  /// screen as snapshot JSON, with `captureMs`.
+  Future<String> debugSnapshot() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.AgentHostApi.debugSnapshot$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as String;
+  }
+
+  /// Debug builds only: runs one action (ActionJson wire format) on the
+  /// screen of the last [debugSnapshot] and returns the result JSON.
+  Future<String> debugExecute(String actionJson) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.AgentHostApi.debugExecute$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[actionJson],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as String;
+  }
+}
+
+abstract class AgentEventsApi {
+  static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
+
+  void onStepEvent(StepEvent event);
+
+  static void setUp(
+    AgentEventsApi? api, {
+    BinaryMessenger? binaryMessenger,
+    String messageChannelSuffix = '',
+  }) {
+    messageChannelSuffix = messageChannelSuffix.isNotEmpty
+        ? '.$messageChannelSuffix'
+        : '';
+    {
+      final pigeonVar_channel = BasicMessageChannel<Object?>(
+        'dev.flutter.pigeon.alesle_ai.AgentEventsApi.onStepEvent$messageChannelSuffix',
+        pigeonChannelCodec,
+        binaryMessenger: binaryMessenger,
+      );
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          final List<Object?> args = message! as List<Object?>;
+          final StepEvent arg_event = args[0]! as StepEvent;
+          try {
+            api.onStepEvent(arg_event);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          } catch (e) {
+            return wrapResponse(
+              error: PlatformException(code: 'error', message: e.toString()),
+            );
+          }
+        });
+      }
+    }
   }
 }

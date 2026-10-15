@@ -13,7 +13,16 @@ import io.flutter.plugin.common.StandardMethodCodec
 import io.flutter.plugin.common.StandardMessageCodec
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 private object AgentApiPigeonUtils {
+
+  fun createConnectionError(channelName: String): FlutterError {
+    return FlutterError("channel-error",  "Unable to establish connection on channel: '$channelName'.", "")  }
 
   fun wrapResult(result: Any?): List<Any?> {
     return listOf(result)
@@ -192,6 +201,23 @@ class FlutterError (
   val details: Any? = null
 ) : RuntimeException()
 
+enum class StepEventKind(val raw: Int) {
+  /** A task began; `text` is the command. */
+  STARTED(0),
+  /** The agent moved on; `text` says what it is doing now. */
+  STEP(1),
+  /** The task ended on its own; `text` is the final status. */
+  FINISHED(2),
+  /** The user stopped it (app, notification or overlay). */
+  STOPPED(3);
+
+  companion object {
+    fun ofRaw(raw: Int): StepEventKind? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
 /** Generated class from Pigeon that represents data sent in messages. */
 data class AgentStatusMessage (
   /** Whether the user has switched on Alesle's AccessibilityService. */
@@ -229,12 +255,113 @@ data class AgentStatusMessage (
     return "AgentStatusMessage(accessibilityEnabled=$accessibilityEnabled)"
   }
 }
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class StartTaskResult (
+  val started: Boolean,
+  /**
+   * Why it did not start, as a snake_case code: `empty_command`,
+   * `already_running`, `accessibility_off`, `background_start_refused`.
+   */
+  val reason: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): StartTaskResult {
+      val started = pigeonVar_list[0] as Boolean
+      val reason = pigeonVar_list[1] as String?
+      return StartTaskResult(started, reason)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      started,
+      reason,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as StartTaskResult
+    return AgentApiPigeonUtils.deepEquals(this.started, other.started) && AgentApiPigeonUtils.deepEquals(this.reason, other.reason)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.started)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.reason)
+    return result
+  }
+  override fun toString(): String {
+    return "StartTaskResult(started=$started, reason=$reason)"
+  }
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class StepEvent (
+  val kind: StepEventKind,
+  val text: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): StepEvent {
+      val kind = pigeonVar_list[0] as StepEventKind
+      val text = pigeonVar_list[1] as String?
+      return StepEvent(kind, text)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      kind,
+      text,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as StepEvent
+    return AgentApiPigeonUtils.deepEquals(this.kind, other.kind) && AgentApiPigeonUtils.deepEquals(this.text, other.text)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.kind)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.text)
+    return result
+  }
+  override fun toString(): String {
+    return "StepEvent(kind=$kind, text=$text)"
+  }
+}
 private open class AgentApiPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
       129.toByte() -> {
+        return (readValue(buffer) as Long?)?.let {
+          StepEventKind.ofRaw(it.toInt())
+        }
+      }
+      130.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
           AgentStatusMessage.fromList(it)
+        }
+      }
+      131.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          StartTaskResult.fromList(it)
+        }
+      }
+      132.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          StepEvent.fromList(it)
         }
       }
       else -> super.readValueOfType(type, buffer)
@@ -242,8 +369,20 @@ private open class AgentApiPigeonCodec : StandardMessageCodec() {
   }
   override fun writeValue(stream: ByteArrayOutputStream, value: Any?)   {
     when (value) {
-      is AgentStatusMessage -> {
+      is StepEventKind -> {
         stream.write(129)
+        writeValue(stream, value.raw.toLong())
+      }
+      is AgentStatusMessage -> {
+        stream.write(130)
+        writeValue(stream, value.toList())
+      }
+      is StartTaskResult -> {
+        stream.write(131)
+        writeValue(stream, value.toList())
+      }
+      is StepEvent -> {
+        stream.write(132)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -256,6 +395,20 @@ interface AgentHostApi {
   fun getStatus(): AgentStatusMessage
   /** Opens the system Accessibility settings screen. */
   fun openAccessibilitySettings()
+  /** Starts a task for a typed or spoken command. */
+  fun startTask(command: String): StartTaskResult
+  /** Stops the running task, if any. */
+  fun stopTask()
+  /**
+   * Debug builds only (fails with `debug_only` otherwise): the current
+   * screen as snapshot JSON, with `captureMs`.
+   */
+  fun debugSnapshot(): String
+  /**
+   * Debug builds only: runs one action (ActionJson wire format) on the
+   * screen of the last [debugSnapshot] and returns the result JSON.
+   */
+  fun debugExecute(actionJson: String): String
 
   companion object {
     /** The codec used by AgentHostApi. */
@@ -266,6 +419,7 @@ interface AgentHostApi {
     @JvmOverloads
     fun setUp(binaryMessenger: BinaryMessenger, api: AgentHostApi?, messageChannelSuffix: String = "") {
       val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+      val taskQueue = binaryMessenger.makeBackgroundTaskQueue()
       run {
         val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.AgentHostApi.getStatus$separatedMessageChannelSuffix", codec)
         if (api != null) {
@@ -296,6 +450,99 @@ interface AgentHostApi {
         } else {
           channel.setMessageHandler(null)
         }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.AgentHostApi.startTask$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val commandArg = args[0] as String
+            val wrapped: List<Any?> = try {
+              listOf(api.startTask(commandArg))
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.AgentHostApi.stopTask$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.stopTask()
+              listOf(null)
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.AgentHostApi.debugSnapshot$separatedMessageChannelSuffix", codec, taskQueue)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              listOf(api.debugSnapshot())
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.AgentHostApi.debugExecute$separatedMessageChannelSuffix", codec, taskQueue)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val actionJsonArg = args[0] as String
+            val wrapped: List<Any?> = try {
+              listOf(api.debugExecute(actionJsonArg))
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+    }
+  }
+}
+/** Generated class from Pigeon that represents Flutter messages that can be called from Kotlin. */
+class AgentEventsApi(private val binaryMessenger: BinaryMessenger, private val messageChannelSuffix: String = "") {
+  companion object {
+    /** The codec used by AgentEventsApi. */
+    val codec: MessageCodec<Any?> by lazy {
+      AgentApiPigeonCodec()
+    }
+  }
+  suspend fun onStepEvent(eventArg: StepEvent)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    return suspendCancellableCoroutine { continuation ->
+      val channelName = "dev.flutter.pigeon.alesle_ai.AgentEventsApi.onStepEvent$separatedMessageChannelSuffix"
+      val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+      channel.send(listOf(eventArg)) {
+        if (it is List<*>) {
+          if (it.size > 1) {
+            continuation.resumeWithException(FlutterError(it[0] as String, it[1] as String, it[2] as String?))
+          } else {
+            continuation.resume(Unit)
+          }
+        } else {
+          continuation.resumeWithException(AgentApiPigeonUtils.createConnectionError(channelName))
+        } 
       }
     }
   }

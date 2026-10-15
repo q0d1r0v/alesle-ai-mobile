@@ -1,9 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/l10n/l10n.dart';
+import '../../../app/router/app_router.dart';
 import '../domain/agent_status.dart';
 import '../domain/server_health.dart';
 import 'failure_message.dart';
@@ -40,7 +43,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.appTitle)),
+      appBar: AppBar(
+        // Debug builds: a long press opens the agent console.
+        title: GestureDetector(
+          key: const Key('home-title'),
+          onLongPress: kDebugMode
+              ? () => unawaited(context.push(AppRoutes.agentDebug))
+              : null,
+          child: Text(context.l10n.appTitle),
+        ),
+      ),
       body: RefreshIndicator(
         onRefresh: () async {
           ref

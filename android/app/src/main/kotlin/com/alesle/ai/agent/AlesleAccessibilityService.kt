@@ -25,7 +25,9 @@ import com.alesle.ai.agent.snapshot.SnapshotContext
  * Reads the screen only when asked ([capture]); events are used just to
  * remember which window class is in front. No screen content is kept.
  */
-class AlesleAccessibilityService : AccessibilityService() {
+class AlesleAccessibilityService :
+    AccessibilityService(),
+    AgentRuntime {
     private val snapshotBuilder = SnapshotBuilder()
 
     /** Package and class of the last window-state change: the "activity". */
@@ -36,12 +38,12 @@ class AlesleAccessibilityService : AccessibilityService() {
 
     /** Eyes and hands for the action executor; null until the system connects the service. */
     @Volatile
-    var deviceControl: DeviceControl? = null
+    override var deviceControl: DeviceControl? = null
         private set
 
     /** System intents (calls, alarms, searches…); null until connected. */
     @Volatile
-    var intentLauncher: IntentLauncher? = null
+    override var intentLauncher: IntentLauncher? = null
         private set
 
     override fun onServiceConnected() {
@@ -74,8 +76,7 @@ class AlesleAccessibilityService : AccessibilityService() {
         // Nothing in flight to cancel yet.
     }
 
-    /** The current screen, or null when no window is readable (e.g. lock screen). */
-    fun capture(): CapturedScreen? {
+    override fun capture(): CapturedScreen? {
         val root = rootInActiveWindow ?: return null
         val packageName = root.packageName?.toString() ?: return null
         val metrics = resources.displayMetrics

@@ -54,8 +54,12 @@ patrol test --dart-define-from-file=env/dev.json
 
 ## Try the agent runtime on a phone (debug builds)
 
-Until the agent loop exists, a debug-only receiver lets you take snapshots and
-run single actions over adb. Answers come back in the `am broadcast` output;
+On the phone: long-press the "Alesle AI" title on the home screen to open the
+agent console (snapshot, actions with a delay so you can switch apps, start
+and stop a task). From a computer:
+
+Until the agent loop exists, a debug-only receiver also takes snapshots and
+runs single actions over adb. Answers come back in the `am broadcast` output;
 nothing is written to disk or logs. Release builds do not contain it.
 
 ```bash
@@ -71,7 +75,8 @@ adb shell am broadcast -n $R --es cmd action --es json "'{\"type\":\"tap\",\"nod
 adb shell am broadcast -n $R --es cmd action --es json "'{\"type\":\"launch_app\",\"name\":\"Calculator\"}'"
 ```
 
-Node ids refer to the last `snapshot`. The action format is documented in
+Other commands: `task_start --es step '…'`, `task_stop`, `status`. Node ids
+refer to the last `snapshot`. The action format is documented in
 `android/app/src/main/kotlin/com/alesle/ai/agent/protocol/ActionJson.kt`.
 
 Installing over adb skips Android 13+ "Restricted settings". Before a release,
