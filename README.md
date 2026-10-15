@@ -30,6 +30,22 @@ One build, `com.alesle.ai`, distributed only as a signed APK from our website �
 no Google Play ([ADR 0005](../alesle-ai-api/docs/adr/0005-website-only-distribution.md)).
 "Confirm every sensitive action" is a user setting (on by default), not a build flavor.
 
+## Release signing
+
+Release APKs are signed with the release key (`alias alesle`), kept outside the
+repository with an offline backup. Losing it means installed apps can never
+be updated. `android/key.properties` (git-ignored) points Gradle at it:
+
+```properties
+storeFile=/home/<you>/keys/alesle-release.jks
+storePassword=…
+keyAlias=alesle
+keyPassword=…
+```
+
+Without the file, `flutter build apk --release` fails on purpose; debug builds
+do not need it.
+
 ## Code generation
 
 ```bash

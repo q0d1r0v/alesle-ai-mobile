@@ -1,9 +1,19 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
     id("org.jlleitschuh.gradle.ktlint")
 }
+
+// Release signing key: android/key.properties (git-ignored; README "Release signing").
+// The keystore itself lives outside the repository.
+val releaseKey =
+    Properties().apply {
+        val file = rootProject.file("key.properties")
+        if (file.exists()) file.inputStream().use(::load)
+    }
 
 android {
     namespace = "com.alesle.ai"
@@ -30,10 +40,21 @@ android {
         testInstrumentationRunnerArguments["clearPackageData"] = "true"
     }
 
+    signingConfigs {
+        if (!releaseKey.isEmpty) {
+            create("release") {
+                storeFile = file(releaseKey.getProperty("storeFile"))
+                storePassword = releaseKey.getProperty("storePassword")
+                keyAlias = releaseKey.getProperty("keyAlias")
+                keyPassword = releaseKey.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO(release): replace with the release keystore before the first public APK.
-            signingConfig = signingConfigs.getByName("debug")
+            // Never the debug key: an APK signed with it could not be updated by the real one.
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 
@@ -83,6 +104,14 @@ dependencies {
 
 flutter {
     source = "../.."
+}
+
+// A release build without the key fails here instead of producing an unsigned APK.
+gradle.taskGraph.whenReady {
+    val buildsRelease = allTasks.any { it.name in setOf("assembleRelease", "bundleRelease", "packageRelease") }
+    if (buildsRelease && releaseKey.isEmpty) {
+        throw GradleException("Release signing needs android/key.properties (see README, \"Release signing\").")
+    }
 }
 
 // Robolectric unit tests read merged assets (isIncludeAndroidResources), and
