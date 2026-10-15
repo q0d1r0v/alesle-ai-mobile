@@ -83,12 +83,14 @@ class AccessibilityUiNodeTest {
         assertTrue(node.click())
         assertTrue(node.longClick())
         assertTrue(node.imeEnter())
+        assertTrue(node.focus())
         val args = slot<Bundle>()
         assertTrue(node.setText("Salom"))
         verify {
             info.performAction(AccessibilityNodeInfo.ACTION_CLICK)
             info.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK)
             info.performAction(AccessibilityAction.ACTION_IME_ENTER.id)
+            info.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
             info.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, capture(args))
         }
         assertEquals("Salom", args.captured.getCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE))

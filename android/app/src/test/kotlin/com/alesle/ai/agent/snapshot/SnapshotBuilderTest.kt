@@ -122,6 +122,13 @@ class SnapshotBuilderTest {
     }
 
     @Test
+    fun `treats an empty view id as none`() {
+        // Seen on Flutter screens.
+        val nodes = build(screenRoot(FakeNode(text = "A", viewId = ""), FakeNode(text = "B", viewId = "pkg:id/"))).nodes
+        assertEquals(listOf(null, null), nodes.map { it.viewId })
+    }
+
+    @Test
     fun `reports checked state only for checkable nodes`() {
         val nodes =
             build(

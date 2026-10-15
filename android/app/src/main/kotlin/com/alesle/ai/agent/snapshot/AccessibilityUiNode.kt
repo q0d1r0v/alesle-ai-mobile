@@ -50,6 +50,8 @@ class AccessibilityUiNode(
 
     override fun longClick(): Boolean = info.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK)
 
+    override fun focus(): Boolean = info.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
+
     override fun setText(text: String): Boolean {
         val args = Bundle().apply { putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text) }
         return info.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)

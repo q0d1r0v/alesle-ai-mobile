@@ -111,7 +111,8 @@ class SnapshotBuilder(
             role = roleOf(node),
             text = if (node.isPassword && text != null) PASSWORD_MASK else text,
             desc = desc,
-            viewId = node.viewId?.substringAfter(":id/"),
+            // Flutter reports an empty id; that is no id.
+            viewId = node.viewId?.substringAfter(":id/")?.takeIf { it.isNotBlank() },
             bounds = node.bounds,
             clickable = node.isClickable || node.isLongClickable,
             editable = node.isEditable,

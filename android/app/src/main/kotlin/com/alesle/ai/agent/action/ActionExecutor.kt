@@ -73,9 +73,25 @@ class ActionExecutor(
         if (node.isPassword) return ActionResult.blocked("password_field")
         if (!node.isEditable) return ActionResult.error("not_editable")
         if (!node.isEnabled) return ActionResult.blocked("node_disabled")
+        focus(node)
         if (!node.setText(action.text)) return ActionResult.error("set_text_failed")
         if (action.submit && !node.imeEnter()) return ActionResult.error("submit_failed")
         return ActionResult.OK
+    }
+
+    /**
+     * Tap the field first, as a person would. Flutter ignores set-text on an
+     * unfocused field while its Android bridge still reports success and
+     * shows the new text (seen on a real phone), so wait for the focus.
+     */
+    private fun focus(node: UiNode) {
+        if (node.isFocused) return
+        if (!node.click() && !node.focus()) return
+        val deadline = now() + FOCUS_WAIT_MS
+        while (now() < deadline) {
+            if (node.refresh() && node.isFocused) return
+            sleep(POLL_MS)
+        }
     }
 
     private fun scroll(
@@ -125,6 +141,7 @@ class ActionExecutor(
     companion object {
         const val MAX_WAIT_MS = 3_000L
         const val POLL_MS = 150L
+        const val FOCUS_WAIT_MS = 600L
         const val TAP_MS = 50L
         const val LONG_PRESS_MS = 700L
         const val SWIPE_MS = 300L

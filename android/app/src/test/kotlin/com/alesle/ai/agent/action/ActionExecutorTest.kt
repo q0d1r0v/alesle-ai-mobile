@@ -155,6 +155,39 @@ class ActionExecutorTest {
     }
 
     @Test
+    fun `focuses the field before typing, like a tap`() {
+        val field = ActionNode(isEditable = true, isClickable = true)
+        run(AgentAction.TypeText(0, "salom"), capture(field))
+        assertEquals(1, field.clicks)
+        assertEquals(listOf("salom"), field.typed)
+
+        // Already focused: no extra tap.
+        run(AgentAction.TypeText(0, "yana"), capture(field))
+        assertEquals(1, field.clicks)
+    }
+
+    @Test
+    fun `falls back to input focus when the field takes no click`() {
+        val field = ActionNode(isEditable = true, clickResult = false, focusResult = true)
+        assertEquals(ActionResult.OK, run(AgentAction.TypeText(0, "salom"), capture(field)))
+        assertEquals(1, field.focuses)
+        assertTrue(sleeps.isEmpty())
+    }
+
+    @Test
+    fun `waits briefly for focus and types anyway`() {
+        val slow = ActionNode(isEditable = true, focusOnClick = false)
+        assertEquals(ActionResult.OK, run(AgentAction.TypeText(0, "salom"), capture(slow)))
+        assertEquals(ActionExecutor.FOCUS_WAIT_MS, sleeps.sum())
+        assertEquals(listOf("salom"), slow.typed)
+
+        sleeps.clear()
+        val stubborn = ActionNode(isEditable = true, clickResult = false)
+        assertEquals(ActionResult.OK, run(AgentAction.TypeText(0, "salom"), capture(stubborn)))
+        assertTrue(sleeps.isEmpty())
+    }
+
+    @Test
     fun `never types into a password field`() {
         val password = ActionNode(isEditable = true, isPassword = true)
         assertEquals(ActionResult.blocked("password_field"), run(AgentAction.TypeText(0, "secret"), capture(password)))
@@ -341,12 +374,15 @@ private class ActionNode(
     private val setTextResult: Boolean = true,
     private val imeResult: Boolean = true,
     private val scrollResult: Boolean = true,
+    focused: Boolean = false,
+    private val focusOnClick: Boolean = true,
+    private val focusResult: Boolean = false,
 ) : UiNode {
     override val contentDescription: String? = null
     override val hintText: String? = null
     override val isShowingHintText = false
     override val isVisibleToUser = true
-    override val isFocused = false
+    override var isFocused = focused
     override val isCheckable = false
     override val isChecked = false
 
@@ -358,9 +394,18 @@ private class ActionNode(
 
     override fun refresh() = alive
 
+    var focuses = 0
+
     override fun click(): Boolean {
         clicks++
+        if (clickResult && focusOnClick) isFocused = true
         return clickResult
+    }
+
+    override fun focus(): Boolean {
+        focuses++
+        if (focusResult) isFocused = true
+        return focusResult
     }
 
     override fun longClick(): Boolean {

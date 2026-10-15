@@ -59,6 +59,9 @@ interface UiNode {
 
     fun longClick(): Boolean = false
 
+    /** Gives the node input focus. */
+    fun focus(): Boolean = false
+
     fun setText(text: String): Boolean = false
 
     /** Presses the keyboard's action key (send, search, done…) for this field. */
