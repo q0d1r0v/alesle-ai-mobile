@@ -230,4 +230,36 @@ class AgentOverlayTest {
         overlay.hide()
         idle()
     }
+
+    @Test
+    fun `a refused window never crashes, and nothing unseen is approved`() {
+        val refusing =
+            mockk<WindowManager>(relaxed = true).also { wm ->
+                every { wm.addView(any(), any()) } throws WindowManager.BadTokenException("token null is not valid")
+            }
+        val dead = AgentOverlay(context, onStop = {}, windowManager = refusing, main = Handler(Looper.getMainLooper()), sleepFor = {})
+        dead.showStep("Telegram ochilmoqda")
+        dead.showStep("Xabar yozilmoqda")
+        idle()
+
+        val approvals = mutableListOf<Boolean>()
+        dead.confirm(Confirmation("Onamga yuborilsinmi?", "Salom", always = false), countdown = true) { approvals += it }
+        val picks = mutableListOf<String?>()
+        dead.ask("Qaysi biri?", listOf(Choice("c1", "Aziz")), answer = { picks += it })
+        idle()
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(5))
+        assertEquals(listOf(false), approvals)
+        assertEquals(listOf<String?>(null), picks)
+        dead.hide()
+        idle()
+    }
+
+    @Test
+    fun `a window the system already dropped is removed quietly`() {
+        every { windowManager.removeViewImmediate(any()) } throws IllegalArgumentException("not attached")
+        overlay.showStep("Telegram ochilmoqda")
+        idle()
+        overlay.hide()
+        idle()
+    }
 }

@@ -13,6 +13,7 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.os.Looper
 import android.text.TextUtils
+import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
@@ -55,9 +56,13 @@ class AgentOverlay(
     private var sheet: View? = null
     private var countdown: Runnable? = null
 
+    /** The system refused a window once; it will not take more this task. */
+    private var refused = false
+
     override fun showStep(say: String) {
         main.post {
-            if (glow == null) glow = GlowView(context).also { add(it, fullScreen(touchable = false)) }
+            if (refused) return@post
+            if (glow == null) glow = GlowView(context).takeIf { add(it, fullScreen(touchable = false)) }
             val text = pillText
             if (text == null) buildPill(say) else text.text = say
         }
@@ -145,15 +150,18 @@ class AgentOverlay(
         // The window spans the width; the card floats 8 dp from the edges like the design's glass sheet.
         val frame = FrameLayout(context).apply { setPadding(dp(8), 0, dp(8), 0) }
         frame.addView(row, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        pill = frame
-        pillText = text
-        add(
-            frame,
-            params(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, focusable = false).apply {
-                gravity = Gravity.TOP
-                y = dp(TOP_INSET_DP)
-            },
-        )
+        val shown =
+            add(
+                frame,
+                params(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, focusable = false).apply {
+                    gravity = Gravity.TOP
+                    y = dp(TOP_INSET_DP)
+                },
+            )
+        if (shown) {
+            pill = frame
+            pillText = text
+        }
     }
 
     // ── Sheets ──────────────────────────────────────────────────────────────
@@ -195,7 +203,8 @@ class AgentOverlay(
                 null
             }
         // Open first: opening closes any previous sheet and its timer.
-        openSheet(card)
+        // Unseen, nothing is approved: a question nobody saw is a "no".
+        if (!openSheet(card)) return answer(false)
         note?.let { startCountdown(it) { finishSheet { answer(true) } } }
     }
 
@@ -236,7 +245,7 @@ class AgentOverlay(
             capsule(context.getString(R.string.overlay_cancel), filled = false) { finishSheet { answer(null) } },
             centered(ViewGroup.LayoutParams.MATCH_PARENT, dp(52), top = 14),
         )
-        openSheet(card)
+        if (!openSheet(card)) answer(null)
     }
 
     private fun startCountdown(
@@ -260,8 +269,10 @@ class AgentOverlay(
         tick.run()
     }
 
-    private fun openSheet(card: LinearLayout) {
+    /** False when the sheet could not be shown. */
+    private fun openSheet(card: LinearLayout): Boolean {
         closeSheet()
+        if (refused) return false
         // A dimmed backdrop takes the touches: the app below must not be tapped while we ask.
         val backdrop =
             FrameLayout(context).apply {
@@ -274,8 +285,9 @@ class AgentOverlay(
                 setMargins(dp(8), 0, dp(8), dp(8))
             },
         )
+        if (!add(backdrop, fullScreen(touchable = true))) return false
         sheet = backdrop
-        add(backdrop, fullScreen(touchable = true))
+        return true
     }
 
     private fun finishSheet(then: () -> Unit) {
@@ -399,16 +411,41 @@ class AgentOverlay(
             PixelFormat.TRANSLUCENT,
         )
 
+    /**
+     * False when the system refuses the window: the service lost its
+     * connection (its token is gone) while a task still holds it. The overlay
+     * then stays off for this task instead of crashing the app.
+     */
     private fun add(
         view: View,
         params: WindowManager.LayoutParams,
-    ) {
-        windowManager.addView(view, params)
-        added += view
+    ): Boolean {
+        if (refused) return false
+        return try {
+            windowManager.addView(view, params)
+            added += view
+            true
+        } catch (e: WindowManager.BadTokenException) {
+            refuse(e)
+        } catch (e: WindowManager.InvalidDisplayException) {
+            refuse(e)
+        }
+    }
+
+    private fun refuse(error: Exception): Boolean {
+        refused = true
+        Log.w(TAG, "Overlay window refused: ${error.javaClass.simpleName}")
+        return false
     }
 
     private fun remove(view: View) {
-        if (added.remove(view)) windowManager.removeViewImmediate(view)
+        if (!added.remove(view)) return
+        try {
+            windowManager.removeViewImmediate(view)
+        } catch (e: IllegalArgumentException) {
+            // The system already dropped it with the service's connection.
+            Log.w(TAG, "Overlay window already gone: ${e.javaClass.simpleName}")
+        }
     }
 
     /** The violet edge light: shows that Alesle is in control of the screen. */
@@ -474,6 +511,7 @@ class AgentOverlay(
     }
 
     companion object {
+        private const val TAG = "AlesleOverlay"
         const val COUNTDOWN_SECONDS = 3
         private const val CONCEAL_WAIT_MS = 500L
         private const val CONCEAL_FRAME_MS = 120L

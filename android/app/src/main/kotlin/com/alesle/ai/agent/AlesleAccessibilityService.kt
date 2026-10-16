@@ -1,6 +1,7 @@
 package com.alesle.ai.agent
 
 import android.accessibilityservice.AccessibilityService
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Handler
 import android.os.HandlerThread
@@ -66,6 +67,15 @@ class AlesleAccessibilityService :
         intentLauncher =
             IntentLauncher(ContentResolverContacts(contentResolver), PackageManagerApps(packageManager), ContextActivityStarter(this))
         instance = this
+    }
+
+    /**
+     * The system dropped the connection (switched off, or rebinding after an
+     * update): this instance's window token is gone, so nobody may use it.
+     */
+    override fun onUnbind(intent: Intent?): Boolean {
+        if (instance === this) instance = null
+        return super.onUnbind(intent)
     }
 
     override fun onDestroy() {

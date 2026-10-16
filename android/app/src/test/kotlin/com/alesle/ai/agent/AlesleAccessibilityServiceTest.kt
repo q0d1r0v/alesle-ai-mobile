@@ -2,6 +2,7 @@ package com.alesle.ai.agent
 
 import android.view.accessibility.AccessibilityEvent
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
@@ -36,5 +37,20 @@ class AlesleAccessibilityServiceTest {
         assertNull(AlesleAccessibilityService.instance)
         controller.destroy()
         assertNull(AlesleAccessibilityService.instance)
+    }
+
+    @Test
+    fun `is not exposed once the system unbinds it`() {
+        val controller = Robolectric.buildService(AlesleAccessibilityService::class.java).create()
+        val service = controller.get()
+        // Protected: the system calls it once the service is bound.
+        AlesleAccessibilityService::class.java
+            .getDeclaredMethod("onServiceConnected")
+            .apply { isAccessible = true }
+            .invoke(service)
+        assertSame(service, AlesleAccessibilityService.instance)
+        service.onUnbind(null)
+        assertNull(AlesleAccessibilityService.instance)
+        controller.destroy()
     }
 }
