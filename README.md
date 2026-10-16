@@ -63,6 +63,34 @@ keyPassword=…
 Without the file, `flutter build apk --release` fails on purpose; debug builds
 do not need it.
 
+## Releasing
+
+1. Bump `version: x.y.z+code` in `pubspec.yaml` (the code must grow) and
+   write the notes and `minSupportedVersionCode` in `release/next.json`.
+   Raising the minimum blocks older apps until they update (EC-15).
+2. Tag and push: `git tag vx.y.z && git push <remote> vx.y.z`.
+
+`.github/workflows/release.yml` then builds the signed APK, attaches it (and
+its SHA-256 and `release.json`) to a GitHub release, copies it to the CDN when
+configured, and publishes the manifest to the API. `tool/apk_manifest.sh`
+builds the manifest from the APK itself (version, file and certificate
+SHA-256), so the app's update check (AC-APP-6) and the website read the same
+values.
+
+| GitHub setting (environment `release`) | Kind     | Needed                    |
+| -------------------------------------- | -------- | ------------------------- |
+| `ANDROID_KEYSTORE_BASE64`              | secret   | yes (`base64 -w0 *.jks`)  |
+| `ANDROID_KEYSTORE_PASSWORD`            | secret   | yes                       |
+| `ANDROID_KEY_ALIAS`                    | secret   | yes (`alesle`)            |
+| `ANDROID_KEY_PASSWORD`                 | secret   | yes                       |
+| `RELEASE_API_URL`                      | variable | to publish the manifest   |
+| `RELEASE_PUBLISH_TOKEN`                | secret   | with `RELEASE_API_URL`    |
+| `RELEASE_CDN_BASE_URL`                 | variable | to serve from the CDN     |
+| `RELEASE_S3_BUCKET`, `_REGION`, `_ENDPOINT` | variable | with the CDN         |
+| `RELEASE_S3_ACCESS_KEY_ID`, `_SECRET_ACCESS_KEY` | secret | with the CDN     |
+
+Without a CDN the manifest points at the GitHub release asset.
+
 ## Code generation
 
 ```bash
