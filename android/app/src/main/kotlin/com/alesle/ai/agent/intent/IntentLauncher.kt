@@ -165,7 +165,16 @@ class IntentLauncher(
                 if (phone == null) Resolved.Failed(ActionResult.notFound("contact_not_found")) else Resolved.Number(phone.number)
             }
             is Recipient.ContactName -> {
-                val matches = matchContacts(recipient.name, contacts.search(recipient.name.trim()))
+                // A name may come back as we showed it in a choice ("Aziz Ish ··0122",
+                // remembered that way): the digits then pick among same-named contacts.
+                val (name, tail) = splitChoiceLabel(recipient.name)
+                val found = matchContacts(name, contacts.search(name))
+                val matches =
+                    if (tail == null) {
+                        found
+                    } else {
+                        found.filter { it.number.filter(Char::isDigit).endsWith(tail) }.ifEmpty { found }
+                    }
                 when (matches.size) {
                     0 -> Resolved.Failed(ActionResult.notFound("contact_not_found"))
                     1 -> Resolved.Number(matches.single().number)
@@ -230,6 +239,14 @@ class IntentLauncher(
                 if (hits.isNotEmpty()) return hits
             }
             return emptyList()
+        }
+
+        private val CHOICE_LABEL = Regex("""^(.*?)\s*··(\d{2,4})$""")
+
+        /** "Aziz Ish ··0122" -> ("Aziz Ish", "0122"); any other name -> (name, null). */
+        internal fun splitChoiceLabel(label: String): Pair<String, String?> {
+            val match = CHOICE_LABEL.matchEntire(label.trim()) ?: return label.trim() to null
+            return match.groupValues[1].trim() to match.groupValues[2]
         }
 
         /** "Aziz Karimov ··4567": enough to tell two people apart, without the full number. */

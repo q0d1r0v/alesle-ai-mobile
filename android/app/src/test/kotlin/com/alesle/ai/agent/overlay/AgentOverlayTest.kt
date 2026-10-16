@@ -15,6 +15,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -67,6 +68,42 @@ class AgentOverlayTest {
         while (view != null && !view.hasOnClickListeners()) view = view.parent as? View
         checkNotNull(view) { "nothing clickable around $text" }.performClick()
         idle()
+    }
+
+    @Test
+    fun `speaks the command's language, not the phone's`() {
+        val uz =
+            AgentOverlay(
+                context,
+                onStop = {},
+                locale = "uz",
+                windowManager = windowManager,
+                main = Handler(Looper.getMainLooper()),
+                sleepFor = {},
+            )
+        uz.showStep("Ishlayapman")
+        idle()
+        assertTrue(windows.flatMap { texts(it.first) }.any { it.contains("To'xtatish") })
+        windows.clear()
+
+        val ru =
+            AgentOverlay(
+                context,
+                onStop = {},
+                locale = "ru-RU",
+                windowManager = windowManager,
+                main = Handler(Looper.getMainLooper()),
+                sleepFor = {},
+            )
+        ru.ask("Какой?", listOf(Choice("a", "A")), {})
+        idle()
+        assertTrue(windows.flatMap { texts(it.first) }.contains("Отмена"))
+    }
+
+    @Test
+    fun `an empty or odd locale keeps the phone's language`() {
+        assertSame(context, localized(context, null))
+        assertSame(context, localized(context, "  "))
     }
 
     @Test

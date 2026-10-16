@@ -2,6 +2,7 @@ package com.alesle.ai.agent.overlay
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -24,6 +25,7 @@ import com.alesle.ai.R
 import com.alesle.ai.agent.action.Choice
 import com.alesle.ai.agent.loop.Confirmation
 import com.alesle.ai.agent.loop.LoopUi
+import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -37,12 +39,15 @@ import java.util.concurrent.TimeUnit
  * on the main thread; the [LoopUi] calls may come from any thread.
  */
 class AgentOverlay(
-    private val context: Context,
+    context: Context,
     private val onStop: () -> Unit,
+    /** The command's language (BCP-47): the sheets speak it, not the phone's. */
+    locale: String? = null,
     private val windowManager: WindowManager = context.getSystemService(WindowManager::class.java),
     private val main: Handler = Handler(Looper.getMainLooper()),
     private val sleepFor: (Long) -> Unit = Thread::sleep,
 ) : LoopUi {
+    private val context: Context = localized(context, locale)
     private val added = mutableSetOf<View>()
     private var glow: View? = null
     private var pill: View? = null
@@ -493,4 +498,17 @@ class AgentOverlay(
         private const val FULL_TURN = 360f
         private const val FRAME_MS = 32L
     }
+}
+
+/** [base] with [locale]'s resources; [base] itself when there is no usable locale. */
+internal fun localized(
+    base: Context,
+    locale: String?,
+): Context {
+    val tag = locale?.trim().orEmpty()
+    if (tag.isEmpty()) return base
+    val wanted = Locale.forLanguageTag(tag)
+    if (wanted.language.isEmpty()) return base
+    val configuration = Configuration(base.resources.configuration).apply { setLocale(wanted) }
+    return base.createConfigurationContext(configuration)
 }

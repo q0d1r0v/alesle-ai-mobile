@@ -156,7 +156,7 @@ class AgentTaskController(
                         ),
                     sockets = OkHttpLoopSocketFactory(OkHttpLoopSocketFactory.socketUrl(request.apiBaseUrl), request.accessToken),
                     device = RuntimeLoopDevice({ AlesleAccessibilityService.instance }, { service.lastEventAt }, SystemClock::uptimeMillis),
-                    ui = AgentOverlay(service, onStop = StopRequests::request),
+                    ui = AgentOverlay(service, onStop = StopRequests::request, locale = request.locale),
                     worker = worker,
                     events = { event ->
                         events(event)

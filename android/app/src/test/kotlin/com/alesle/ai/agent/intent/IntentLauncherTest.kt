@@ -115,6 +115,24 @@ class IntentLauncherTest {
     }
 
     @Test
+    fun `a name given as a choice label reaches that contact by its last digits`() {
+        starter.granted += Manifest.permission.READ_CONTACTS
+        contacts.phones += listOf(ContactPhone(7, "Aziz", "+998901234567"), ContactPhone(9, "Aziz", "+998935557788"))
+        assertEquals(ActionResult.OK, launcher.execute(IntentAction.Call(Recipient.ContactName("Aziz ··7788"))))
+        assertEquals(Uri.fromParts("tel", "+998935557788", null), started.data)
+        // Digits that fit nobody: back to asking.
+        val unknown = launcher.execute(IntentAction.Call(Recipient.ContactName("Aziz ··0000")))
+        assertEquals(ActionStatus.AMBIGUOUS, unknown.status)
+    }
+
+    @Test
+    fun `splits choice labels`() {
+        assertEquals("Aziz Ish" to "0122", IntentLauncher.splitChoiceLabel(" Aziz Ish ··0122 "))
+        assertEquals("Onam" to null, IntentLauncher.splitChoiceLabel("Onam"))
+        assertEquals("Ona ··x" to null, IntentLauncher.splitChoiceLabel("Ona ··x"))
+    }
+
+    @Test
     fun `calls the contact the user picked`() {
         starter.granted += Manifest.permission.READ_CONTACTS
         contacts.phones += ContactPhone(9, "Aziz", "+998935557788")
