@@ -5,6 +5,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/agent_debug/presentation/agent_debug_screen.dart';
 import '../../features/auth/presentation/sign_in_screen.dart';
+import '../../features/billing/presentation/limit_screen.dart';
+import '../../features/billing/presentation/pay_screen.dart';
+import '../../features/billing/presentation/payment_status_screen.dart';
+import '../../features/billing/presentation/plan_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/memory/presentation/history_screen.dart';
 import '../../features/memory/presentation/memory_screen.dart';
@@ -19,6 +23,20 @@ abstract final class AppRoutes {
   static const String settings = '/settings';
   static const String memory = '/settings/memory';
   static const String history = '/settings/history';
+  static const String plan = '/settings/plan';
+  static const String limit = '/limit';
+
+  static String payFor(String product) =>
+      '/billing/pay/${Uri.encodeComponent(product)}';
+
+  static String paymentFor(String id) =>
+      '/billing/payment/${Uri.encodeComponent(id)}';
+
+  /// The limit screen for a task finish reason (`limit_reached`, `daily_limit`).
+  static String limitFor(String reason) => Uri(
+    path: limit,
+    queryParameters: <String, String>{'reason': reason},
+  ).toString();
 
   /// Developer console; registered in debug builds only.
   static const String agentDebug = '/debug/agent';
@@ -49,6 +67,25 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
       GoRoute(
         path: AppRoutes.history,
         builder: (_, _) => const HistoryScreen(),
+      ),
+      GoRoute(path: AppRoutes.plan, builder: (_, _) => const PlanScreen()),
+      GoRoute(
+        path: '/billing/pay/:product',
+        builder: (_, GoRouterState state) =>
+            PayScreen(product: state.pathParameters['product']!),
+      ),
+      GoRoute(
+        path: '/billing/payment/:id',
+        builder: (_, GoRouterState state) =>
+            PaymentStatusScreen(paymentId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: AppRoutes.limit,
+        builder: (_, GoRouterState state) => LimitScreen(
+          kind:
+              LimitKind.fromReason(state.uri.queryParameters['reason']) ??
+              LimitKind.month,
+        ),
       ),
       if (kDebugMode)
         GoRoute(

@@ -538,4 +538,192 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get settingsHistory => 'Tarix';
+
+  @override
+  String get settingsPlan => 'Tarif va limit';
+
+  @override
+  String get billingTitle => 'Tarif';
+
+  @override
+  String get billingPlanFree => 'Bepul';
+
+  @override
+  String billingUsed(Object percent) {
+    return 'Bu oy $percent% ishlatildi';
+  }
+
+  @override
+  String billingResets(Object date) {
+    return 'Limit yangilanadi: $date';
+  }
+
+  @override
+  String get billingSimpleMode =>
+      'Limit tugadi: faqat oddiy buyruqlar (qo‘ng‘iroq, budilnik, SMS) ishlaydi.';
+
+  @override
+  String billingPaidUntil(Object date) {
+    return '$date gacha to‘langan';
+  }
+
+  @override
+  String billingEndsOn(Object date) {
+    return '$date da tugaydi, uzaytirilmaydi';
+  }
+
+  @override
+  String get billingPastDue => 'Obunani uzaytirib bo‘lmadi, bepul tarifdasiz.';
+
+  @override
+  String get billingCancel => 'Uzaytirishni to‘xtatish';
+
+  @override
+  String get billingResume => 'Uzaytirishni yoqish';
+
+  @override
+  String get billingCancelTitle => 'Uzaytirish to‘xtatilsinmi?';
+
+  @override
+  String billingCancelBody(Object date) {
+    return 'Tarif $date gacha ishlaydi, keyin bepul tarifga o‘tasiz.';
+  }
+
+  @override
+  String get billingPlans => 'Tariflar';
+
+  @override
+  String billingPerMonth(Object price) {
+    return '$price so‘m / oy';
+  }
+
+  @override
+  String billingPrice(Object price) {
+    return '$price so‘m';
+  }
+
+  @override
+  String billingFeatureDaily(Object commands) {
+    return 'Kuniga $commands ta buyruq';
+  }
+
+  @override
+  String billingFeatureScreenDaily(Object tasks) {
+    return 'Kuniga $tasks ta ilova vazifasi';
+  }
+
+  @override
+  String get billingFeatureNoDaily => 'Kunlik cheklovsiz';
+
+  @override
+  String get billingFeatureVision => 'Ekrandagi rasmlarni ham tushunadi';
+
+  @override
+  String get billingFeatureStrong =>
+      'Murakkab vazifalar uchun eng kuchli model';
+
+  @override
+  String get billingCurrent => 'Joriy tarif';
+
+  @override
+  String get billingChoose => 'Tanlash';
+
+  @override
+  String get billingExtend => 'Uzaytirish';
+
+  @override
+  String get billingPackTitle => 'Qo‘shimcha limit';
+
+  @override
+  String get billingPackBody => 'Shu oy uchun ko‘proq ish. Tarif o‘zgarmaydi.';
+
+  @override
+  String billingAddMore(Object price) {
+    return 'Ko‘proq qo‘shish · $price so‘m';
+  }
+
+  @override
+  String get billingPayTitle => 'To‘lov usuli';
+
+  @override
+  String get billingMethodCard => 'Bank kartasi';
+
+  @override
+  String get billingSecure =>
+      'Xavfsiz. Alesle karta ma’lumotlaringizni ko‘rmaydi.';
+
+  @override
+  String get billingNoMethods =>
+      'To‘lov hozircha mavjud emas. Keyinroq urinib ko‘ring.';
+
+  @override
+  String get billingPageNotOpened => 'To‘lov sahifasini ochib bo‘lmadi.';
+
+  @override
+  String get billingChecking => 'To‘lov tekshirilmoqda…';
+
+  @override
+  String get billingCheckingBody => 'Odatda bir necha soniya oladi.';
+
+  @override
+  String get billingPaid => 'To‘lov qabul qilindi';
+
+  @override
+  String get billingPaidBody => 'Hammasi tayyor, davom etavering.';
+
+  @override
+  String get billingNotPaid => 'To‘lov o‘tmadi';
+
+  @override
+  String get billingNotPaidBody =>
+      'Qayta yoki boshqa usul bilan urinib ko‘ring.';
+
+  @override
+  String get billingStillWaiting => 'Hali tasdiqlanmadi';
+
+  @override
+  String get billingStillWaitingBody =>
+      'To‘lov tasdiqlanishi bilan tarif o‘zi yoqiladi.';
+
+  @override
+  String get billingCheckAgain => 'Yana tekshirish';
+
+  @override
+  String get limitMonthTitle => 'Bu oylik limit tugadi';
+
+  @override
+  String get limitMonthBody =>
+      'Qo‘ng‘iroq, budilnik va SMS ishlayveradi. Ilovalar bilan ishlash uchun ko‘proq qo‘shing.';
+
+  @override
+  String get limitDailyTitle => 'Bugungi bepul limit tugadi';
+
+  @override
+  String get limitDailyBody =>
+      'Ertaga yana davom etasiz yoki Pro bilan kunlik cheklovsiz ishlaysiz.';
+
+  @override
+  String get limitUpgrade => 'Tarifni oshirish';
+
+  @override
+  String limitWaitUntil(Object date) {
+    return '$date gacha kutish';
+  }
+
+  @override
+  String get limitWaitTomorrow => 'Ertagacha kutish';
+
+  @override
+  String usageHighNotice(Object percent) {
+    return 'Bu oylik limitning $percent% ishlatildi.';
+  }
+
+  @override
+  String get taskAddMore => 'Ko‘proq qo‘shish';
+
+  @override
+  String get commonLater => 'Keyinroq';
+
+  @override
+  String get commonDone => 'Tayyor';
 }

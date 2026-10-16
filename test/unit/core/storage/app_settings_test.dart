@@ -39,6 +39,10 @@ void main() {
         const AppSettings(language: 'uz').hashCode,
       );
       expect(const AppSettings(), isNot(const AppSettings(language: 'uz')));
+      expect(
+        const AppSettings(),
+        isNot(const AppSettings(usageNoticeKey: 'k')),
+      );
     });
   });
 
@@ -57,6 +61,7 @@ void main() {
         language: 'uz',
         voiceReplies: false,
         confirmSensitiveActions: false,
+        usageNoticeKey: '2026-11-16T07:00:00.000Z:80',
       );
       await store.write(settings);
       expect(store.read(), settings);

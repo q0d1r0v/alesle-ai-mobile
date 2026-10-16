@@ -8,6 +8,7 @@ import 'package:alesle_ai/core/auth/auth_session.dart';
 import 'package:alesle_ai/core/errors/failure.dart';
 import 'package:alesle_ai/core/storage/app_settings.dart';
 import 'package:alesle_ai/features/auth/domain/auth_repository.dart';
+import 'package:alesle_ai/features/billing/domain/billing.dart';
 import 'package:alesle_ai/features/home/domain/agent_status.dart';
 import 'package:alesle_ai/features/home/domain/home_repositories.dart';
 import 'package:alesle_ai/features/home/domain/server_health.dart';
@@ -508,4 +509,127 @@ final class FakeMemoryRepository implements MemoryRepository {
 
   @override
   Future<void> clearHistory() => _check('clearHistory');
+}
+
+const List<Product> testProducts = <Product>[
+  Product(
+    code: 'free',
+    kind: ProductKind.plan,
+    priceUzs: 0,
+    dailyCommands: 20,
+    dailyScreenTasks: 3,
+    vision: false,
+    strongModel: false,
+  ),
+  Product(
+    code: 'max',
+    kind: ProductKind.plan,
+    priceUzs: 164000,
+    dailyCommands: null,
+    dailyScreenTasks: null,
+    vision: true,
+    strongModel: true,
+  ),
+  Product(
+    code: 'pro',
+    kind: ProductKind.plan,
+    priceUzs: 63000,
+    dailyCommands: null,
+    dailyScreenTasks: null,
+    vision: true,
+    strongModel: false,
+  ),
+  Product(
+    code: 'pack_500',
+    kind: ProductKind.pack,
+    priceUzs: 25000,
+    dailyCommands: null,
+    dailyScreenTasks: null,
+    vision: false,
+    strongModel: false,
+  ),
+];
+
+BillingStatus testBillingStatus({
+  String plan = 'free',
+  int usedPercent = 40,
+  bool simple = false,
+  SubscriptionState? subscription,
+  bool cancelAtPeriodEnd = false,
+  List<PayMethod> methods = PayMethod.values,
+}) => BillingStatus(
+  planCode: plan,
+  usedPercent: usedPercent,
+  simple: simple,
+  periodEnd: DateTime.utc(2026, 11, 16, 7),
+  subscription: subscription,
+  cancelAtPeriodEnd: cancelAtPeriodEnd,
+  methods: methods,
+);
+
+/// Plans and payments in memory; [payments] answers each `payment()` call in
+/// turn (the last one repeats).
+final class FakeBillingRepository implements BillingRepository {
+  BillingStatus current = testBillingStatus();
+  List<Product> catalog = testProducts;
+  List<PaymentResult> payments = <PaymentResult>[PaymentResult.paid];
+  Object? failure;
+  Object? checkoutFailure;
+  final List<String> calls = <String>[];
+
+  Future<void> _check(String call) async {
+    calls.add(call);
+    if (failure case final Object value) throw value;
+  }
+
+  @override
+  Future<BillingStatus> status() async {
+    await _check('status');
+    return current;
+  }
+
+  @override
+  Future<List<Product>> products() async {
+    await _check('products');
+    return catalog;
+  }
+
+  @override
+  Future<Checkout> checkout({
+    required String product,
+    required PayMethod method,
+    required String language,
+  }) async {
+    await _check('checkout:$product:${method.name}:$language');
+    if (checkoutFailure case final Object value) throw value;
+    return Checkout(
+      paymentId: 'pay-1',
+      url: Uri.parse('https://checkout.example/pay-1'),
+    );
+  }
+
+  @override
+  Future<PaymentResult> payment(String id) async {
+    await _check('payment:$id');
+    return payments.length > 1 ? payments.removeAt(0) : payments.single;
+  }
+
+  @override
+  Future<void> cancel() async {
+    await _check('cancel');
+    current = testBillingStatus(
+      plan: current.planCode,
+      subscription: current.subscription,
+      cancelAtPeriodEnd: true,
+    );
+  }
+
+  @override
+  Future<void> resume() async {
+    await _check('resume');
+    current = testBillingStatus(
+      plan: current.planCode,
+      subscription: current.subscription,
+    );
+  }
 }

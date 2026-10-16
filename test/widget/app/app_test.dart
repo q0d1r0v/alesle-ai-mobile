@@ -12,6 +12,9 @@ import 'package:alesle_ai/features/agent_debug/domain/agent_console.dart';
 import 'package:alesle_ai/features/agent_debug/presentation/agent_debug_screen.dart';
 import 'package:alesle_ai/features/auth/data/auth_data_providers.dart';
 import 'package:alesle_ai/features/auth/presentation/sign_in_screen.dart';
+import 'package:alesle_ai/features/billing/data/billing_data_providers.dart';
+import 'package:alesle_ai/features/billing/presentation/limit_screen.dart';
+import 'package:alesle_ai/features/billing/presentation/payment_status_screen.dart';
 import 'package:alesle_ai/features/home/presentation/home_providers.dart';
 import 'package:alesle_ai/features/home/presentation/home_screen.dart';
 import 'package:alesle_ai/features/onboarding/data/onboarding_data_providers.dart';
@@ -317,6 +320,153 @@ void main() {
       expect(container.read(deviceSetupRepositoryProvider), isNotNull);
     },
   );
+
+  group('billing', () {
+    late StreamController<Uri> links;
+    late FakeBillingRepository billing;
+    late FakeAssistantRepository assistant;
+
+    setUp(() {
+      links = StreamController<Uri>();
+      billing = FakeBillingRepository();
+      assistant = FakeAssistantRepository();
+    });
+
+    tearDown(() => links.close());
+
+    Future<ProviderContainer> pumpApp(WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appConfigProvider.overrideWithValue(config),
+            healthRepositoryProvider.overrideWithValue(
+              FakeHealthRepository(() async => readyHealth),
+            ),
+            agentRepositoryProvider.overrideWithValue(
+              FakeAgentRepository(() async => enabledAgent),
+            ),
+            appSettingsStoreProvider.overrideWithValue(
+              await testSettingsStore(language: 'uz'),
+            ),
+            sessionStoreProvider.overrideWithValue(
+              MemorySessionStore(testSession()),
+            ),
+            initialSessionProvider.overrideWithValue(testSession()),
+            incomingLinksProvider.overrideWithValue(links.stream),
+            assistantRepositoryProvider.overrideWithValue(assistant),
+            voiceRepositoryProvider.overrideWithValue(FakeVoiceRepository()),
+            billingRepositoryProvider.overrideWithValue(billing),
+          ],
+          child: const AlesleApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return ProviderScope.containerOf(tester.element(find.byType(AlesleApp)));
+    }
+
+    /// The payment status screen's orb never settles.
+    Future<void> settleFor(WidgetTester tester) async {
+      for (int i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    testWidgets('reminds once per period from 80 %', (
+      WidgetTester tester,
+    ) async {
+      billing.current = testBillingStatus(usedPercent: 85);
+      final ProviderContainer container = await pumpApp(tester);
+      expect(find.byKey(const Key('usage-notice')), findsOneWidget);
+      expect(find.text('Bu oylik limitning 85% ishlatildi.'), findsOneWidget);
+      expect(
+        container.read(appSettingsProvider).usageNoticeKey,
+        endsWith(':80'),
+      );
+
+      // After a task: checked again, but not told again.
+      ScaffoldMessenger.of(tester.element(find.byType(HomeScreen)))
+          .removeCurrentSnackBar();
+      await tester.pumpAndSettle();
+      assistant.push(
+        const TaskUpdate(TaskUpdateKind.finished, status: 'done', text: 'ok'),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        billing.calls.where((String c) => c == 'status').length,
+        greaterThan(1),
+      );
+      expect(find.byKey(const Key('usage-notice')), findsNothing);
+    });
+
+    testWidgets('the reminder opens the plan', (WidgetTester tester) async {
+      billing.current = testBillingStatus(usedPercent: 90);
+      await pumpApp(tester);
+      await tester.tap(find.text('Tarif'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('plan-current')), findsOneWidget);
+    });
+
+    testWidgets('a used-up month opens the limit screen once', (
+      WidgetTester tester,
+    ) async {
+      billing.current = testBillingStatus(usedPercent: 100, simple: true);
+      await pumpApp(tester);
+      expect(find.byType(LimitScreen), findsOneWidget);
+      await tester.tap(find.byKey(const Key('limit-close')));
+      await tester.pumpAndSettle();
+      expect(find.byType(HomeScreen), findsOneWidget);
+    });
+
+    testWidgets('nothing is said below 80 % or when offline', (
+      WidgetTester tester,
+    ) async {
+      billing.failure = const NetworkFailure();
+      await pumpApp(tester);
+      expect(find.byKey(const Key('usage-notice')), findsNothing);
+      expect(find.byType(LimitScreen), findsNothing);
+    });
+
+    testWidgets('a task refused for the limit opens the limit screen', (
+      WidgetTester tester,
+    ) async {
+      await pumpApp(tester);
+      assistant.push(
+        const TaskUpdate(
+          TaskUpdateKind.finished,
+          status: 'cannot',
+          reason: 'daily_limit',
+          text: 'Bugungi bepul limit tugadi.',
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(LimitScreen), findsOneWidget);
+      expect(find.text('Bugungi bepul limit tugadi'), findsOneWidget);
+
+      // Back on the result, "add more" opens it again.
+      await tester.tap(find.byKey(const Key('limit-later')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('result-add-more')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('result-add-more')));
+      await tester.pumpAndSettle();
+      expect(find.byType(LimitScreen), findsOneWidget);
+    });
+
+    testWidgets('the payment page’s way back shows the payment', (
+      WidgetTester tester,
+    ) async {
+      await pumpApp(tester);
+      links.add(Uri.parse('https://alesle.ai/billing/return?payment=pay-9'));
+      await settleFor(tester);
+      expect(find.byType(PaymentStatusScreen), findsOneWidget);
+      expect(billing.calls, contains('payment:pay-9'));
+      expect(find.text('To‘lov qabul qilindi'), findsOneWidget);
+
+      // The same link again does not stack a second screen.
+      links.add(Uri.parse('https://alesle.ai/billing/return?payment=pay-9'));
+      await settleFor(tester);
+      expect(find.byType(PaymentStatusScreen), findsOneWidget);
+    });
+  });
 }
 
 final class _SilentConsole implements AgentConsoleRepository {

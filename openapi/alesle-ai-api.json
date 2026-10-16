@@ -714,6 +714,210 @@
         ]
       }
     },
+    "/v1/billing/plans": {
+      "get": {
+        "operationId": "billingPlans",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlanDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/status": {
+      "get": {
+        "operationId": "billingStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/checkout": {
+      "post": {
+        "operationId": "billingCheckout",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutResultDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "PAYMENT_PROVIDER_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/payments/{id}": {
+      "get": {
+        "operationId": "billingPayment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/subscription/cancel": {
+      "post": {
+        "operationId": "billingCancel",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Not renewed; the plan lasts until the period ends."
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/subscription/resume": {
+      "post": {
+        "operationId": "billingResume",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "billing"
+        ]
+      }
+    },
     "/v1/voice/transcribe": {
       "post": {
         "operationId": "voiceTranscribe",
@@ -986,6 +1190,7 @@
           "SESSION_EXPIRED",
           "GOOGLE_TOKEN_INVALID",
           "SIGN_IN_METHOD_UNAVAILABLE",
+          "PAYMENT_PROVIDER_UNAVAILABLE",
           "INTERNAL"
         ]
       },
@@ -1420,6 +1625,206 @@
         "required": [
           "items",
           "next"
+        ]
+      },
+      "ProductKind": {
+        "type": "string",
+        "enum": [
+          "plan",
+          "pack"
+        ]
+      },
+      "PlanDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "pro"
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProductKind"
+              }
+            ]
+          },
+          "priceUzs": {
+            "type": "string",
+            "description": "UZS, as a decimal string.",
+            "example": "63000.00"
+          },
+          "priceUsd": {
+            "type": "string",
+            "description": "USD for display, as a decimal string.",
+            "example": "4.99"
+          },
+          "dailyCommands": {
+            "type": "number",
+            "nullable": true,
+            "description": "Commands per day; null: no cap."
+          },
+          "dailyScreenTasks": {
+            "type": "number",
+            "nullable": true,
+            "description": "Screen tasks per day; null: no cap."
+          },
+          "vision": {
+            "type": "boolean"
+          },
+          "strongModel": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "kind",
+          "priceUzs",
+          "priceUsd",
+          "dailyCommands",
+          "dailyScreenTasks",
+          "vision",
+          "strongModel"
+        ]
+      },
+      "BillingStatusDto": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string",
+            "example": "free"
+          },
+          "usedPercent": {
+            "type": "number",
+            "description": "Share of this period’s allowance used, 0–100 (D9)."
+          },
+          "simple": {
+            "type": "boolean",
+            "description": "Allowance used up: simple mode until the period ends."
+          },
+          "periodEnd": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "subscriptionStatus": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "active",
+              "past_due",
+              "canceled",
+              "expired"
+            ],
+            "description": "Paid plan state; null on Free."
+          },
+          "cancelAtPeriodEnd": {
+            "type": "boolean"
+          },
+          "providers": {
+            "type": "array",
+            "description": "Payment methods set up here.",
+            "items": {
+              "type": "string",
+              "enum": [
+                "payme",
+                "click",
+                "atmos"
+              ]
+            }
+          }
+        },
+        "required": [
+          "plan",
+          "usedPercent",
+          "simple",
+          "periodEnd",
+          "subscriptionStatus",
+          "cancelAtPeriodEnd",
+          "providers"
+        ]
+      },
+      "PaymentProviderName": {
+        "type": "string",
+        "enum": [
+          "payme",
+          "click",
+          "atmos"
+        ]
+      },
+      "CheckoutDto": {
+        "type": "object",
+        "properties": {
+          "product": {
+            "type": "string",
+            "example": "pro"
+          },
+          "provider": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PaymentProviderName"
+              }
+            ]
+          },
+          "language": {
+            "type": "string",
+            "example": "uz"
+          }
+        },
+        "required": [
+          "product",
+          "provider",
+          "language"
+        ]
+      },
+      "CheckoutResultDto": {
+        "type": "object",
+        "properties": {
+          "paymentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "url": {
+            "type": "string",
+            "description": "The provider’s page, to open in Custom Tabs."
+          }
+        },
+        "required": [
+          "paymentId",
+          "url"
+        ]
+      },
+      "PaymentState": {
+        "type": "string",
+        "enum": [
+          "created",
+          "pending",
+          "paid",
+          "canceled",
+          "failed",
+          "refunded"
+        ]
+      },
+      "PaymentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PaymentState"
+              }
+            ]
+          },
+          "product": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "state",
+          "product"
         ]
       },
       "SpeechLanguage": {

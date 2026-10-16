@@ -533,4 +533,189 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsHistory => 'History';
+
+  @override
+  String get settingsPlan => 'Plan and usage';
+
+  @override
+  String get billingTitle => 'Plan';
+
+  @override
+  String get billingPlanFree => 'Free';
+
+  @override
+  String billingUsed(Object percent) {
+    return '$percent% used this month';
+  }
+
+  @override
+  String billingResets(Object date) {
+    return 'Limit resets on $date';
+  }
+
+  @override
+  String get billingSimpleMode =>
+      'Limit used up: only simple commands (calls, alarms, SMS) work.';
+
+  @override
+  String billingPaidUntil(Object date) {
+    return 'Paid until $date';
+  }
+
+  @override
+  String billingEndsOn(Object date) {
+    return 'Ends on $date, won’t renew';
+  }
+
+  @override
+  String get billingPastDue => 'We couldn’t renew your plan; you’re on Free.';
+
+  @override
+  String get billingCancel => 'Stop renewing';
+
+  @override
+  String get billingResume => 'Keep renewing';
+
+  @override
+  String get billingCancelTitle => 'Stop renewing?';
+
+  @override
+  String billingCancelBody(Object date) {
+    return 'Your plan works until $date, then you’re on Free.';
+  }
+
+  @override
+  String get billingPlans => 'Plans';
+
+  @override
+  String billingPerMonth(Object price) {
+    return '$price UZS / month';
+  }
+
+  @override
+  String billingPrice(Object price) {
+    return '$price UZS';
+  }
+
+  @override
+  String billingFeatureDaily(Object commands) {
+    return '$commands commands a day';
+  }
+
+  @override
+  String billingFeatureScreenDaily(Object tasks) {
+    return '$tasks app tasks a day';
+  }
+
+  @override
+  String get billingFeatureNoDaily => 'No daily cap';
+
+  @override
+  String get billingFeatureVision => 'Understands images on screen too';
+
+  @override
+  String get billingFeatureStrong => 'The strongest model for complex tasks';
+
+  @override
+  String get billingCurrent => 'Current plan';
+
+  @override
+  String get billingChoose => 'Choose';
+
+  @override
+  String get billingExtend => 'Extend';
+
+  @override
+  String get billingPackTitle => 'Extra limit';
+
+  @override
+  String get billingPackBody =>
+      'More for this month. Your plan stays the same.';
+
+  @override
+  String billingAddMore(Object price) {
+    return 'Add more · $price UZS';
+  }
+
+  @override
+  String get billingPayTitle => 'Pay with';
+
+  @override
+  String get billingMethodCard => 'Bank card';
+
+  @override
+  String get billingSecure => 'Secure. Alesle never sees your card.';
+
+  @override
+  String get billingNoMethods =>
+      'Payment isn’t available yet. Try again later.';
+
+  @override
+  String get billingPageNotOpened => 'Couldn’t open the payment page.';
+
+  @override
+  String get billingChecking => 'Checking the payment…';
+
+  @override
+  String get billingCheckingBody => 'This usually takes a few seconds.';
+
+  @override
+  String get billingPaid => 'Payment received';
+
+  @override
+  String get billingPaidBody => 'You’re all set.';
+
+  @override
+  String get billingNotPaid => 'Payment didn’t go through';
+
+  @override
+  String get billingNotPaidBody => 'Try again, or another way.';
+
+  @override
+  String get billingStillWaiting => 'Not confirmed yet';
+
+  @override
+  String get billingStillWaitingBody =>
+      'As soon as the payment is confirmed, it switches on by itself.';
+
+  @override
+  String get billingCheckAgain => 'Check again';
+
+  @override
+  String get limitMonthTitle => 'This month is used up';
+
+  @override
+  String get limitMonthBody =>
+      'Calls, alarms and SMS still work. Add more to use apps again.';
+
+  @override
+  String get limitDailyTitle => 'Today’s free limit is used up';
+
+  @override
+  String get limitDailyBody => 'Continue tomorrow, or go Pro for no daily cap.';
+
+  @override
+  String get limitUpgrade => 'Upgrade';
+
+  @override
+  String limitWaitUntil(Object date) {
+    return 'Wait until $date';
+  }
+
+  @override
+  String get limitWaitTomorrow => 'Wait until tomorrow';
+
+  @override
+  String usageHighNotice(Object percent) {
+    return '$percent% of this month’s limit is used.';
+  }
+
+  @override
+  String get taskAddMore => 'Add more';
+
+  @override
+  String get commonLater => 'Later';
+
+  @override
+  String get commonDone => 'Done';
 }

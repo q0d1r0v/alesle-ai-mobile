@@ -65,6 +65,12 @@ void main() {
       final ProviderContainer container = await pump(tester);
       expect(find.text('aziz@example.com'), findsOneWidget);
       expect(find.text('Aziz'), findsOneWidget);
+      // Devices are below the fold: build them first.
+      await tester.scrollUntilVisible(
+        find.text('Google Pixel 7'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Google Pixel 7'), findsOneWidget);
       expect(find.text('Shu qurilma'), findsOneWidget);
       expect(

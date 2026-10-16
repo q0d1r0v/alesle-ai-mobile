@@ -66,6 +66,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  /// A task refused for the plan's limit opens the limit screen (SOW 07 §6).
+  void _offerMore(HomeTask? previous, HomeTask next) {
+    if (next is! TaskResult || previous is TaskResult) return;
+    final String? reason = next.reason;
+    if (!isLimitReason(reason)) return;
+    unawaited(context.push(AppRoutes.limitFor(reason!)));
+  }
+
   void _showVoiceProblem(VoiceState? previous, VoiceState next) {
     final VoiceProblem? problem = next.problem;
     if (problem == null || problem == previous?.problem) return;
@@ -87,6 +95,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     ref
       ..listen<HomeTask>(homeTaskProvider, _speakResult)
+      ..listen<HomeTask>(homeTaskProvider, _offerMore)
       ..listen<VoiceState>(voiceProvider, _showVoiceProblem);
     final HomeTask task = ref.watch(homeTaskProvider);
     return Scaffold(
@@ -594,7 +603,22 @@ class _ResultView extends ConsumerWidget {
             ),
           ),
         ),
-        done,
+        if (isLimitReason(result.reason)) ...<Widget>[
+          CapsuleButton(
+            key: const Key('result-add-more'),
+            label: context.l10n.taskAddMore,
+            onPressed: () =>
+                unawaited(context.push(AppRoutes.limitFor(result.reason!))),
+          ),
+          const SizedBox(height: 8),
+          CapsuleButton(
+            key: const Key('done-button'),
+            label: context.l10n.taskDoneButton,
+            style: CapsuleStyle.text,
+            onPressed: ref.read(homeTaskProvider.notifier).dismiss,
+          ),
+        ] else
+          done,
       ],
     );
   }

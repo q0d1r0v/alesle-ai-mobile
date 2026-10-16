@@ -8,6 +8,7 @@ final class AppSettings {
     this.language,
     this.voiceReplies = true,
     this.confirmSensitiveActions = true,
+    this.usageNoticeKey,
   });
 
   final bool onboardingDone;
@@ -21,18 +22,24 @@ final class AppSettings {
   /// "Confirm every sensitive action": on by default (A4, D11).
   final bool confirmSensitiveActions;
 
+  /// The last usage notice shown (80 % or used up), so each shows once per
+  /// period.
+  final String? usageNoticeKey;
+
   AppSettings copyWith({
     bool? onboardingDone,
     String? language,
     bool clearLanguage = false,
     bool? voiceReplies,
     bool? confirmSensitiveActions,
+    String? usageNoticeKey,
   }) => AppSettings(
     onboardingDone: onboardingDone ?? this.onboardingDone,
     language: clearLanguage ? null : (language ?? this.language),
     voiceReplies: voiceReplies ?? this.voiceReplies,
     confirmSensitiveActions:
         confirmSensitiveActions ?? this.confirmSensitiveActions,
+    usageNoticeKey: usageNoticeKey ?? this.usageNoticeKey,
   );
 
   @override
@@ -41,7 +48,8 @@ final class AppSettings {
       other.onboardingDone == onboardingDone &&
       other.language == language &&
       other.voiceReplies == voiceReplies &&
-      other.confirmSensitiveActions == confirmSensitiveActions;
+      other.confirmSensitiveActions == confirmSensitiveActions &&
+      other.usageNoticeKey == usageNoticeKey;
 
   @override
   int get hashCode => Object.hash(
@@ -49,6 +57,7 @@ final class AppSettings {
     language,
     voiceReplies,
     confirmSensitiveActions,
+    usageNoticeKey,
   );
 }
 
@@ -60,6 +69,7 @@ final class AppSettingsStore {
   static const String _language = 'language';
   static const String _voice = 'voice_replies';
   static const String _confirm = 'confirm_sensitive_actions';
+  static const String _usageNotice = 'usage_notice_key';
 
   static const Set<String> languages = <String>{'en', 'uz', 'ru'};
 
@@ -75,6 +85,7 @@ final class AppSettingsStore {
       language: languages.contains(language) ? language : null,
       voiceReplies: _prefs.getBool(_voice) ?? true,
       confirmSensitiveActions: _prefs.getBool(_confirm) ?? true,
+      usageNoticeKey: _prefs.getString(_usageNotice),
     );
   }
 
@@ -88,5 +99,11 @@ final class AppSettingsStore {
     }
     await _prefs.setBool(_voice, settings.voiceReplies);
     await _prefs.setBool(_confirm, settings.confirmSensitiveActions);
+    final String? notice = settings.usageNoticeKey;
+    if (notice == null) {
+      await _prefs.remove(_usageNotice);
+    } else {
+      await _prefs.setString(_usageNotice, notice);
+    }
   }
 }

@@ -534,4 +534,190 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsHistory => 'История';
+
+  @override
+  String get settingsPlan => 'Тариф и лимит';
+
+  @override
+  String get billingTitle => 'Тариф';
+
+  @override
+  String get billingPlanFree => 'Бесплатный';
+
+  @override
+  String billingUsed(Object percent) {
+    return 'В этом месяце использовано $percent%';
+  }
+
+  @override
+  String billingResets(Object date) {
+    return 'Лимит обновится $date';
+  }
+
+  @override
+  String get billingSimpleMode =>
+      'Лимит исчерпан: работают только простые команды (звонки, будильники, SMS).';
+
+  @override
+  String billingPaidUntil(Object date) {
+    return 'Оплачено до $date';
+  }
+
+  @override
+  String billingEndsOn(Object date) {
+    return 'Закончится $date, без продления';
+  }
+
+  @override
+  String get billingPastDue =>
+      'Не удалось продлить подписку, вы на бесплатном тарифе.';
+
+  @override
+  String get billingCancel => 'Отключить продление';
+
+  @override
+  String get billingResume => 'Включить продление';
+
+  @override
+  String get billingCancelTitle => 'Отключить продление?';
+
+  @override
+  String billingCancelBody(Object date) {
+    return 'Тариф действует до $date, затем — бесплатный.';
+  }
+
+  @override
+  String get billingPlans => 'Тарифы';
+
+  @override
+  String billingPerMonth(Object price) {
+    return '$price сум / мес';
+  }
+
+  @override
+  String billingPrice(Object price) {
+    return '$price сум';
+  }
+
+  @override
+  String billingFeatureDaily(Object commands) {
+    return '$commands команд в день';
+  }
+
+  @override
+  String billingFeatureScreenDaily(Object tasks) {
+    return '$tasks задачи в приложениях в день';
+  }
+
+  @override
+  String get billingFeatureNoDaily => 'Без дневного лимита';
+
+  @override
+  String get billingFeatureVision => 'Понимает и картинки на экране';
+
+  @override
+  String get billingFeatureStrong => 'Самая сильная модель для сложных задач';
+
+  @override
+  String get billingCurrent => 'Текущий тариф';
+
+  @override
+  String get billingChoose => 'Выбрать';
+
+  @override
+  String get billingExtend => 'Продлить';
+
+  @override
+  String get billingPackTitle => 'Дополнительный лимит';
+
+  @override
+  String get billingPackBody =>
+      'Больше работы в этом месяце. Тариф не меняется.';
+
+  @override
+  String billingAddMore(Object price) {
+    return 'Добавить · $price сум';
+  }
+
+  @override
+  String get billingPayTitle => 'Способ оплаты';
+
+  @override
+  String get billingMethodCard => 'Банковская карта';
+
+  @override
+  String get billingSecure => 'Безопасно. Alesle не видит данные вашей карты.';
+
+  @override
+  String get billingNoMethods => 'Оплата пока недоступна. Попробуйте позже.';
+
+  @override
+  String get billingPageNotOpened => 'Не удалось открыть страницу оплаты.';
+
+  @override
+  String get billingChecking => 'Проверяем оплату…';
+
+  @override
+  String get billingCheckingBody => 'Обычно это занимает несколько секунд.';
+
+  @override
+  String get billingPaid => 'Оплата прошла';
+
+  @override
+  String get billingPaidBody => 'Всё готово, можно продолжать.';
+
+  @override
+  String get billingNotPaid => 'Оплата не прошла';
+
+  @override
+  String get billingNotPaidBody => 'Попробуйте ещё раз или другим способом.';
+
+  @override
+  String get billingStillWaiting => 'Пока не подтверждено';
+
+  @override
+  String get billingStillWaitingBody =>
+      'Как только оплата подтвердится, тариф включится сам.';
+
+  @override
+  String get billingCheckAgain => 'Проверить ещё раз';
+
+  @override
+  String get limitMonthTitle => 'Лимит на этот месяц исчерпан';
+
+  @override
+  String get limitMonthBody =>
+      'Звонки, будильники и SMS работают. Добавьте лимит, чтобы снова работать с приложениями.';
+
+  @override
+  String get limitDailyTitle => 'Бесплатный лимит на сегодня исчерпан';
+
+  @override
+  String get limitDailyBody =>
+      'Продолжите завтра или работайте без дневного лимита с Pro.';
+
+  @override
+  String get limitUpgrade => 'Улучшить тариф';
+
+  @override
+  String limitWaitUntil(Object date) {
+    return 'Подождать до $date';
+  }
+
+  @override
+  String get limitWaitTomorrow => 'Подождать до завтра';
+
+  @override
+  String usageHighNotice(Object percent) {
+    return 'Использовано $percent% лимита на месяц.';
+  }
+
+  @override
+  String get taskAddMore => 'Добавить лимит';
+
+  @override
+  String get commonLater => 'Позже';
+
+  @override
+  String get commonDone => 'Готово';
 }

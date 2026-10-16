@@ -40,6 +40,8 @@ enum ErrorCode {
   googleTokenInvalid('GOOGLE_TOKEN_INVALID'),
   @JsonValue('SIGN_IN_METHOD_UNAVAILABLE')
   signInMethodUnavailable('SIGN_IN_METHOD_UNAVAILABLE'),
+  @JsonValue('PAYMENT_PROVIDER_UNAVAILABLE')
+  paymentProviderUnavailable('PAYMENT_PROVIDER_UNAVAILABLE'),
   @JsonValue('INTERNAL')
   internal('INTERNAL'),
 

@@ -62,6 +62,13 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="alesle.ai" android:pathPrefix="/auth/" />
             </intent-filter>
+            <!-- The payment page sends the user back here (SOW 07 §5). -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="alesle.ai" android:path="/billing/return" />
+            </intent-filter>
             <!-- app_links hands links to Dart; Flutter must not also push them as routes. -->
             <meta-data android:name="flutter_deeplinking_enabled" android:value="false" />
         </activity>
@@ -113,6 +120,14 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- url_launcher: payment pages open in Custom Tabs, else the browser. -->
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
         </intent>
     </queries>
 </manifest>

@@ -1095,6 +1095,318 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Tarix'**
   String get settingsHistory;
+
+  /// No description provided for @settingsPlan.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tarif va limit'**
+  String get settingsPlan;
+
+  /// No description provided for @billingTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tarif'**
+  String get billingTitle;
+
+  /// No description provided for @billingPlanFree.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bepul'**
+  String get billingPlanFree;
+
+  /// No description provided for @billingUsed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu oy {percent}% ishlatildi'**
+  String billingUsed(Object percent);
+
+  /// No description provided for @billingResets.
+  ///
+  /// In uz, this message translates to:
+  /// **'Limit yangilanadi: {date}'**
+  String billingResets(Object date);
+
+  /// No description provided for @billingSimpleMode.
+  ///
+  /// In uz, this message translates to:
+  /// **'Limit tugadi: faqat oddiy buyruqlar (qo‘ng‘iroq, budilnik, SMS) ishlaydi.'**
+  String get billingSimpleMode;
+
+  /// No description provided for @billingPaidUntil.
+  ///
+  /// In uz, this message translates to:
+  /// **'{date} gacha to‘langan'**
+  String billingPaidUntil(Object date);
+
+  /// No description provided for @billingEndsOn.
+  ///
+  /// In uz, this message translates to:
+  /// **'{date} da tugaydi, uzaytirilmaydi'**
+  String billingEndsOn(Object date);
+
+  /// No description provided for @billingPastDue.
+  ///
+  /// In uz, this message translates to:
+  /// **'Obunani uzaytirib bo‘lmadi, bepul tarifdasiz.'**
+  String get billingPastDue;
+
+  /// No description provided for @billingCancel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uzaytirishni to‘xtatish'**
+  String get billingCancel;
+
+  /// No description provided for @billingResume.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uzaytirishni yoqish'**
+  String get billingResume;
+
+  /// No description provided for @billingCancelTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uzaytirish to‘xtatilsinmi?'**
+  String get billingCancelTitle;
+
+  /// No description provided for @billingCancelBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tarif {date} gacha ishlaydi, keyin bepul tarifga o‘tasiz.'**
+  String billingCancelBody(Object date);
+
+  /// No description provided for @billingPlans.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tariflar'**
+  String get billingPlans;
+
+  /// No description provided for @billingPerMonth.
+  ///
+  /// In uz, this message translates to:
+  /// **'{price} so‘m / oy'**
+  String billingPerMonth(Object price);
+
+  /// No description provided for @billingPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'{price} so‘m'**
+  String billingPrice(Object price);
+
+  /// No description provided for @billingFeatureDaily.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuniga {commands} ta buyruq'**
+  String billingFeatureDaily(Object commands);
+
+  /// No description provided for @billingFeatureScreenDaily.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuniga {tasks} ta ilova vazifasi'**
+  String billingFeatureScreenDaily(Object tasks);
+
+  /// No description provided for @billingFeatureNoDaily.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kunlik cheklovsiz'**
+  String get billingFeatureNoDaily;
+
+  /// No description provided for @billingFeatureVision.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ekrandagi rasmlarni ham tushunadi'**
+  String get billingFeatureVision;
+
+  /// No description provided for @billingFeatureStrong.
+  ///
+  /// In uz, this message translates to:
+  /// **'Murakkab vazifalar uchun eng kuchli model'**
+  String get billingFeatureStrong;
+
+  /// No description provided for @billingCurrent.
+  ///
+  /// In uz, this message translates to:
+  /// **'Joriy tarif'**
+  String get billingCurrent;
+
+  /// No description provided for @billingChoose.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tanlash'**
+  String get billingChoose;
+
+  /// No description provided for @billingExtend.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uzaytirish'**
+  String get billingExtend;
+
+  /// No description provided for @billingPackTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo‘shimcha limit'**
+  String get billingPackTitle;
+
+  /// No description provided for @billingPackBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Shu oy uchun ko‘proq ish. Tarif o‘zgarmaydi.'**
+  String get billingPackBody;
+
+  /// No description provided for @billingAddMore.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ko‘proq qo‘shish · {price} so‘m'**
+  String billingAddMore(Object price);
+
+  /// No description provided for @billingPayTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'To‘lov usuli'**
+  String get billingPayTitle;
+
+  /// No description provided for @billingMethodCard.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bank kartasi'**
+  String get billingMethodCard;
+
+  /// No description provided for @billingSecure.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xavfsiz. Alesle karta ma’lumotlaringizni ko‘rmaydi.'**
+  String get billingSecure;
+
+  /// No description provided for @billingNoMethods.
+  ///
+  /// In uz, this message translates to:
+  /// **'To‘lov hozircha mavjud emas. Keyinroq urinib ko‘ring.'**
+  String get billingNoMethods;
+
+  /// No description provided for @billingPageNotOpened.
+  ///
+  /// In uz, this message translates to:
+  /// **'To‘lov sahifasini ochib bo‘lmadi.'**
+  String get billingPageNotOpened;
+
+  /// No description provided for @billingChecking.
+  ///
+  /// In uz, this message translates to:
+  /// **'To‘lov tekshirilmoqda…'**
+  String get billingChecking;
+
+  /// No description provided for @billingCheckingBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Odatda bir necha soniya oladi.'**
+  String get billingCheckingBody;
+
+  /// No description provided for @billingPaid.
+  ///
+  /// In uz, this message translates to:
+  /// **'To‘lov qabul qilindi'**
+  String get billingPaid;
+
+  /// No description provided for @billingPaidBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hammasi tayyor, davom etavering.'**
+  String get billingPaidBody;
+
+  /// No description provided for @billingNotPaid.
+  ///
+  /// In uz, this message translates to:
+  /// **'To‘lov o‘tmadi'**
+  String get billingNotPaid;
+
+  /// No description provided for @billingNotPaidBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qayta yoki boshqa usul bilan urinib ko‘ring.'**
+  String get billingNotPaidBody;
+
+  /// No description provided for @billingStillWaiting.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hali tasdiqlanmadi'**
+  String get billingStillWaiting;
+
+  /// No description provided for @billingStillWaitingBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'To‘lov tasdiqlanishi bilan tarif o‘zi yoqiladi.'**
+  String get billingStillWaitingBody;
+
+  /// No description provided for @billingCheckAgain.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana tekshirish'**
+  String get billingCheckAgain;
+
+  /// No description provided for @limitMonthTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu oylik limit tugadi'**
+  String get limitMonthTitle;
+
+  /// No description provided for @limitMonthBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo‘ng‘iroq, budilnik va SMS ishlayveradi. Ilovalar bilan ishlash uchun ko‘proq qo‘shing.'**
+  String get limitMonthBody;
+
+  /// No description provided for @limitDailyTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bugungi bepul limit tugadi'**
+  String get limitDailyTitle;
+
+  /// No description provided for @limitDailyBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ertaga yana davom etasiz yoki Pro bilan kunlik cheklovsiz ishlaysiz.'**
+  String get limitDailyBody;
+
+  /// No description provided for @limitUpgrade.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tarifni oshirish'**
+  String get limitUpgrade;
+
+  /// No description provided for @limitWaitUntil.
+  ///
+  /// In uz, this message translates to:
+  /// **'{date} gacha kutish'**
+  String limitWaitUntil(Object date);
+
+  /// No description provided for @limitWaitTomorrow.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ertagacha kutish'**
+  String get limitWaitTomorrow;
+
+  /// No description provided for @usageHighNotice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu oylik limitning {percent}% ishlatildi.'**
+  String usageHighNotice(Object percent);
+
+  /// No description provided for @taskAddMore.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ko‘proq qo‘shish'**
+  String get taskAddMore;
+
+  /// No description provided for @commonLater.
+  ///
+  /// In uz, this message translates to:
+  /// **'Keyinroq'**
+  String get commonLater;
+
+  /// No description provided for @commonDone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayyor'**
+  String get commonDone;
 }
 
 class _AppLocalizationsDelegate

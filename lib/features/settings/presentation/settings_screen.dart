@@ -372,6 +372,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 AlesleGroup(
                   children: <Widget>[
                     ListTile(
+                      key: const Key('settings-plan'),
+                      leading: const Icon(Icons.workspace_premium_outlined),
+                      title: Text(l10n.settingsPlan),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => unawaited(context.push(AppRoutes.plan)),
+                    ),
+                    ListTile(
                       key: const Key('settings-memory'),
                       leading: const Icon(Icons.psychology_outlined),
                       title: Text(l10n.settingsMemory),

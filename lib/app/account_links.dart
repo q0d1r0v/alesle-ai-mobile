@@ -3,16 +3,19 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../core/auth/auth_session.dart';
 import '../core/storage/app_settings.dart';
 import '../features/auth/data/auth_data_providers.dart';
 import '../features/auth/domain/auth_repository.dart';
 import '../features/auth/presentation/auth_messages.dart';
+import '../features/billing/domain/billing.dart';
 import '../features/settings/data/settings_data_providers.dart';
 import '../features/settings/domain/account.dart';
 import 'bootstrap/core_providers.dart';
 import 'l10n/app_localizations.dart';
+import 'router/app_router.dart';
 
 /// Links the app is opened with (App Links); tests replace it.
 final Provider<Stream<Uri>> incomingLinksProvider = Provider<Stream<Uri>>((
@@ -28,7 +31,7 @@ final GlobalKey<ScaffoldMessengerState> appMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
 
 /// App-wide account upkeep: opens sign-in and confirmation links from emails
-/// (EC-AU-1), and after a sign-in brings this phone and the account in line.
+/// (EC-AU-1) and the payment page's way back (SOW 07 §5), and after a sign-in brings this phone and the account in line.
 class AccountLinks extends ConsumerStatefulWidget {
   const AccountLinks({required this.child, super.key});
 
@@ -56,6 +59,10 @@ class _AccountLinksState extends ConsumerState<AccountLinks> {
   }
 
   Future<void> _open(Uri uri) async {
+    if (paymentFromReturnLink(uri) case final String payment) {
+      _openPayment(payment);
+      return;
+    }
     final EmailLink? link = EmailLink.parse(uri);
     if (link == null) return;
     final AuthRepository auth = ref.read(authRepositoryProvider);
@@ -70,6 +77,15 @@ class _AccountLinksState extends ConsumerState<AccountLinks> {
     } on Object catch (error) {
       _say((AppLocalizations l10n) => authFailureMessage(l10n, error));
     }
+  }
+
+  /// Shows the payment's status, unless it is already on screen (the status
+  /// screen opened when the payment page did).
+  void _openPayment(String payment) {
+    final GoRouter router = ref.read(routerProvider);
+    final String path = AppRoutes.paymentFor(payment);
+    if (router.routerDelegate.currentConfiguration.uri.path == path) return;
+    unawaited(router.push(path));
   }
 
   void _say(String Function(AppLocalizations l10n) message) {

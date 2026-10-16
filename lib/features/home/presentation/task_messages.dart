@@ -37,6 +37,10 @@ String? taskExplanation(
   };
 }
 
+/// The plan's limit stopped the task: the limit screen has a way on.
+bool isLimitReason(String? reason) =>
+    reason == 'limit_reached' || reason == 'daily_limit';
+
 /// "Good morning" until noon, "Good afternoon" until six, then evening.
 String greeting(AppLocalizations l10n, DateTime now) => switch (now.hour) {
   >= 5 && < 12 => l10n.greetingMorning,
