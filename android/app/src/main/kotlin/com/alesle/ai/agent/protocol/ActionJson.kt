@@ -21,6 +21,20 @@ sealed interface DecodedAction {
     data class Intent(
         val action: IntentAction,
     ) : DecodedAction
+
+    /**
+     * The user's turn: a permission dialog, a lock screen, a password. The
+     * loop waits, hands off the screen, until it changes or [timeoutMs] passes.
+     */
+    data class WaitForUser(
+        val timeoutMs: Long,
+    ) : DecodedAction {
+        companion object {
+            const val DEFAULT_MS = 60_000L
+            const val MIN_MS = 5_000L
+            const val MAX_MS = 120_000L
+        }
+    }
 }
 
 /** The action JSON was malformed; [reason] is a snake_case code for the backend. */
@@ -36,6 +50,7 @@ class ActionDecodeException(
  * {"type":"long_press","nodeId":4}         {"type":"type_text","nodeId":2,"text":"salom","submit":true}
  * {"type":"scroll","direction":"down"}     {"type":"back"} {"type":"home"} {"type":"recents"}
  * {"type":"wait","ms":1500,"until":{"textContains":"Yuborildi"}}
+ * {"type":"wait_for_user","timeoutMs":60000}
  * {"type":"launch_app","package":"org.telegram.messenger"}   {"type":"launch_app","name":"Telegram"}
  * {"type":"intent","kind":"call","to":{"contact":"Aziz"}}    // or {"phone":"+998…"} / {"ref":"contact:12"}
  * {"type":"intent","kind":"sms","to":{…},"text":"…"}
@@ -68,6 +83,11 @@ object ActionJson {
             "home" -> DecodedAction.Screen(AgentAction.Global(GlobalAction.HOME))
             "recents" -> DecodedAction.Screen(AgentAction.Global(GlobalAction.RECENTS))
             "wait" -> DecodedAction.Screen(wait(json))
+            "wait_for_user" ->
+                DecodedAction.WaitForUser(
+                    (json.optionalLong("timeoutMs") ?: DecodedAction.WaitForUser.DEFAULT_MS)
+                        .coerceIn(DecodedAction.WaitForUser.MIN_MS, DecodedAction.WaitForUser.MAX_MS),
+                )
             "launch_app" -> {
                 val packageName = json.optionalString("package")
                 val name = json.optionalString("name")

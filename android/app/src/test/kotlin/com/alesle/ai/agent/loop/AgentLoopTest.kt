@@ -254,6 +254,56 @@ class AgentLoopTest {
     }
 
     @Test
+    fun `waits for the user without a sheet until the screen changes`() {
+        accepted()
+        device.hash = "dialog"
+        sockets.receive("""{"type":"observe"}""")
+        sockets.receive(act("s1", """{"type":"wait_for_user","timeoutMs":5000}"""))
+        assertEquals(listOf("Ishlayapman"), ui.steps)
+        assertTrue(ui.asks.isEmpty())
+        assertTrue(device.executed.isEmpty())
+
+        // Still the dialog: keep waiting.
+        worker.runDelayed()
+        assertEquals(listOf(AgentLoop.USER_POLL_MS, AgentLoop.USER_POLL_MS), worker.delays)
+        // A re-sent act while waiting does not start a second wait.
+        sockets.receive(act("s1", """{"type":"wait_for_user","timeoutMs":5000}"""))
+        assertEquals(2, worker.delays.size)
+
+        device.hash = null
+        worker.runDelayed()
+        val observation = JSONObject(sockets.sent.last())
+        assertEquals("s1", observation.getString("stepId"))
+        assertEquals("ok", observation.getJSONObject("result").getString("status"))
+        assertTrue(device.settles > 0)
+    }
+
+    @Test
+    fun `gives up waiting for the user after the timeout`() {
+        accepted()
+        device.hash = "lock"
+        sockets.receive("""{"type":"observe"}""")
+        sockets.receive(act("s1", """{"type":"wait_for_user","timeoutMs":5000}"""))
+        val polls = (5_000 / AgentLoop.USER_POLL_MS).toInt()
+        repeat(polls) { worker.runDelayed() }
+        val result = JSONObject(sockets.sent.last()).getJSONObject("result")
+        assertEquals("error", result.getString("status"))
+        assertEquals(AgentLoop.USER_TIMEOUT, result.getString("reason"))
+        assertEquals(polls, worker.delays.size)
+    }
+
+    @Test
+    fun `STOP while waiting for the user ends the wait`() {
+        val loop = accepted()
+        device.hash = "dialog"
+        sockets.receive(act("s1", """{"type":"wait_for_user"}"""))
+        loop.stop()
+        val sent = sockets.sent.size
+        worker.runDelayed()
+        assertEquals(sent, sockets.sent.size)
+    }
+
+    @Test
     fun `STOP ends at once and tells the server`() {
         val loop = accepted()
         loop.stop()
@@ -424,9 +474,12 @@ private class FakeDevice : LoopDevice {
     val executed = mutableListOf<DecodedAction>()
     val executedOn = mutableListOf<CapturedScreen?>()
 
+    /** When set, every capture shows this same screen. */
+    var hash: String? = null
+
     override fun capture(): CapturedScreen? {
         captures++
-        lastCapture = screen?.let { screen(captures) }
+        lastCapture = screen?.let { screen(captures, hash) }
         return lastCapture
     }
 
@@ -452,22 +505,24 @@ private class FakeDevice : LoopDevice {
         return picture
     }
 
-    private fun screen(n: Int = 0) =
-        CapturedScreen(
-            ScreenSnapshot(
-                "s-$n",
-                "com.example",
-                null,
-                "hash-$n",
-                "uz",
-                Orientation.PORTRAIT,
-                emptyList(),
-                keyboardVisible = false,
-                truncated = false,
-            ),
+    private fun screen(
+        n: Int = 0,
+        hash: String? = null,
+    ) = CapturedScreen(
+        ScreenSnapshot(
+            "s-$n",
+            "com.example",
+            null,
+            hash ?: "hash-$n",
+            "uz",
+            Orientation.PORTRAIT,
             emptyList(),
-            Bounds(0, 0, 1080, 2400),
-        )
+            keyboardVisible = false,
+            truncated = false,
+        ),
+        emptyList(),
+        Bounds(0, 0, 1080, 2400),
+    )
 }
 
 private class FakeUi : LoopUi {

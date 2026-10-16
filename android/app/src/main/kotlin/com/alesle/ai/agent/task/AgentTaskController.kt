@@ -51,6 +51,11 @@ class AgentTaskController(
     @Volatile
     var listener: ((StepEvent) -> Unit)? = null
 
+    /** How the last task ended, in memory only: the debug receiver reports it to the eval. */
+    @Volatile
+    var lastFinished: StepEvent? = null
+        private set
+
     private var loop: TaskLoop? = null
     private var stopHandle: AutoCloseable? = null
 
@@ -102,7 +107,9 @@ class AgentTaskController(
                     stopHandle = null
                     stopService()
                 }
-                emit(StepEvent(StepEventKind.FINISHED, event.reply, event.status, event.reason))
+                val finished = StepEvent(StepEventKind.FINISHED, event.reply, event.status, event.reason)
+                lastFinished = finished
+                emit(finished)
             }
         }
     }

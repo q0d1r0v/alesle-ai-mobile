@@ -30,6 +30,8 @@ class RuntimeLoopDevice(
                 val target = screen ?: device.capture() ?: return ActionResult.notFound("no_window")
                 ActionExecutor(device).execute(action.action, target)
             }
+            // AgentLoop waits for the user itself; nothing to run here.
+            is DecodedAction.WaitForUser -> ActionResult.error(LOOP_ONLY)
         }
     }
 
@@ -50,6 +52,7 @@ class RuntimeLoopDevice(
 
     companion object {
         const val ACCESSIBILITY_OFF = "accessibility_off"
+        const val LOOP_ONLY = "loop_only"
         const val FIRST_PAUSE_MS = 150L
         const val QUIET_MS = 400L
         const val POLL_MS = 100L

@@ -2,6 +2,7 @@ import 'package:alesle_ai/app/app.dart';
 import 'package:alesle_ai/app/bootstrap/core_providers.dart';
 import 'package:alesle_ai/core/config/app_config.dart';
 import 'package:alesle_ai/core/network/dio_factory.dart';
+import 'package:alesle_ai/core/storage/app_settings.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,7 +17,35 @@ import 'package:integration_test/integration_test.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('home shows server readiness and the native agent status', (
+  Future<AppSettingsStore> settings({required bool onboardingDone}) async {
+    final AppSettingsStore store = await AppSettingsStore.load();
+    await store.write(AppSettings(onboardingDone: onboardingDone));
+    return store;
+  }
+
+  testWidgets('a first launch starts with onboarding', (
+    WidgetTester tester,
+  ) async {
+    final AppConfig config = AppConfig.parse(
+      environment: 'dev',
+      apiBaseUrl: 'http://api.test',
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appConfigProvider.overrideWithValue(config),
+          appSettingsStoreProvider.overrideWithValue(
+            await settings(onboardingDone: false),
+          ),
+        ],
+        child: const AlesleApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('onboarding-start')), findsOneWidget);
+  });
+
+  testWidgets('home shows the native agent status: off until enabled', (
     WidgetTester tester,
   ) async {
     final AppConfig config = AppConfig.parse(
@@ -41,13 +70,17 @@ void main() {
         overrides: [
           appConfigProvider.overrideWithValue(config),
           dioProvider.overrideWithValue(dio),
+          appSettingsStoreProvider.overrideWithValue(
+            await settings(onboardingDone: true),
+          ),
         ],
         child: const AlesleApp(),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('server-status-card')), findsOneWidget);
+    // A freshly installed app has no accessibility: "Alesle is off".
+    expect(find.byKey(const Key('off-view')), findsOneWidget);
     expect(
       find.byKey(const Key('enable-accessibility-button')),
       findsOneWidget,

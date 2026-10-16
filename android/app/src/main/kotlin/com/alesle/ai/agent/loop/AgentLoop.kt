@@ -131,6 +131,9 @@ class AgentLoop(
     private var taskId: String? = null
     private var lastScreen: CapturedScreen? = null
     private var executed: Pair<String, ActionResult>? = null
+
+    /** The step waiting for the user; a re-sent act for it must not start a second wait. */
+    private var waitingStep: String? = null
     private var reconnects = 0
 
     fun start() {
@@ -212,6 +215,7 @@ class AgentLoop(
             observe(frame.stepId, done.second)
             return
         }
+        if (frame.stepId == waitingStep) return
         ui.showStep(frame.say)
         events(LoopEvent.Step(frame.say))
         val decoded =
@@ -221,6 +225,10 @@ class AgentLoop(
                 finishStep(frame.stepId, ActionResult.error(e.reason))
                 return
             }
+        if (decoded is DecodedAction.WaitForUser) {
+            waitForUser(frame.stepId, decoded.timeoutMs)
+            return
+        }
         val confirm = frame.confirm
         if (confirm == null) {
             run(frame.stepId, decoded)
@@ -251,6 +259,43 @@ class AgentLoop(
         if (ended.get()) return
         device.settle()
         finishStep(stepId, result)
+    }
+
+    /**
+     * A permission dialog or a lock screen is the user's to answer: no sheet
+     * over it (it would hide the dialog's own buttons, eval 2026-10-16), only
+     * the pill saying what to do. Done when the screen changes.
+     */
+    private fun waitForUser(
+        stepId: String,
+        timeoutMs: Long,
+    ) {
+        waitingStep = stepId
+        val before = (lastScreen ?: device.capture())?.snapshot?.screenHash
+        pollUser(stepId, before, polls = (timeoutMs / USER_POLL_MS).toInt().coerceAtLeast(1))
+    }
+
+    private fun pollUser(
+        stepId: String,
+        before: String?,
+        polls: Int,
+    ) {
+        worker.postDelayed(USER_POLL_MS) {
+            if (ended.get()) return@postDelayed
+            val now = device.capture()?.snapshot?.screenHash
+            when {
+                now != null && now != before -> {
+                    waitingStep = null
+                    device.settle()
+                    finishStep(stepId, ActionResult.OK)
+                }
+                polls <= 1 -> {
+                    waitingStep = null
+                    finishStep(stepId, ActionResult.error(USER_TIMEOUT))
+                }
+                else -> pollUser(stepId, before, polls - 1)
+            }
+        }
     }
 
     /** Actions that may fall back to a gesture; waits, global keys and intents never touch the screen. */
@@ -303,5 +348,8 @@ class AgentLoop(
     companion object {
         /** About 28 s in all: inside the server's 30 s grace (EC-1). */
         val RECONNECT_DELAYS_MS = listOf(1_000L, 2_000L, 4_000L, 8_000L, 8_000L, 5_000L)
+
+        const val USER_POLL_MS = 700L
+        const val USER_TIMEOUT = "user_timeout"
     }
 }

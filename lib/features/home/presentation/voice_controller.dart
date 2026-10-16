@@ -19,9 +19,14 @@ final class VoiceState {
   final Failure? failure;
 }
 
-/// Tap to speak, tap again to finish (SOW 04 §4.1, design "Listening").
+/// Tap to speak, tap again to finish; or hold while speaking (SOW 04 §4.1,
+/// design "Listening").
 class VoiceController extends Notifier<VoiceState> {
   VoiceRepository get _voice => ref.read(voiceRepositoryProvider);
+
+  /// Between the tap and the microphone opening: a second tap must not
+  /// start a second recording.
+  bool _starting = false;
 
   @override
   VoiceState build() => const VoiceState();
@@ -33,7 +38,13 @@ class VoiceController extends Notifier<VoiceState> {
       case VoicePhase.transcribing:
         return null;
       case VoicePhase.idle:
-        await _start();
+        if (_starting) return null;
+        _starting = true;
+        try {
+          await _start();
+        } finally {
+          _starting = false;
+        }
         return null;
       case VoicePhase.listening:
         return _finish(language);

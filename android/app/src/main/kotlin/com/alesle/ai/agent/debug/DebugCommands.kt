@@ -52,6 +52,7 @@ class DebugCommands(
                     val screen = lastScreen ?: device.capture() ?: return error("no_window")
                     ActionExecutor(device).execute(decoded.action, screen)
                 }
+                is DecodedAction.WaitForUser -> return error("loop_only")
             }
         return ActionJson.encode(result)
     }

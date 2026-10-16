@@ -200,6 +200,19 @@ class _IdleView extends ConsumerWidget {
                         child: GestureDetector(
                           key: const Key('orb'),
                           onTap: () => unawaited(_onOrb(context, ref)),
+                          // Hold to talk: listening while the finger is down.
+                          onLongPressStart: (_) {
+                            if (ref.read(voiceProvider).phase ==
+                                VoicePhase.idle) {
+                              unawaited(_onOrb(context, ref));
+                            }
+                          },
+                          onLongPressEnd: (_) {
+                            if (ref.read(voiceProvider).phase ==
+                                VoicePhase.listening) {
+                              unawaited(_onOrb(context, ref));
+                            }
+                          },
                           child: AlesleOrb(
                             size: orb,
                             state: switch (phase) {

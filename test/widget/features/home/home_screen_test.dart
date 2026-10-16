@@ -9,6 +9,7 @@ import 'package:alesle_ai/features/home/domain/home_repositories.dart';
 import 'package:alesle_ai/features/home/domain/server_health.dart';
 import 'package:alesle_ai/features/home/presentation/home_providers.dart';
 import 'package:alesle_ai/features/home/presentation/home_screen.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -379,6 +380,27 @@ void main() {
       await tester.tap(find.byKey(const Key('send-button')));
       await tester.pump();
       expect(assistant.commands.single.text, 'Onamga qo‘ng‘iroq qil, iltimos');
+    });
+
+    testWidgets('hold to talk: listens while held, finishes on release', (
+      WidgetTester tester,
+    ) async {
+      await pumpHome(tester);
+      final TestGesture finger = await tester.startGesture(
+        tester.getCenter(find.byKey(const Key('orb'))),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await tester.pump();
+      expect(voice.starts, 1);
+      expect(find.text('Eshityapman'), findsOneWidget);
+
+      await finger.up();
+      await tester.pumpAndSettle();
+      expect(voice.languages, <String?>['uz']);
+      final TextField field = tester.widget(
+        find.byKey(const Key('command-field')),
+      );
+      expect(field.controller?.text, 'Onamga qo‘ng‘iroq qil');
     });
 
     testWidgets('tells the user when the microphone is not allowed', (

@@ -50,14 +50,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _refresh() async {
+    if (!mounted) return;
+    // Read once: after an await the screen may be gone, and ref with it.
+    final DeviceSetupRepository repository = _repository;
     try {
       final Map<SetupPermission, PermissionStatus> statuses =
           <SetupPermission, PermissionStatus>{
             for (final SetupPermission permission in SetupPermission.values)
-              permission: await _repository.status(permission),
+              permission: await repository.status(permission),
           };
-      final bool accessibility = await _repository.accessibilityEnabled();
-      final DeviceSetup setup = await _repository.setup();
+      final bool accessibility = await repository.accessibilityEnabled();
+      final DeviceSetup setup = await repository.setup();
       if (!mounted) return;
       setState(() {
         _permissions
@@ -95,15 +98,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _askPermissions() async {
+    final DeviceSetupRepository repository = _repository;
     for (final SetupPermission permission in SetupPermission.values) {
       final PermissionStatus current =
           _permissions[permission] ?? PermissionStatus.denied;
       if (current == PermissionStatus.granted) continue;
       if (current == PermissionStatus.permanentlyDenied) {
-        await _repository.openAppDetails();
+        await repository.openAppDetails();
         return;
       }
-      final PermissionStatus answer = await _repository.request(permission);
+      final PermissionStatus answer = await repository.request(permission);
       if (!mounted) return;
       setState(() => _permissions[permission] = answer);
     }

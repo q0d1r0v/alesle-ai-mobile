@@ -112,6 +112,7 @@ class AgentTaskControllerTest {
         assertFalse(controller.isRunning)
         assertEquals(StepEvent(StepEventKind.FINISHED, "Bajarildi", "done", null), events.last())
         assertEquals(1, events.count { it.kind == StepEventKind.FINISHED })
+        assertEquals(events.last(), controller.lastFinished)
     }
 
     @Test

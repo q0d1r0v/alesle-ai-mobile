@@ -81,6 +81,14 @@ void main() {
     expect(voice.cancels, 1);
   });
 
+  test('a second tap while the microphone opens starts nothing more', () async {
+    final Future<String?> first = controller().toggle();
+    expect(await controller().toggle(), isNull);
+    await first;
+    expect(voice.starts, 1);
+    expect(state().phase, VoicePhase.listening);
+  });
+
   test('a tap while transcribing does nothing', () async {
     await controller().toggle();
     final Future<String?> finishing = controller().toggle();

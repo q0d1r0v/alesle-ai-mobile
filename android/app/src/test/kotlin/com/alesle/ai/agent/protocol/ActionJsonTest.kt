@@ -63,6 +63,14 @@ class ActionJsonTest {
     }
 
     @Test
+    fun `decodes a wait for the user, its timeout kept within bounds`() {
+        assertEquals(DecodedAction.WaitForUser(60_000), ActionJson.decode("""{"type":"wait_for_user"}"""))
+        assertEquals(DecodedAction.WaitForUser(30_000), ActionJson.decode("""{"type":"wait_for_user","timeoutMs":30000}"""))
+        assertEquals(DecodedAction.WaitForUser(5_000), ActionJson.decode("""{"type":"wait_for_user","timeoutMs":10}"""))
+        assertEquals(DecodedAction.WaitForUser(120_000), ActionJson.decode("""{"type":"wait_for_user","timeoutMs":9999999}"""))
+    }
+
+    @Test
     fun `decodes app launches`() {
         assertEquals(
             IntentAction.LaunchApp(packageName = "org.telegram.messenger"),

@@ -2,6 +2,7 @@ import 'package:alesle_ai/app/app.dart';
 import 'package:alesle_ai/app/bootstrap/core_providers.dart';
 import 'package:alesle_ai/core/config/app_config.dart';
 import 'package:alesle_ai/core/network/dio_factory.dart';
+import 'package:alesle_ai/core/storage/app_settings.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,11 +35,15 @@ void main() {
       }),
     );
 
+    final AppSettingsStore store = await AppSettingsStore.load();
+    await store.write(const AppSettings(onboardingDone: true));
+
     await $.pumpWidgetAndSettle(
       ProviderScope(
         overrides: [
           appConfigProvider.overrideWithValue(config),
           dioProvider.overrideWithValue(dio),
+          appSettingsStoreProvider.overrideWithValue(store),
         ],
         child: const AlesleApp(),
       ),

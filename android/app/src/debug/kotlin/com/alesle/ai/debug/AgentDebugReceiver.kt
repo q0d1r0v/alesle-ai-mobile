@@ -97,6 +97,7 @@ class AgentDebugReceiver : BroadcastReceiver() {
                     .put("taskRunning", tasks.isRunning)
                     .put("fgsRunning", AgentForegroundService.running)
                     .put("stopRequests", stopRequests)
+                    .put("lastReply", tasks.lastFinished?.text)
             else -> error("unknown_cmd")
         }
     }
