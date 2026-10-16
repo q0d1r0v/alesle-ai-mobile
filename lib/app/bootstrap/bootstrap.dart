@@ -5,6 +5,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 
+import '../../core/auth/auth_session.dart';
+import '../../core/auth/session_store.dart';
 import '../../core/config/app_config.dart';
 import '../../core/storage/app_settings.dart';
 import '../app.dart';
@@ -14,7 +16,7 @@ import 'core_providers.dart';
 AppConfig configFromEnvironment() => AppConfig.parse(
   environment: const String.fromEnvironment('APP_ENV'),
   apiBaseUrl: const String.fromEnvironment('API_BASE_URL'),
-  devAuthToken: const String.fromEnvironment('DEV_AUTH_TOKEN'),
+  googleServerClientId: const String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID'),
 );
 
 /// App entry: validate configuration, then start. A misconfigured build
@@ -29,11 +31,15 @@ Future<void> bootstrap({List<Override> overrides = const <Override>[]}) async {
   );
   final AppConfig config = configFromEnvironment();
   final AppSettingsStore settings = await AppSettingsStore.load();
+  final SessionStore sessions = SecureSessionStore();
+  final AuthSession? session = await sessions.read();
   runApp(
     ProviderScope(
       overrides: <Override>[
         appConfigProvider.overrideWithValue(config),
         appSettingsStoreProvider.overrideWithValue(settings),
+        sessionStoreProvider.overrideWithValue(sessions),
+        initialSessionProvider.overrideWithValue(session),
         ...overrides,
       ],
       child: const AlesleApp(),

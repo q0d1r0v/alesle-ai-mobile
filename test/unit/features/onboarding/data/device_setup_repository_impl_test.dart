@@ -56,6 +56,7 @@ void main() {
         batteryOptimizationIgnored: true,
         manufacturer: 'xiaomi',
         sdkInt: 36,
+        deviceName: 'Xiaomi 23090RA98G',
       ),
     );
     when(

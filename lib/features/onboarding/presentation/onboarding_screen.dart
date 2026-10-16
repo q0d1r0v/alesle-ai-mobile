@@ -10,6 +10,7 @@ import '../../../app/router/app_router.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../app/widgets/alesle_orb.dart';
 import '../../../app/widgets/capsule_button.dart';
+import '../../../app/widgets/grouped_card.dart';
 import '../../../core/errors/failure.dart';
 import '../../../core/storage/app_settings.dart';
 import '../data/onboarding_data_providers.dart';
@@ -237,56 +238,6 @@ class _StepLayout extends StatelessWidget {
 }
 
 /// The white grouped list of the design system.
-/// A white rounded card; its own [Material] so list tiles inside show ink.
-class _Card extends StatelessWidget {
-  const _Card({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final BorderRadius radius = BorderRadius.circular(AlesleRadii.card);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        boxShadow: AlesleShadows.card,
-      ),
-      child: Material(
-        color: Colors.white,
-        borderRadius: radius,
-        clipBehavior: Clip.antiAlias,
-        child: child,
-      ),
-    );
-  }
-}
-
-class _Group extends StatelessWidget {
-  const _Group({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return _Card(
-      child: Column(
-        children: <Widget>[
-          for (final (int index, Widget child) in children.indexed) ...<Widget>[
-            if (index > 0)
-              const Divider(
-                height: 1,
-                indent: 16,
-                endIndent: 16,
-                color: AlesleColors.hairline,
-              ),
-            child,
-          ],
-        ],
-      ),
-    );
-  }
-}
-
 // ── Steps ────────────────────────────────────────────────────────────────────
 
 class _Welcome extends StatelessWidget {
@@ -366,7 +317,7 @@ class _Language extends ConsumerWidget {
       onBack: onBack,
       title: context.l10n.onboardingLanguageTitle,
       body: context.l10n.onboardingLanguageBody,
-      content: _Group(
+      content: AlesleGroup(
         children: <Widget>[
           for (final (String code, String name) in _options)
             ListTile(
@@ -411,7 +362,7 @@ class _Privacy extends StatelessWidget {
     return _StepLayout(
       onBack: onBack,
       title: context.l10n.onboardingPrivacyTitle,
-      content: _Group(
+      content: AlesleGroup(
         children: <Widget>[
           for (final (IconData icon, String text) in points)
             ListTile(
@@ -483,7 +434,7 @@ class _Permissions extends StatelessWidget {
       onBack: onBack,
       title: context.l10n.onboardingPermissionsTitle,
       body: context.l10n.onboardingPermissionsBody,
-      content: _Group(
+      content: AlesleGroup(
         children: <Widget>[
           for (final (
                 SetupPermission permission,
@@ -613,7 +564,7 @@ class _TurnOn extends StatelessWidget {
       onBack: onBack,
       title: context.l10n.turnOnTitle,
       body: context.l10n.turnOnBody,
-      content: _Card(
+      content: AlesleCard(
         child: ListTile(
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
@@ -684,7 +635,7 @@ class _Battery extends StatelessWidget {
       onBack: onBack,
       title: context.l10n.onboardingBatteryTitle,
       body: context.l10n.onboardingBatteryBody,
-      content: _Group(
+      content: AlesleGroup(
         children: <Widget>[
           ListTile(
             key: const Key('battery-exempt'),

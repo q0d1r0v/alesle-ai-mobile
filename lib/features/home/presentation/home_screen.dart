@@ -171,19 +171,28 @@ class _IdleView extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Align(
-          alignment: Alignment.centerLeft,
-          // Debug builds: a long press opens the agent console.
-          child: GestureDetector(
-            key: const Key('home-title'),
-            onLongPress: kDebugMode
-                ? () => unawaited(context.push(AppRoutes.agentDebug))
-                : null,
-            child: Text(
-              greeting(context.l10n, now()),
-              style: text.bodyLarge?.copyWith(color: AlesleColors.text2),
+        Row(
+          children: <Widget>[
+            Expanded(
+              // Debug builds: a long press opens the agent console.
+              child: GestureDetector(
+                key: const Key('home-title'),
+                onLongPress: kDebugMode
+                    ? () => unawaited(context.push(AppRoutes.agentDebug))
+                    : null,
+                child: Text(
+                  greeting(context.l10n, now()),
+                  style: text.bodyLarge?.copyWith(color: AlesleColors.text2),
+                ),
+              ),
             ),
-          ),
+            IconButton(
+              key: const Key('home-settings'),
+              onPressed: () => unawaited(context.push(AppRoutes.settings)),
+              icon: const Icon(Icons.tune_rounded),
+              tooltip: context.l10n.settingsTitle,
+            ),
+          ],
         ),
         Expanded(
           child: off

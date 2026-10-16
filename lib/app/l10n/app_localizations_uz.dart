@@ -284,4 +284,176 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get voiceMicDenied => 'Mikrofonga ruxsat kerak.';
+
+  @override
+  String get signInTitle => 'Alesle’ga kiring';
+
+  @override
+  String get signInBody =>
+      'Sozlamalar va tarixingiz barcha qurilmalarda saqlanadi.';
+
+  @override
+  String get signInGoogle => 'Google bilan davom etish';
+
+  @override
+  String get signInEmail => 'Email bilan davom etish';
+
+  @override
+  String get signInEmailLabel => 'Email';
+
+  @override
+  String get signInPasswordLabel => 'Parol';
+
+  @override
+  String get signInNameLabel => 'Ismingiz (ixtiyoriy)';
+
+  @override
+  String get signInButton => 'Kirish';
+
+  @override
+  String get signInCreateButton => 'Akkaunt yaratish';
+
+  @override
+  String get signInToCreate => 'Akkauntingiz yo‘qmi? Yarating';
+
+  @override
+  String get signInToSignIn => 'Akkauntingiz bormi? Kiring';
+
+  @override
+  String get signInSendLink => 'Parolsiz: emailga havola yuboring';
+
+  @override
+  String get signInLinkSentTitle => 'Emailingizni tekshiring';
+
+  @override
+  String signInLinkSentBody(String email) {
+    return '$email manziliga kirish havolasini yubordik. Uni shu telefonda oching.';
+  }
+
+  @override
+  String get signInBackToOptions => 'Boshqa usul';
+
+  @override
+  String get signInSigningIn => 'Kirilmoqda…';
+
+  @override
+  String get signInBadEmail => 'Email manzilini tekshiring.';
+
+  @override
+  String get signInShortPassword => 'Parol kamida 8 belgi bo‘lsin.';
+
+  @override
+  String get authInvalidCredentials => 'Email yoki parol noto‘g‘ri.';
+
+  @override
+  String get authEmailTaken =>
+      'Bu email bilan akkaunt bor. Kiring yoki havola so‘rang.';
+
+  @override
+  String get authLinkInvalid =>
+      'Havola eskirgan yoki ishlatilgan. Yangisini so‘rang.';
+
+  @override
+  String get authGoogleFailed =>
+      'Google bilan kirib bo‘lmadi. Boshqa usulni sinang.';
+
+  @override
+  String get authSessionExpired => 'Qaytadan kiring.';
+
+  @override
+  String get authTooMany =>
+      'Juda ko‘p urinish. Bir daqiqadan keyin qayta urining.';
+
+  @override
+  String get emailVerified => 'Email tasdiqlandi.';
+
+  @override
+  String get settingsTitle => 'Sozlamalar';
+
+  @override
+  String get settingsAccount => 'Akkaunt';
+
+  @override
+  String get settingsName => 'Ism';
+
+  @override
+  String get settingsNameEmpty => 'Kiritilmagan';
+
+  @override
+  String get settingsEmailUnverified => 'Tasdiqlanmagan';
+
+  @override
+  String get settingsResendEmail => 'Tasdiqlash xatini qayta yuborish';
+
+  @override
+  String get settingsEmailSent => 'Xat yuborildi.';
+
+  @override
+  String get settingsAssistant => 'Yordamchi';
+
+  @override
+  String get settingsLanguage => 'Til';
+
+  @override
+  String get settingsConfirmActions => 'Har muhim amalni tasdiqlash';
+
+  @override
+  String get settingsConfirmActionsHelp =>
+      'O‘chirilsa — 3 soniyalik bekor qilish imkoniyati. To‘lov va o‘chirish har doim tasdiqlanadi.';
+
+  @override
+  String get settingsVoiceReplies => 'Javoblarni ovozda o‘qish';
+
+  @override
+  String get settingsDevices => 'Qurilmalar';
+
+  @override
+  String get settingsThisDevice => 'Shu qurilma';
+
+  @override
+  String get settingsUnknownDevice => 'Noma’lum qurilma';
+
+  @override
+  String settingsLastUsed(String date) {
+    return 'Oxirgi marta: $date';
+  }
+
+  @override
+  String get settingsRemoveDevice => 'Chiqarish';
+
+  @override
+  String get settingsSignOut => 'Chiqish';
+
+  @override
+  String get settingsSignOutEverywhere => 'Hamma qurilmalardan chiqish';
+
+  @override
+  String get settingsDeleteAccount => 'Akkauntni o‘chirish';
+
+  @override
+  String get settingsDeleteTitle => 'Akkaunt o‘chirilsinmi?';
+
+  @override
+  String get settingsDeleteBody =>
+      'Ma’lumotlaringiz 7 kundan keyin butunlay o‘chiriladi. Shu muddat ichida bekor qilishingiz mumkin.';
+
+  @override
+  String get settingsDeleteConfirm => 'O‘chirish';
+
+  @override
+  String settingsDeletionScheduled(String date) {
+    return 'Akkaunt $date kuni o‘chiriladi.';
+  }
+
+  @override
+  String get settingsCancelDeletion => 'O‘chirishni bekor qilish';
+
+  @override
+  String get commonCancel => 'Bekor qilish';
+
+  @override
+  String get commonSave => 'Saqlash';
+
+  @override
+  String get commonRetry => 'Qayta urinish';
 }

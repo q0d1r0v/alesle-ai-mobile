@@ -93,5 +93,79 @@
   "homeTypeInstead": "Yozib yuborish",
   "voiceNotHeard": "Eshitmadim. Yana bir bor ayting.",
   "voiceUnavailable": "Ovoz xizmati hozir ishlamayapti. Yozib yuboring.",
-  "voiceMicDenied": "Mikrofonga ruxsat kerak."
+  "voiceMicDenied": "Mikrofonga ruxsat kerak.",
+  "signInTitle": "Alesle’ga kiring",
+  "signInBody": "Sozlamalar va tarixingiz barcha qurilmalarda saqlanadi.",
+  "signInGoogle": "Google bilan davom etish",
+  "signInEmail": "Email bilan davom etish",
+  "signInEmailLabel": "Email",
+  "signInPasswordLabel": "Parol",
+  "signInNameLabel": "Ismingiz (ixtiyoriy)",
+  "signInButton": "Kirish",
+  "signInCreateButton": "Akkaunt yaratish",
+  "signInToCreate": "Akkauntingiz yo‘qmi? Yarating",
+  "signInToSignIn": "Akkauntingiz bormi? Kiring",
+  "signInSendLink": "Parolsiz: emailga havola yuboring",
+  "signInLinkSentTitle": "Emailingizni tekshiring",
+  "signInLinkSentBody": "{email} manziliga kirish havolasini yubordik. Uni shu telefonda oching.",
+  "signInBackToOptions": "Boshqa usul",
+  "signInSigningIn": "Kirilmoqda…",
+  "signInBadEmail": "Email manzilini tekshiring.",
+  "signInShortPassword": "Parol kamida 8 belgi bo‘lsin.",
+  "authInvalidCredentials": "Email yoki parol noto‘g‘ri.",
+  "authEmailTaken": "Bu email bilan akkaunt bor. Kiring yoki havola so‘rang.",
+  "authLinkInvalid": "Havola eskirgan yoki ishlatilgan. Yangisini so‘rang.",
+  "authGoogleFailed": "Google bilan kirib bo‘lmadi. Boshqa usulni sinang.",
+  "authSessionExpired": "Qaytadan kiring.",
+  "authTooMany": "Juda ko‘p urinish. Bir daqiqadan keyin qayta urining.",
+  "emailVerified": "Email tasdiqlandi.",
+  "settingsTitle": "Sozlamalar",
+  "settingsAccount": "Akkaunt",
+  "settingsName": "Ism",
+  "settingsNameEmpty": "Kiritilmagan",
+  "settingsEmailUnverified": "Tasdiqlanmagan",
+  "settingsResendEmail": "Tasdiqlash xatini qayta yuborish",
+  "settingsEmailSent": "Xat yuborildi.",
+  "settingsAssistant": "Yordamchi",
+  "settingsLanguage": "Til",
+  "settingsConfirmActions": "Har muhim amalni tasdiqlash",
+  "settingsConfirmActionsHelp": "O‘chirilsa — 3 soniyalik bekor qilish imkoniyati. To‘lov va o‘chirish har doim tasdiqlanadi.",
+  "settingsVoiceReplies": "Javoblarni ovozda o‘qish",
+  "settingsDevices": "Qurilmalar",
+  "settingsThisDevice": "Shu qurilma",
+  "settingsUnknownDevice": "Noma’lum qurilma",
+  "settingsLastUsed": "Oxirgi marta: {date}",
+  "settingsRemoveDevice": "Chiqarish",
+  "settingsSignOut": "Chiqish",
+  "settingsSignOutEverywhere": "Hamma qurilmalardan chiqish",
+  "settingsDeleteAccount": "Akkauntni o‘chirish",
+  "settingsDeleteTitle": "Akkaunt o‘chirilsinmi?",
+  "settingsDeleteBody": "Ma’lumotlaringiz 7 kundan keyin butunlay o‘chiriladi. Shu muddat ichida bekor qilishingiz mumkin.",
+  "settingsDeleteConfirm": "O‘chirish",
+  "settingsDeletionScheduled": "Akkaunt {date} kuni o‘chiriladi.",
+  "settingsCancelDeletion": "O‘chirishni bekor qilish",
+  "commonCancel": "Bekor qilish",
+  "commonSave": "Saqlash",
+  "commonRetry": "Qayta urinish",
+  "@signInLinkSentBody": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "@settingsLastUsed": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "@settingsDeletionScheduled": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  }
 }

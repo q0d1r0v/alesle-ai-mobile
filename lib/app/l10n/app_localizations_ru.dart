@@ -282,4 +282,175 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get voiceMicDenied => 'Нужен доступ к микрофону.';
+
+  @override
+  String get signInTitle => 'Войдите в Alesle';
+
+  @override
+  String get signInBody =>
+      'Настройки и история сохранятся на всех устройствах.';
+
+  @override
+  String get signInGoogle => 'Продолжить с Google';
+
+  @override
+  String get signInEmail => 'Продолжить с email';
+
+  @override
+  String get signInEmailLabel => 'Email';
+
+  @override
+  String get signInPasswordLabel => 'Пароль';
+
+  @override
+  String get signInNameLabel => 'Ваше имя (необязательно)';
+
+  @override
+  String get signInButton => 'Войти';
+
+  @override
+  String get signInCreateButton => 'Создать аккаунт';
+
+  @override
+  String get signInToCreate => 'Нет аккаунта? Создайте';
+
+  @override
+  String get signInToSignIn => 'Уже есть аккаунт? Войдите';
+
+  @override
+  String get signInSendLink => 'Без пароля: пришлите ссылку на email';
+
+  @override
+  String get signInLinkSentTitle => 'Проверьте почту';
+
+  @override
+  String signInLinkSentBody(String email) {
+    return 'Мы отправили ссылку для входа на $email. Откройте её на этом телефоне.';
+  }
+
+  @override
+  String get signInBackToOptions => 'Другой способ';
+
+  @override
+  String get signInSigningIn => 'Входим…';
+
+  @override
+  String get signInBadEmail => 'Проверьте email.';
+
+  @override
+  String get signInShortPassword => 'Пароль — минимум 8 символов.';
+
+  @override
+  String get authInvalidCredentials => 'Неверный email или пароль.';
+
+  @override
+  String get authEmailTaken =>
+      'Аккаунт с этим email уже есть. Войдите или запросите ссылку.';
+
+  @override
+  String get authLinkInvalid =>
+      'Ссылка устарела или уже использована. Запросите новую.';
+
+  @override
+  String get authGoogleFailed =>
+      'Не удалось войти через Google. Попробуйте другой способ.';
+
+  @override
+  String get authSessionExpired => 'Войдите снова.';
+
+  @override
+  String get authTooMany => 'Слишком много попыток. Попробуйте через минуту.';
+
+  @override
+  String get emailVerified => 'Email подтверждён.';
+
+  @override
+  String get settingsTitle => 'Настройки';
+
+  @override
+  String get settingsAccount => 'Аккаунт';
+
+  @override
+  String get settingsName => 'Имя';
+
+  @override
+  String get settingsNameEmpty => 'Не указано';
+
+  @override
+  String get settingsEmailUnverified => 'Не подтверждён';
+
+  @override
+  String get settingsResendEmail => 'Отправить письмо ещё раз';
+
+  @override
+  String get settingsEmailSent => 'Письмо отправлено.';
+
+  @override
+  String get settingsAssistant => 'Ассистент';
+
+  @override
+  String get settingsLanguage => 'Язык';
+
+  @override
+  String get settingsConfirmActions => 'Подтверждать каждое важное действие';
+
+  @override
+  String get settingsConfirmActionsHelp =>
+      'Если выключено — 3 секунды на отмену. Оплата и удаление подтверждаются всегда.';
+
+  @override
+  String get settingsVoiceReplies => 'Читать ответы вслух';
+
+  @override
+  String get settingsDevices => 'Устройства';
+
+  @override
+  String get settingsThisDevice => 'Это устройство';
+
+  @override
+  String get settingsUnknownDevice => 'Неизвестное устройство';
+
+  @override
+  String settingsLastUsed(String date) {
+    return 'Последний раз: $date';
+  }
+
+  @override
+  String get settingsRemoveDevice => 'Выйти';
+
+  @override
+  String get settingsSignOut => 'Выйти';
+
+  @override
+  String get settingsSignOutEverywhere => 'Выйти на всех устройствах';
+
+  @override
+  String get settingsDeleteAccount => 'Удалить аккаунт';
+
+  @override
+  String get settingsDeleteTitle => 'Удалить аккаунт?';
+
+  @override
+  String get settingsDeleteBody =>
+      'Данные удалятся навсегда через 7 дней. До этого можно отменить.';
+
+  @override
+  String get settingsDeleteConfirm => 'Удалить';
+
+  @override
+  String settingsDeletionScheduled(String date) {
+    return 'Аккаунт будет удалён $date.';
+  }
+
+  @override
+  String get settingsCancelDeletion => 'Отменить удаление';
+
+  @override
+  String get commonCancel => 'Отмена';
+
+  @override
+  String get commonSave => 'Сохранить';
+
+  @override
+  String get commonRetry => 'Повторить';
 }

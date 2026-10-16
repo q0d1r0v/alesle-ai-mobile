@@ -214,7 +214,8 @@ class DeviceHostApiImplTest {
     private fun api(
         manufacturer: String = "Google",
         context: Context = app,
-    ) = DeviceHostApiImpl(context, PermissionGate(context) { null }, recorder, player, manufacturer)
+        model: String = "Pixel 7",
+    ) = DeviceHostApiImpl(context, PermissionGate(context) { null }, recorder, player, manufacturer, model)
 
     @Test
     fun `reports battery exemption, maker and Android version`() {
@@ -224,6 +225,13 @@ class DeviceHostApiImplTest {
         assertTrue(state.sdkInt > 0)
         shadowOf(app.getSystemService(PowerManager::class.java)).setIgnoringBatteryOptimizations(app.packageName, true)
         assertTrue(api().setupState().batteryOptimizationIgnored)
+    }
+
+    @Test
+    fun `names the phone for the device list`() {
+        assertEquals("Google Pixel 7", api().setupState().deviceName)
+        assertEquals("Xiaomi 23090RA98G", deviceName("Xiaomi", "23090RA98G"))
+        assertEquals("samsung SM-S918B", deviceName("samsung", "samsung SM-S918B"))
     }
 
     @Test

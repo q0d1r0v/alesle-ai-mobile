@@ -127,6 +127,7 @@ class DeviceSetupMessage {
     required this.batteryOptimizationIgnored,
     required this.manufacturer,
     required this.sdkInt,
+    required this.deviceName,
   });
 
   /// Android will not stop Alesle to save battery.
@@ -135,6 +136,9 @@ class DeviceSetupMessage {
   /// `Build.MANUFACTURER`, lower-cased: picks the OEM autostart guide.
   final String manufacturer;
   final int sdkInt;
+
+  /// "Xiaomi 23090RA98G", "Google Pixel 7": names this phone in the device list.
+  final String deviceName;
 }
 
 @HostApi()

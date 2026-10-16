@@ -282,4 +282,174 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get voiceMicDenied => 'Microphone access is needed.';
+
+  @override
+  String get signInTitle => 'Sign in to Alesle';
+
+  @override
+  String get signInBody =>
+      'Your settings and history stay with you on every device.';
+
+  @override
+  String get signInGoogle => 'Continue with Google';
+
+  @override
+  String get signInEmail => 'Continue with email';
+
+  @override
+  String get signInEmailLabel => 'Email';
+
+  @override
+  String get signInPasswordLabel => 'Password';
+
+  @override
+  String get signInNameLabel => 'Your name (optional)';
+
+  @override
+  String get signInButton => 'Sign in';
+
+  @override
+  String get signInCreateButton => 'Create account';
+
+  @override
+  String get signInToCreate => 'No account yet? Create one';
+
+  @override
+  String get signInToSignIn => 'Have an account? Sign in';
+
+  @override
+  String get signInSendLink => 'No password? Email me a link';
+
+  @override
+  String get signInLinkSentTitle => 'Check your email';
+
+  @override
+  String signInLinkSentBody(String email) {
+    return 'We sent a sign-in link to $email. Open it on this phone.';
+  }
+
+  @override
+  String get signInBackToOptions => 'Use another way';
+
+  @override
+  String get signInSigningIn => 'Signing in…';
+
+  @override
+  String get signInBadEmail => 'Check the email address.';
+
+  @override
+  String get signInShortPassword => 'Use at least 8 characters.';
+
+  @override
+  String get authInvalidCredentials => 'Wrong email or password.';
+
+  @override
+  String get authEmailTaken =>
+      'An account with this email exists. Sign in or ask for a link.';
+
+  @override
+  String get authLinkInvalid =>
+      'This link expired or was already used. Ask for a new one.';
+
+  @override
+  String get authGoogleFailed => 'Google sign-in failed. Try another way.';
+
+  @override
+  String get authSessionExpired => 'Please sign in again.';
+
+  @override
+  String get authTooMany => 'Too many attempts. Try again in a minute.';
+
+  @override
+  String get emailVerified => 'Email confirmed.';
+
+  @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get settingsAccount => 'Account';
+
+  @override
+  String get settingsName => 'Name';
+
+  @override
+  String get settingsNameEmpty => 'Not set';
+
+  @override
+  String get settingsEmailUnverified => 'Not confirmed';
+
+  @override
+  String get settingsResendEmail => 'Send the confirmation again';
+
+  @override
+  String get settingsEmailSent => 'Email sent.';
+
+  @override
+  String get settingsAssistant => 'Assistant';
+
+  @override
+  String get settingsLanguage => 'Language';
+
+  @override
+  String get settingsConfirmActions => 'Confirm every sensitive action';
+
+  @override
+  String get settingsConfirmActionsHelp =>
+      'When off, you get 3 seconds to cancel. Payments and deletions are always confirmed.';
+
+  @override
+  String get settingsVoiceReplies => 'Read replies aloud';
+
+  @override
+  String get settingsDevices => 'Devices';
+
+  @override
+  String get settingsThisDevice => 'This device';
+
+  @override
+  String get settingsUnknownDevice => 'Unknown device';
+
+  @override
+  String settingsLastUsed(String date) {
+    return 'Last used $date';
+  }
+
+  @override
+  String get settingsRemoveDevice => 'Sign out';
+
+  @override
+  String get settingsSignOut => 'Sign out';
+
+  @override
+  String get settingsSignOutEverywhere => 'Sign out everywhere';
+
+  @override
+  String get settingsDeleteAccount => 'Delete account';
+
+  @override
+  String get settingsDeleteTitle => 'Delete your account?';
+
+  @override
+  String get settingsDeleteBody =>
+      'Your data is erased for good in 7 days. You can cancel until then.';
+
+  @override
+  String get settingsDeleteConfirm => 'Delete';
+
+  @override
+  String settingsDeletionScheduled(String date) {
+    return 'Your account will be deleted on $date.';
+  }
+
+  @override
+  String get settingsCancelDeletion => 'Cancel deletion';
+
+  @override
+  String get commonCancel => 'Cancel';
+
+  @override
+  String get commonSave => 'Save';
+
+  @override
+  String get commonRetry => 'Try again';
 }

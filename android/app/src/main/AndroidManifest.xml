@@ -54,6 +54,16 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Sign-in and confirmation links from emails (SOW 06, EC-AU-1).
+                 Verified against https://alesle.ai/.well-known/assetlinks.json. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="alesle.ai" android:pathPrefix="/auth/" />
+            </intent-filter>
+            <!-- app_links hands links to Dart; Flutter must not also push them as routes. -->
+            <meta-data android:name="flutter_deeplinking_enabled" android:value="false" />
         </activity>
 
         <!--

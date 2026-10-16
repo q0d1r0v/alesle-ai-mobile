@@ -28,6 +28,18 @@ enum ErrorCode {
   serviceUnavailable('SERVICE_UNAVAILABLE'),
   @JsonValue('VOICE_UNAVAILABLE')
   voiceUnavailable('VOICE_UNAVAILABLE'),
+  @JsonValue('INVALID_CREDENTIALS')
+  invalidCredentials('INVALID_CREDENTIALS'),
+  @JsonValue('EMAIL_TAKEN')
+  emailTaken('EMAIL_TAKEN'),
+  @JsonValue('LINK_INVALID')
+  linkInvalid('LINK_INVALID'),
+  @JsonValue('SESSION_EXPIRED')
+  sessionExpired('SESSION_EXPIRED'),
+  @JsonValue('GOOGLE_TOKEN_INVALID')
+  googleTokenInvalid('GOOGLE_TOKEN_INVALID'),
+  @JsonValue('SIGN_IN_METHOD_UNAVAILABLE')
+  signInMethodUnavailable('SIGN_IN_METHOD_UNAVAILABLE'),
   @JsonValue('INTERNAL')
   internal('INTERNAL'),
 

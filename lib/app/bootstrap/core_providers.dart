@@ -1,6 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/auth/api_token_refresher.dart';
+import '../../core/auth/auth_session.dart';
+import '../../core/auth/session_controller.dart';
+import '../../core/auth/session_store.dart';
 import '../../core/config/app_config.dart';
 import '../../core/network/dio_factory.dart';
 import '../../core/platform/agent_events_bridge.dart';
@@ -13,11 +17,49 @@ final Provider<AppConfig> appConfigProvider = Provider<AppConfig>(
   ),
 );
 
+/// Requests as the signed-in user: bearer token, refreshed as needed.
 final Provider<Dio> dioProvider = Provider<Dio>((Ref ref) {
+  final Dio dio = createDio(
+    ref.watch(appConfigProvider),
+    tokens: ref.read(sessionProvider.notifier),
+  );
+  ref.onDispose(dio.close);
+  return dio;
+});
+
+/// Requests without a user: sign-in, refresh, health.
+final Provider<Dio> anonymousDioProvider = Provider<Dio>((Ref ref) {
   final Dio dio = createDio(ref.watch(appConfigProvider));
   ref.onDispose(dio.close);
   return dio;
 });
+
+/// Overridden in `bootstrap()` with the secure store.
+final Provider<SessionStore> sessionStoreProvider = Provider<SessionStore>(
+  (Ref ref) => throw StateError(
+    'sessionStoreProvider must be overridden (see bootstrap()).',
+  ),
+);
+
+/// The session read from the store at startup (bootstrap overrides it).
+final Provider<AuthSession?> initialSessionProvider = Provider<AuthSession?>(
+  (Ref ref) => null,
+);
+
+final Provider<TokenRefresher> tokenRefresherProvider =
+    Provider<TokenRefresher>(
+      (Ref ref) => apiTokenRefresher(ref.read(anonymousDioProvider)),
+    );
+
+/// The signed-in user's session; null when signed out.
+final NotifierProvider<SessionController, AuthSession?> sessionProvider =
+    NotifierProvider<SessionController, AuthSession?>(
+      () => SessionController(
+        store: (Ref ref) => ref.read(sessionStoreProvider),
+        initial: (Ref ref) => ref.read(initialSessionProvider),
+        refresher: (Ref ref) => ref.read(tokenRefresherProvider),
+      ),
+    );
 
 /// One bridge per app: native task events reach every listener through it.
 final Provider<AgentEventsBridge> agentEventsBridgeProvider =

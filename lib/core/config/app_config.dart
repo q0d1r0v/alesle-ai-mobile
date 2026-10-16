@@ -20,20 +20,19 @@ final class AppConfig {
   const AppConfig({
     required this.environment,
     required this.apiBaseUrl,
-    this.devAuthToken,
+    this.googleServerClientId,
   });
 
   /// Validates raw build values. [apiBaseUrl] must be an origin only
   /// (scheme + host + optional port): generated client paths already start
   /// with `/v1`, so a path here would double it.
   ///
-  /// [devAuthToken] is the API's development token (alesle-ai-api D14),
-  /// accepted in dev builds only and only until accounts exist (Sprint 5).
-  /// Pass it with `--dart-define=DEV_AUTH_TOKEN=…`, never in a committed file.
+  /// [googleServerClientId] is the web OAuth client ID Google signs ID tokens
+  /// for (the API's GOOGLE_CLIENT_IDS); empty hides "Continue with Google".
   factory AppConfig.parse({
     required String environment,
     required String apiBaseUrl,
-    String devAuthToken = '',
+    String googleServerClientId = '',
   }) {
     final AppEnvironment env = AppEnvironment.values.firstWhere(
       (AppEnvironment value) => value.name == environment,
@@ -64,17 +63,18 @@ final class AppConfig {
       throw AppConfigError('API_BASE_URL must use https in prod.');
     }
 
-    final String token = devAuthToken.trim();
-    if (token.isNotEmpty && env != AppEnvironment.dev) {
+    final String google = googleServerClientId.trim();
+    if (google.isNotEmpty && !google.endsWith('.apps.googleusercontent.com')) {
       throw AppConfigError(
-        'DEV_AUTH_TOKEN is for dev builds only; got one for ${env.name}.',
+        'GOOGLE_SERVER_CLIENT_ID must be an OAuth client ID '
+        '(…apps.googleusercontent.com); got "$google".',
       );
     }
 
     return AppConfig(
       environment: env,
       apiBaseUrl: uri.replace(path: '').toString(),
-      devAuthToken: token.isEmpty ? null : token,
+      googleServerClientId: google.isEmpty ? null : google,
     );
   }
 
@@ -83,6 +83,6 @@ final class AppConfig {
   /// Origin of the API, without a trailing slash.
   final String apiBaseUrl;
 
-  /// The development bearer token, or null (always null outside dev).
-  final String? devAuthToken;
+  /// Google sign-in's server client ID, or null when Google sign-in is off.
+  final String? googleServerClientId;
 }

@@ -1,12 +1,18 @@
 import 'dart:async';
 
 import 'package:alesle_ai/core/agent/agent_task.dart';
+import 'package:alesle_ai/core/api/generated/models/auth_user_dto.dart';
+import 'package:alesle_ai/core/api/generated/models/token_pair_dto.dart';
+import 'package:alesle_ai/core/auth/access_token_source.dart';
+import 'package:alesle_ai/core/auth/auth_session.dart';
 import 'package:alesle_ai/core/errors/failure.dart';
 import 'package:alesle_ai/core/storage/app_settings.dart';
+import 'package:alesle_ai/features/auth/domain/auth_repository.dart';
 import 'package:alesle_ai/features/home/domain/agent_status.dart';
 import 'package:alesle_ai/features/home/domain/home_repositories.dart';
 import 'package:alesle_ai/features/home/domain/server_health.dart';
 import 'package:alesle_ai/features/onboarding/domain/device_setup.dart';
+import 'package:alesle_ai/features/settings/domain/account.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Hand-written fakes for widget tests: they keep call counts and let a test
@@ -206,3 +212,215 @@ final class FakeDeviceSetup implements DeviceSetupRepository {
     return true;
   }
 }
+
+/// Hands out [token]; records how long it had to stay valid.
+final class FakeTokens implements AccessTokenSource {
+  FakeTokens([this.token = 'access-token']);
+
+  String? token;
+
+  /// What a forced refresh turns [token] into (null: signed out).
+  String? refreshesTo;
+  final List<Duration> margins = <Duration>[];
+  int forced = 0;
+
+  @override
+  Future<String?> accessToken({
+    Duration margin = const Duration(minutes: 1),
+    bool forceRefresh = false,
+  }) async {
+    margins.add(margin);
+    if (forceRefresh) {
+      forced++;
+      token = refreshesTo;
+    }
+    return token;
+  }
+}
+
+/// A session that is good for an hour from [now].
+AuthSession testSession({DateTime? now}) => AuthSession(
+  accessToken: 'access-token',
+  refreshToken: 'refresh-token',
+  expiresAt: (now ?? DateTime.now()).add(const Duration(hours: 1)),
+  userId: '0190f0a0-0000-7000-8000-000000000001',
+  email: 'aziz@example.com',
+);
+
+/// Sign-in that a test steers: [failure] makes every call fail; [onSignIn]
+/// runs when a sign-in succeeds (e.g. to sign the session in).
+final class FakeAuthRepository implements AuthRepository {
+  FakeAuthRepository({this.googleAvailable = true});
+
+  @override
+  final bool googleAvailable;
+  Object? failure;
+  bool googleCancelled = false;
+  Future<void> Function()? onSignIn;
+  final List<String> calls = <String>[];
+
+  Future<void> _done(String call) async {
+    calls.add(call);
+    if (failure case final Object value) throw value;
+    await onSignIn?.call();
+  }
+
+  @override
+  Future<void> signInWithPassword({
+    required String email,
+    required String password,
+  }) => _done('login:$email');
+
+  @override
+  Future<void> register({
+    required String email,
+    required String password,
+    String? displayName,
+  }) => _done('register:$email:${displayName ?? ''}');
+
+  @override
+  Future<bool> signInWithGoogle() async {
+    if (googleCancelled) {
+      calls.add('google-cancelled');
+      return false;
+    }
+    await _done('google');
+    return true;
+  }
+
+  @override
+  Future<void> sendMagicLink(String email) async {
+    calls.add('link:$email');
+    if (failure case final Object value) throw value;
+  }
+
+  @override
+  Future<void> signInWithMagicLink(String token) => _done('magic:$token');
+
+  @override
+  Future<void> verifyEmail(String token) async {
+    calls.add('verify:$token');
+    if (failure case final Object value) throw value;
+  }
+}
+
+/// An account kept in memory.
+final class FakeAccountRepository implements AccountRepository {
+  Profile current = const Profile(
+    email: 'aziz@example.com',
+    emailVerified: true,
+    displayName: 'Aziz',
+    language: 'uz',
+    confirmSensitiveActions: true,
+    deletionScheduledAt: null,
+  );
+  List<Device> sessions = <Device>[
+    Device(
+      id: 'd1',
+      name: 'Google Pixel 7',
+      lastUsedAt: DateTime(2026, 10, 16),
+      current: true,
+    ),
+    Device(
+      id: 'd2',
+      name: 'Tablet',
+      lastUsedAt: DateTime(2026, 10, 10),
+      current: false,
+    ),
+  ];
+  Object? failure;
+  final List<String> calls = <String>[];
+
+  Future<void> _check(String call) async {
+    calls.add(call);
+    if (failure case final Object value) throw value;
+  }
+
+  Profile _with({
+    String? displayName,
+    String? language,
+    bool? confirm,
+    DateTime? deletion,
+    bool clearDeletion = false,
+  }) => current = Profile(
+    email: current.email,
+    emailVerified: current.emailVerified,
+    displayName: displayName ?? current.displayName,
+    language: language ?? current.language,
+    confirmSensitiveActions: confirm ?? current.confirmSensitiveActions,
+    deletionScheduledAt: clearDeletion
+        ? null
+        : (deletion ?? current.deletionScheduledAt),
+  );
+
+  @override
+  Future<Profile> profile() async {
+    await _check('profile');
+    return current;
+  }
+
+  @override
+  Future<Profile> update({
+    String? displayName,
+    String? language,
+    bool? confirmSensitiveActions,
+  }) async {
+    await _check(
+      'update:${displayName ?? ''}:${language ?? ''}:${confirmSensitiveActions ?? ''}',
+    );
+    return _with(
+      displayName: displayName,
+      language: language,
+      confirm: confirmSensitiveActions,
+    );
+  }
+
+  @override
+  Future<void> resendVerification() => _check('resend');
+
+  @override
+  Future<List<Device>> devices() async {
+    await _check('devices');
+    return sessions;
+  }
+
+  @override
+  Future<void> removeDevice(String id) async {
+    await _check('remove:$id');
+    sessions = <Device>[
+      for (final Device d in sessions)
+        if (d.id != id) d,
+    ];
+  }
+
+  @override
+  Future<void> signOut() => _check('signOut');
+
+  @override
+  Future<void> signOutEverywhere() => _check('signOutEverywhere');
+
+  @override
+  Future<DateTime> requestDeletion() async {
+    await _check('delete');
+    final DateTime at = DateTime(2026, 10, 23);
+    _with(deletion: at);
+    return at;
+  }
+
+  @override
+  Future<Profile> cancelDeletion() async {
+    await _check('cancelDeletion');
+    return _with(clearDeletion: true);
+  }
+}
+
+/// What the server answers to a sign-in.
+TokenPairDto testPair({String access = 'access-token'}) => TokenPairDto(
+  accessToken: access,
+  expiresIn: 900,
+  refreshToken: 'refresh-$access',
+  user: const AuthUserDto(
+    id: '0190f0a0-0000-7000-8000-000000000001',
+    email: 'aziz@example.com',
+  ),
+);

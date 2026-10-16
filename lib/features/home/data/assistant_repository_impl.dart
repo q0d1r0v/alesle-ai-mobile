@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 
 import '../../../core/agent/agent_task.dart';
+import '../../../core/auth/access_token_source.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/errors/failure.dart';
 import '../../../core/platform/agent_events_bridge.dart';
@@ -10,11 +11,13 @@ import '../domain/home_repositories.dart';
 final class AssistantRepositoryImpl implements AssistantRepository {
   AssistantRepositoryImpl({
     required this._config,
+    required this._tokens,
     required this._bridge,
     AgentHostApi? api,
   }) : _api = api ?? AgentHostApi();
 
   final AppConfig _config;
+  final AccessTokenSource _tokens;
   final AgentEventsBridge _bridge;
   final AgentHostApi _api;
 
@@ -23,8 +26,10 @@ final class AssistantRepositoryImpl implements AssistantRepository {
 
   @override
   Future<TaskStart> start(TaskCommand command) async {
-    // Until accounts exist (Sprint 5) the dev build carries the API's dev token.
-    final String? token = _config.devAuthToken;
+    // Valid well past a whole task (≤ 2 min active, plus reconnects).
+    final String? token = await _tokens.accessToken(
+      margin: const Duration(minutes: 5),
+    );
     if (token == null) {
       return const TaskStart(started: false, reason: 'not_signed_in');
     }

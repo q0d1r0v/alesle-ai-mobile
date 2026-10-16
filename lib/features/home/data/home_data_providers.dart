@@ -22,6 +22,7 @@ final Provider<AssistantRepository> assistantRepositoryProvider =
     Provider<AssistantRepository>(
       (Ref ref) => AssistantRepositoryImpl(
         config: ref.watch(appConfigProvider),
+        tokens: ref.read(sessionProvider.notifier),
         bridge: ref.watch(agentEventsBridgeProvider),
       ),
     );

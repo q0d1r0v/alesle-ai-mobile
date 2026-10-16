@@ -1,11 +1,14 @@
 import 'package:alesle_ai/app/app.dart';
 import 'package:alesle_ai/app/bootstrap/core_providers.dart';
+import 'package:alesle_ai/core/auth/auth_session.dart';
+import 'package:alesle_ai/core/auth/session_store.dart';
 import 'package:alesle_ai/core/config/app_config.dart';
 import 'package:alesle_ai/core/network/dio_factory.dart';
 import 'package:alesle_ai/core/storage/app_settings.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:http_mock_adapter/http_mock_adapter.dart';
 import 'package:patrol/patrol.dart';
 
@@ -44,6 +47,7 @@ void main() {
           appConfigProvider.overrideWithValue(config),
           dioProvider.overrideWithValue(dio),
           appSettingsStoreProvider.overrideWithValue(store),
+          ...signedIn(),
         ],
         child: const AlesleApp(),
       ),
@@ -62,4 +66,20 @@ void main() {
     // Back in the app; status was re-read on resume and is still "needs setup".
     await $(const Key('enable-accessibility-button')).waitUntilVisible();
   });
+}
+
+/// A signed-in session kept in memory: the HTTP calls here are mocked, so
+/// the token is never checked.
+List<Override> signedIn() {
+  final AuthSession session = AuthSession(
+    accessToken: 'device-test-token',
+    refreshToken: 'device-test-refresh',
+    expiresAt: DateTime.now().add(const Duration(hours: 1)),
+    userId: '0190f0a0-0000-7000-8000-000000000001',
+    email: 'device@alesle.test',
+  );
+  return <Override>[
+    sessionStoreProvider.overrideWithValue(MemorySessionStore(session)),
+    initialSessionProvider.overrideWithValue(session),
+  ];
 }

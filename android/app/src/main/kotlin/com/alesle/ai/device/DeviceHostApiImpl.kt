@@ -22,6 +22,7 @@ class DeviceHostApiImpl(
     private val recorder: VoiceRecorder,
     private val player: AudioPlayer,
     private val manufacturer: String = Build.MANUFACTURER,
+    private val model: String = Build.MODEL,
 ) : DeviceHostApi {
     override fun permissionState(kind: PermissionKind): PermissionState = permissions.state(kind)
 
@@ -33,6 +34,7 @@ class DeviceHostApiImpl(
             batteryOptimizationIgnored = power?.isIgnoringBatteryOptimizations(context.packageName) ?: false,
             manufacturer = manufacturer.lowercase(Locale.ROOT),
             sdkInt = Build.VERSION.SDK_INT.toLong(),
+            deviceName = deviceName(manufacturer, model),
         )
     }
 
@@ -94,4 +96,13 @@ class DeviceHostApiImpl(
                     ComponentName("com.hihonor.systemmanager", "com.hihonor.systemmanager.startupmgr.ui.StartupNormalAppListActivity"),
             )
     }
+}
+
+/** "Google Pixel 7"; a model that already starts with the maker is left as it is. */
+internal fun deviceName(
+    manufacturer: String,
+    model: String,
+): String {
+    val maker = manufacturer.replaceFirstChar { it.titlecase(Locale.ROOT) }
+    return if (model.startsWith(manufacturer, ignoreCase = true)) model else "$maker $model".trim()
 }

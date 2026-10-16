@@ -15,6 +15,7 @@ const double overallFloor = 80;
 const Map<String, double> pathFloors = <String, double>{
   'lib/features/home/domain/': 95,
   'lib/features/onboarding/domain/': 95,
+  'lib/features/auth/domain/': 95,
   // The task types every feature's domain shares; the features' own domain
   // folders hold only interfaces now (no executable lines to measure).
   'lib/core/agent/': 95,

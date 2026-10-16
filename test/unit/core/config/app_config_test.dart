@@ -5,11 +5,11 @@ void main() {
   AppConfig parse({
     String environment = 'dev',
     String apiBaseUrl = 'http://10.0.2.2:3000',
-    String devAuthToken = '',
+    String googleServerClientId = '',
   }) => AppConfig.parse(
     environment: environment,
     apiBaseUrl: apiBaseUrl,
-    devAuthToken: devAuthToken,
+    googleServerClientId: googleServerClientId,
   );
 
   group('AppConfig.parse', () {
@@ -19,16 +19,16 @@ void main() {
       expect(config.apiBaseUrl, 'http://10.0.2.2:3000');
     });
 
-    test('takes the development token in dev builds only', () {
-      expect(parse().devAuthToken, isNull);
-      expect(parse(devAuthToken: '  ').devAuthToken, isNull);
-      expect(parse(devAuthToken: ' abc ').devAuthToken, 'abc');
+    test('takes a Google OAuth client ID, or none', () {
+      expect(parse().googleServerClientId, isNull);
+      expect(parse(googleServerClientId: '  ').googleServerClientId, isNull);
       expect(
-        () => parse(
-          environment: 'staging',
-          apiBaseUrl: 'https://staging.alesle.ai',
-          devAuthToken: 'abc',
-        ),
+        parse(googleServerClientId: ' 123-abc.apps.googleusercontent.com ')
+            .googleServerClientId,
+        '123-abc.apps.googleusercontent.com',
+      );
+      expect(
+        () => parse(googleServerClientId: 'not-a-client-id'),
         throwsA(isA<AppConfigError>()),
       );
     });

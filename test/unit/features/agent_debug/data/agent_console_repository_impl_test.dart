@@ -13,12 +13,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fakes.dart';
+
 class _MockAgentHostApi extends Mock implements AgentHostApi {}
 
 const AppConfig _config = AppConfig(
   environment: AppEnvironment.dev,
   apiBaseUrl: 'http://127.0.0.1:3000',
-  devAuthToken: 'dev-token',
 );
 
 const TaskCommand _command = TaskCommand(
@@ -31,6 +32,7 @@ void main() {
   late _MockAgentHostApi api;
   late List<AgentEventsApi?> registrations;
   late AgentEventsBridge bridge;
+  late FakeTokens tokens;
   late AgentConsoleRepositoryImpl repository;
 
   setUpAll(() {
@@ -49,8 +51,10 @@ void main() {
     api = _MockAgentHostApi();
     registrations = <AgentEventsApi?>[];
     bridge = AgentEventsBridge(register: registrations.add);
+    tokens = FakeTokens();
     repository = AgentConsoleRepositoryImpl(
       config: _config,
+      tokens: tokens,
       bridge: bridge,
       api: api,
     );
@@ -80,7 +84,9 @@ void main() {
             as TaskRequest;
     expect(sent.command, 'Budilnik 7:30');
     expect(sent.apiBaseUrl, 'http://127.0.0.1:3000');
-    expect(sent.accessToken, 'dev-token');
+    expect(sent.accessToken, 'access-token');
+    // Good for longer than a whole task.
+    expect(tokens.margins.single, const Duration(minutes: 5));
     expect(sent.locale, 'uz');
     expect(sent.confirmEverySensitiveAction, isFalse);
 
@@ -90,10 +96,8 @@ void main() {
 
   test('refuses to start without a token', () async {
     final AgentConsoleRepositoryImpl signedOut = AgentConsoleRepositoryImpl(
-      config: const AppConfig(
-        environment: AppEnvironment.dev,
-        apiBaseUrl: 'http://127.0.0.1:3000',
-      ),
+      config: _config,
+      tokens: FakeTokens(null),
       bridge: bridge,
       api: api,
     );

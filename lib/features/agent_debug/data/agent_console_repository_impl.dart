@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 
+import '../../../core/auth/access_token_source.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/errors/failure.dart';
 import '../../../core/platform/agent_events_bridge.dart';
@@ -9,11 +10,13 @@ import '../domain/agent_console.dart';
 final class AgentConsoleRepositoryImpl implements AgentConsoleRepository {
   AgentConsoleRepositoryImpl({
     required this._config,
+    required this._tokens,
     required this._bridge,
     AgentHostApi? api,
   }) : _api = api ?? AgentHostApi();
 
   final AppConfig _config;
+  final AccessTokenSource _tokens;
   final AgentEventsBridge _bridge;
   final AgentHostApi _api;
 
@@ -29,7 +32,9 @@ final class AgentConsoleRepositoryImpl implements AgentConsoleRepository {
 
   @override
   Future<TaskStart> startTask(TaskCommand command) async {
-    final String? token = _config.devAuthToken;
+    final String? token = await _tokens.accessToken(
+      margin: const Duration(minutes: 5),
+    );
     if (token == null) {
       return const TaskStart(started: false, reason: 'not_signed_in');
     }

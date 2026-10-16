@@ -8,6 +8,7 @@ final Provider<AgentConsoleRepository> agentConsoleRepositoryProvider =
     Provider<AgentConsoleRepository>(
       (Ref ref) => AgentConsoleRepositoryImpl(
         config: ref.watch(appConfigProvider),
+        tokens: ref.read(sessionProvider.notifier),
         bridge: ref.watch(agentEventsBridgeProvider),
       ),
     );

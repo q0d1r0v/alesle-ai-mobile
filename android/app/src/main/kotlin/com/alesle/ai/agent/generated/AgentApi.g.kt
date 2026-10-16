@@ -442,7 +442,9 @@ data class DeviceSetupMessage (
   val batteryOptimizationIgnored: Boolean,
   /** `Build.MANUFACTURER`, lower-cased: picks the OEM autostart guide. */
   val manufacturer: String,
-  val sdkInt: Long
+  val sdkInt: Long,
+  /** "Xiaomi 23090RA98G", "Google Pixel 7": names this phone in the device list. */
+  val deviceName: String
 )
  {
   companion object {
@@ -450,7 +452,8 @@ data class DeviceSetupMessage (
       val batteryOptimizationIgnored = pigeonVar_list[0] as Boolean
       val manufacturer = pigeonVar_list[1] as String
       val sdkInt = pigeonVar_list[2] as Long
-      return DeviceSetupMessage(batteryOptimizationIgnored, manufacturer, sdkInt)
+      val deviceName = pigeonVar_list[3] as String
+      return DeviceSetupMessage(batteryOptimizationIgnored, manufacturer, sdkInt, deviceName)
     }
   }
   fun toList(): List<Any?> {
@@ -458,6 +461,7 @@ data class DeviceSetupMessage (
       batteryOptimizationIgnored,
       manufacturer,
       sdkInt,
+      deviceName,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -468,7 +472,7 @@ data class DeviceSetupMessage (
       return true
     }
     val other = other as DeviceSetupMessage
-    return AgentApiPigeonUtils.deepEquals(this.batteryOptimizationIgnored, other.batteryOptimizationIgnored) && AgentApiPigeonUtils.deepEquals(this.manufacturer, other.manufacturer) && AgentApiPigeonUtils.deepEquals(this.sdkInt, other.sdkInt)
+    return AgentApiPigeonUtils.deepEquals(this.batteryOptimizationIgnored, other.batteryOptimizationIgnored) && AgentApiPigeonUtils.deepEquals(this.manufacturer, other.manufacturer) && AgentApiPigeonUtils.deepEquals(this.sdkInt, other.sdkInt) && AgentApiPigeonUtils.deepEquals(this.deviceName, other.deviceName)
   }
 
   override fun hashCode(): Int {
@@ -476,10 +480,11 @@ data class DeviceSetupMessage (
     result = 31 * result + AgentApiPigeonUtils.deepHash(this.batteryOptimizationIgnored)
     result = 31 * result + AgentApiPigeonUtils.deepHash(this.manufacturer)
     result = 31 * result + AgentApiPigeonUtils.deepHash(this.sdkInt)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.deviceName)
     return result
   }
   override fun toString(): String {
-    return "DeviceSetupMessage(batteryOptimizationIgnored=$batteryOptimizationIgnored, manufacturer=$manufacturer, sdkInt=$sdkInt)"
+    return "DeviceSetupMessage(batteryOptimizationIgnored=$batteryOptimizationIgnored, manufacturer=$manufacturer, sdkInt=$sdkInt, deviceName=$deviceName)"
   }
 }
 private open class AgentApiPigeonCodec : StandardMessageCodec() {

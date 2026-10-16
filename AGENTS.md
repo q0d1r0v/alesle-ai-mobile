@@ -52,7 +52,8 @@ openapi/      committed API contract from alesle-ai-api
    yarn contract:sync` there, then `dart run swagger_parser && dart run
    build_runner build -d` here.
 8. **Bridge changes start in `pigeons/`**: `dart run pigeon --input pigeons/agent_api.dart`.
-9. **No secrets in the app.** Tokens go to `flutter_secure_storage` only.
+9. **No secrets in the app.** Session tokens live in `flutter_secure_storage`
+   only (core/auth); requests get them through `AccessTokenSource`.
 10. **No screen content or personal data in logs.**
 
 ## Tests

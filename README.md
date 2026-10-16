@@ -22,16 +22,22 @@ yarn install                       # git hooks (husky + commitlint)
 flutter run --dart-define-from-file=env/dev.json
 ```
 
-On a physical phone, forward the API over USB and point the build at it. The
-agent loop needs the API's development token until accounts exist (pass it
-on the command line; never commit it):
+On a physical phone, forward the API over USB and point the build at it, then
+sign in in the app (email + password, or a magic link: locally the emails land
+in mailpit, http://127.0.0.1:8026). Google sign-in appears when the build gets
+the web OAuth client ID the API accepts (`GOOGLE_CLIENT_IDS`):
 
 ```bash
 adb reverse tcp:3000 tcp:3000
 flutter run --dart-define-from-file=env/dev.json \
   --dart-define=API_BASE_URL=http://127.0.0.1:3000 \
-  --dart-define=DEV_AUTH_TOKEN=<DEV_AUTH_TOKEN from alesle-ai-api/.env>
+  [--dart-define=GOOGLE_SERVER_CLIENT_ID=<web client id>.apps.googleusercontent.com]
 ```
+
+Magic and confirmation links (`https://alesle.ai/auth/...`) open the app through
+App Links once the website serves `.well-known/assetlinks.json` with the release
+certificate's SHA-256; until then `adb shell am start -a android.intent.action.VIEW
+-d '<link>' com.alesle.ai` opens one by hand.
 
 Debug builds allow plain http only to 127.0.0.1, localhost and 10.0.2.2.
 

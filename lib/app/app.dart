@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'account_links.dart';
 import 'bootstrap/core_providers.dart';
 import 'l10n/app_localizations.dart';
 import 'router/app_router.dart';
@@ -36,6 +37,9 @@ class AlesleApp extends ConsumerWidget {
       theme: buildTheme(),
       themeMode: ThemeMode.light,
       routerConfig: ref.watch(routerProvider),
+      scaffoldMessengerKey: appMessengerKey,
+      builder: (BuildContext context, Widget? child) =>
+          AccountLinks(child: child ?? const SizedBox.shrink()),
       localizationsDelegates: const <LocalizationsDelegate<Object?>>[
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,

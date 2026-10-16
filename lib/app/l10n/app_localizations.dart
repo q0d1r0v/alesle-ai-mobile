@@ -621,6 +621,324 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Mikrofonga ruxsat kerak.'**
   String get voiceMicDenied;
+
+  /// No description provided for @signInTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Alesle’ga kiring'**
+  String get signInTitle;
+
+  /// No description provided for @signInBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sozlamalar va tarixingiz barcha qurilmalarda saqlanadi.'**
+  String get signInBody;
+
+  /// No description provided for @signInGoogle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Google bilan davom etish'**
+  String get signInGoogle;
+
+  /// No description provided for @signInEmail.
+  ///
+  /// In uz, this message translates to:
+  /// **'Email bilan davom etish'**
+  String get signInEmail;
+
+  /// No description provided for @signInEmailLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Email'**
+  String get signInEmailLabel;
+
+  /// No description provided for @signInPasswordLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Parol'**
+  String get signInPasswordLabel;
+
+  /// No description provided for @signInNameLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ismingiz (ixtiyoriy)'**
+  String get signInNameLabel;
+
+  /// No description provided for @signInButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kirish'**
+  String get signInButton;
+
+  /// No description provided for @signInCreateButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkaunt yaratish'**
+  String get signInCreateButton;
+
+  /// No description provided for @signInToCreate.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkauntingiz yo‘qmi? Yarating'**
+  String get signInToCreate;
+
+  /// No description provided for @signInToSignIn.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkauntingiz bormi? Kiring'**
+  String get signInToSignIn;
+
+  /// No description provided for @signInSendLink.
+  ///
+  /// In uz, this message translates to:
+  /// **'Parolsiz: emailga havola yuboring'**
+  String get signInSendLink;
+
+  /// No description provided for @signInLinkSentTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Emailingizni tekshiring'**
+  String get signInLinkSentTitle;
+
+  /// No description provided for @signInLinkSentBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'{email} manziliga kirish havolasini yubordik. Uni shu telefonda oching.'**
+  String signInLinkSentBody(String email);
+
+  /// No description provided for @signInBackToOptions.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshqa usul'**
+  String get signInBackToOptions;
+
+  /// No description provided for @signInSigningIn.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kirilmoqda…'**
+  String get signInSigningIn;
+
+  /// No description provided for @signInBadEmail.
+  ///
+  /// In uz, this message translates to:
+  /// **'Email manzilini tekshiring.'**
+  String get signInBadEmail;
+
+  /// No description provided for @signInShortPassword.
+  ///
+  /// In uz, this message translates to:
+  /// **'Parol kamida 8 belgi bo‘lsin.'**
+  String get signInShortPassword;
+
+  /// No description provided for @authInvalidCredentials.
+  ///
+  /// In uz, this message translates to:
+  /// **'Email yoki parol noto‘g‘ri.'**
+  String get authInvalidCredentials;
+
+  /// No description provided for @authEmailTaken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu email bilan akkaunt bor. Kiring yoki havola so‘rang.'**
+  String get authEmailTaken;
+
+  /// No description provided for @authLinkInvalid.
+  ///
+  /// In uz, this message translates to:
+  /// **'Havola eskirgan yoki ishlatilgan. Yangisini so‘rang.'**
+  String get authLinkInvalid;
+
+  /// No description provided for @authGoogleFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Google bilan kirib bo‘lmadi. Boshqa usulni sinang.'**
+  String get authGoogleFailed;
+
+  /// No description provided for @authSessionExpired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qaytadan kiring.'**
+  String get authSessionExpired;
+
+  /// No description provided for @authTooMany.
+  ///
+  /// In uz, this message translates to:
+  /// **'Juda ko‘p urinish. Bir daqiqadan keyin qayta urining.'**
+  String get authTooMany;
+
+  /// No description provided for @emailVerified.
+  ///
+  /// In uz, this message translates to:
+  /// **'Email tasdiqlandi.'**
+  String get emailVerified;
+
+  /// No description provided for @settingsTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sozlamalar'**
+  String get settingsTitle;
+
+  /// No description provided for @settingsAccount.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkaunt'**
+  String get settingsAccount;
+
+  /// No description provided for @settingsName.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ism'**
+  String get settingsName;
+
+  /// No description provided for @settingsNameEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kiritilmagan'**
+  String get settingsNameEmpty;
+
+  /// No description provided for @settingsEmailUnverified.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tasdiqlanmagan'**
+  String get settingsEmailUnverified;
+
+  /// No description provided for @settingsResendEmail.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tasdiqlash xatini qayta yuborish'**
+  String get settingsResendEmail;
+
+  /// No description provided for @settingsEmailSent.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xat yuborildi.'**
+  String get settingsEmailSent;
+
+  /// No description provided for @settingsAssistant.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yordamchi'**
+  String get settingsAssistant;
+
+  /// No description provided for @settingsLanguage.
+  ///
+  /// In uz, this message translates to:
+  /// **'Til'**
+  String get settingsLanguage;
+
+  /// No description provided for @settingsConfirmActions.
+  ///
+  /// In uz, this message translates to:
+  /// **'Har muhim amalni tasdiqlash'**
+  String get settingsConfirmActions;
+
+  /// No description provided for @settingsConfirmActionsHelp.
+  ///
+  /// In uz, this message translates to:
+  /// **'O‘chirilsa — 3 soniyalik bekor qilish imkoniyati. To‘lov va o‘chirish har doim tasdiqlanadi.'**
+  String get settingsConfirmActionsHelp;
+
+  /// No description provided for @settingsVoiceReplies.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javoblarni ovozda o‘qish'**
+  String get settingsVoiceReplies;
+
+  /// No description provided for @settingsDevices.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qurilmalar'**
+  String get settingsDevices;
+
+  /// No description provided for @settingsThisDevice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Shu qurilma'**
+  String get settingsThisDevice;
+
+  /// No description provided for @settingsUnknownDevice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Noma’lum qurilma'**
+  String get settingsUnknownDevice;
+
+  /// No description provided for @settingsLastUsed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oxirgi marta: {date}'**
+  String settingsLastUsed(String date);
+
+  /// No description provided for @settingsRemoveDevice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Chiqarish'**
+  String get settingsRemoveDevice;
+
+  /// No description provided for @settingsSignOut.
+  ///
+  /// In uz, this message translates to:
+  /// **'Chiqish'**
+  String get settingsSignOut;
+
+  /// No description provided for @settingsSignOutEverywhere.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hamma qurilmalardan chiqish'**
+  String get settingsSignOutEverywhere;
+
+  /// No description provided for @settingsDeleteAccount.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkauntni o‘chirish'**
+  String get settingsDeleteAccount;
+
+  /// No description provided for @settingsDeleteTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkaunt o‘chirilsinmi?'**
+  String get settingsDeleteTitle;
+
+  /// No description provided for @settingsDeleteBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ma’lumotlaringiz 7 kundan keyin butunlay o‘chiriladi. Shu muddat ichida bekor qilishingiz mumkin.'**
+  String get settingsDeleteBody;
+
+  /// No description provided for @settingsDeleteConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'O‘chirish'**
+  String get settingsDeleteConfirm;
+
+  /// No description provided for @settingsDeletionScheduled.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkaunt {date} kuni o‘chiriladi.'**
+  String settingsDeletionScheduled(String date);
+
+  /// No description provided for @settingsCancelDeletion.
+  ///
+  /// In uz, this message translates to:
+  /// **'O‘chirishni bekor qilish'**
+  String get settingsCancelDeletion;
+
+  /// No description provided for @commonCancel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilish'**
+  String get commonCancel;
+
+  /// No description provided for @commonSave.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlash'**
+  String get commonSave;
+
+  /// No description provided for @commonRetry.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qayta urinish'**
+  String get commonRetry;
 }
 
 class _AppLocalizationsDelegate

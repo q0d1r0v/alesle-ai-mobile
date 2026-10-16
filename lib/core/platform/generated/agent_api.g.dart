@@ -360,6 +360,7 @@ class DeviceSetupMessage {
     required this.batteryOptimizationIgnored,
     required this.manufacturer,
     required this.sdkInt,
+    required this.deviceName,
   });
 
   /// Android will not stop Alesle to save battery.
@@ -370,8 +371,16 @@ class DeviceSetupMessage {
 
   int sdkInt;
 
+  /// "Xiaomi 23090RA98G", "Google Pixel 7": names this phone in the device list.
+  String deviceName;
+
   List<Object?> _toList() {
-    return <Object?>[batteryOptimizationIgnored, manufacturer, sdkInt];
+    return <Object?>[
+      batteryOptimizationIgnored,
+      manufacturer,
+      sdkInt,
+      deviceName,
+    ];
   }
 
   Object encode() {
@@ -384,6 +393,7 @@ class DeviceSetupMessage {
       batteryOptimizationIgnored: result[0]! as bool,
       manufacturer: result[1]! as String,
       sdkInt: result[2]! as int,
+      deviceName: result[3]! as String,
     );
   }
 
@@ -401,7 +411,8 @@ class DeviceSetupMessage {
           other.batteryOptimizationIgnored,
         ) &&
         _deepEquals(manufacturer, other.manufacturer) &&
-        _deepEquals(sdkInt, other.sdkInt);
+        _deepEquals(sdkInt, other.sdkInt) &&
+        _deepEquals(deviceName, other.deviceName);
   }
 
   @override
@@ -410,7 +421,7 @@ class DeviceSetupMessage {
 
   @override
   String toString() {
-    return 'DeviceSetupMessage(batteryOptimizationIgnored: $batteryOptimizationIgnored, manufacturer: $manufacturer, sdkInt: $sdkInt)';
+    return 'DeviceSetupMessage(batteryOptimizationIgnored: $batteryOptimizationIgnored, manufacturer: $manufacturer, sdkInt: $sdkInt, deviceName: $deviceName)';
   }
 }
 
