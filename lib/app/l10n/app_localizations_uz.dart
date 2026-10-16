@@ -726,4 +726,82 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get commonDone => 'Tayyor';
+
+  @override
+  String get updateTitle => 'Yangilanish';
+
+  @override
+  String get updateAvailableTitle => 'Yangi versiya chiqdi';
+
+  @override
+  String get updateAvailableBody => 'Bir daqiqacha vaqt oladi.';
+
+  @override
+  String get updateRequiredBody =>
+      'Davom etish uchun ilovani yangilang. Bir daqiqacha vaqt oladi.';
+
+  @override
+  String get updateNow => 'Yangilash';
+
+  @override
+  String get updateUpToDate => 'Eng so‘nggi versiya o‘rnatilgan';
+
+  @override
+  String updateVersion(Object version) {
+    return 'Versiya $version';
+  }
+
+  @override
+  String updateNewVersion(Object version) {
+    return 'Yangi versiya: $version';
+  }
+
+  @override
+  String updateDownloading(Object percent) {
+    return 'Yuklanmoqda… $percent%';
+  }
+
+  @override
+  String get updateInstalling => 'O‘rnatilmoqda…';
+
+  @override
+  String get updatePermissionNeeded =>
+      'Alesle’ga ilova o‘rnatishga ruxsat bering, so‘ng qaytib «Yangilash»ni bosing.';
+
+  @override
+  String get updateRejected =>
+      'Fayl tekshiruvdan o‘tmadi va o‘rnatilmadi. Ilovani alesle.ai saytidan yuklab oling.';
+
+  @override
+  String get updateFailed => 'Yangilab bo‘lmadi. Qayta urinib ko‘ring.';
+
+  @override
+  String get updateStarted => 'O‘rnatishni tasdiqlang.';
+
+  @override
+  String get settingsUpdate => 'Yangilanish';
+
+  @override
+  String get settingsLegal => 'Huquqiy ma’lumot';
+
+  @override
+  String get settingsPrivacy => 'Maxfiylik siyosati';
+
+  @override
+  String get settingsTerms => 'Foydalanish shartlari';
+
+  @override
+  String get settingsRefund => 'Pulni qaytarish';
+
+  @override
+  String get settingsSupport => 'Yordam';
+
+  @override
+  String get settingsLinkFailed => 'Sahifani ochib bo‘lmadi.';
+
+  @override
+  String get reasonUpgrade => 'Ilovaning bu versiyasi eskirgan. Uni yangilang.';
+
+  @override
+  String get settingsDeleteGuide => 'Akkauntni o‘chirish haqida';
 }

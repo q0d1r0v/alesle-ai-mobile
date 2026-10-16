@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth/api_token_refresher.dart';
 import '../../core/auth/auth_session.dart';
 import '../../core/auth/session_controller.dart';
 import '../../core/auth/session_store.dart';
+import '../../core/config/app_build.dart';
 import '../../core/config/app_config.dart';
 import '../../core/network/dio_factory.dart';
 import '../../core/platform/agent_events_bridge.dart';
@@ -17,11 +19,33 @@ final Provider<AppConfig> appConfigProvider = Provider<AppConfig>(
   ),
 );
 
+/// This installed build; `bootstrap()` reads it from Android.
+final Provider<AppBuild> appBuildProvider = Provider<AppBuild>(
+  (Ref ref) => AppBuild.unknown,
+);
+
+/// True once the server said this version is too old (426, EC-15) or the
+/// manifest requires an update: the router then shows only the update screen.
+class UpgradeRequiredController extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void require() => state = true;
+}
+
+final NotifierProvider<UpgradeRequiredController, bool>
+upgradeRequiredProvider = NotifierProvider<UpgradeRequiredController, bool>(
+  UpgradeRequiredController.new,
+);
+
 /// Requests as the signed-in user: bearer token, refreshed as needed.
 final Provider<Dio> dioProvider = Provider<Dio>((Ref ref) {
   final Dio dio = createDio(
     ref.watch(appConfigProvider),
     tokens: ref.read(sessionProvider.notifier),
+    build: ref.watch(appBuildProvider),
+    onUpgradeRequired: () =>
+        ref.read(upgradeRequiredProvider.notifier).require(),
   );
   ref.onDispose(dio.close);
   return dio;
@@ -29,10 +53,23 @@ final Provider<Dio> dioProvider = Provider<Dio>((Ref ref) {
 
 /// Requests without a user: sign-in, refresh, health.
 final Provider<Dio> anonymousDioProvider = Provider<Dio>((Ref ref) {
-  final Dio dio = createDio(ref.watch(appConfigProvider));
+  final Dio dio = createDio(
+    ref.watch(appConfigProvider),
+    build: ref.watch(appBuildProvider),
+    onUpgradeRequired: () =>
+        ref.read(upgradeRequiredProvider.notifier).require(),
+  );
   ref.onDispose(dio.close);
   return dio;
 });
+
+/// Opens a web page outside the app (legal pages, support); tests replace it.
+typedef LinkOpener = Future<bool> Function(Uri url);
+
+final Provider<LinkOpener> linkOpenerProvider = Provider<LinkOpener>(
+  (Ref ref) =>
+      (Uri url) => launchUrl(url, mode: LaunchMode.externalApplication),
+);
 
 /// Overridden in `bootstrap()` with the secure store.
 final Provider<SessionStore> sessionStoreProvider = Provider<SessionStore>(

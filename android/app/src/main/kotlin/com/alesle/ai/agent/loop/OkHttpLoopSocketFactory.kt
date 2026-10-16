@@ -11,6 +11,8 @@ import java.util.concurrent.TimeUnit
 class OkHttpLoopSocketFactory(
     private val url: String,
     private val token: String,
+    /** This build's versionCode: outdated apps are refused with 426 (EC-15). */
+    private val appVersion: Long,
     private val client: OkHttpClient = DEFAULT_CLIENT,
 ) : LoopSocketFactory {
     override fun connect(listener: LoopSocketListener): LoopSocket {
@@ -19,6 +21,7 @@ class OkHttpLoopSocketFactory(
                 .Builder()
                 .url(url)
                 .header("Authorization", "Bearer $token")
+                .header(APP_VERSION_HEADER, appVersion.toString())
                 .build()
         val socket =
             client.newWebSocket(
@@ -52,7 +55,7 @@ class OkHttpLoopSocketFactory(
                         webSocket: WebSocket,
                         t: Throwable,
                         response: Response?,
-                    ) = listener.onGone()
+                    ) = if (response?.code == UPGRADE_REQUIRED) listener.onUpgradeRequired() else listener.onGone()
                 },
             )
         return object : LoopSocket {
@@ -66,6 +69,8 @@ class OkHttpLoopSocketFactory(
 
     companion object {
         const val NORMAL_CLOSURE = 1000
+        const val UPGRADE_REQUIRED = 426
+        const val APP_VERSION_HEADER = "X-App-Version"
         const val PATH = "/v1/agent/ws"
 
         /** Pings keep NAT mappings open and notice a dead link within ~20 s. */

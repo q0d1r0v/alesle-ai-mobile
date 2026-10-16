@@ -241,6 +241,22 @@ enum class PermissionState(val raw: Int) {
   }
 }
 
+enum class InstallOutcome(val raw: Int) {
+  /** The system's install confirmation is showing. */
+  STARTED(0),
+  /** "Install unknown apps" is off for Alesle: its settings page was opened. */
+  PERMISSION_NEEDED(1),
+  /** Not Alesle, not newer, or not signed with Alesle's certificate (AC-APP-6). */
+  REJECTED(2),
+  FAILED(3);
+
+  companion object {
+    fun ofRaw(raw: Int): InstallOutcome? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
 /** Generated class from Pigeon that represents data sent in messages. */
 data class AgentStatusMessage (
   /** Whether the user has switched on Alesle's AccessibilityService. */
@@ -487,6 +503,52 @@ data class DeviceSetupMessage (
     return "DeviceSetupMessage(batteryOptimizationIgnored=$batteryOptimizationIgnored, manufacturer=$manufacturer, sdkInt=$sdkInt, deviceName=$deviceName)"
   }
 }
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class AppVersionMessage (
+  val versionCode: Long,
+  val versionName: String,
+  /** Lowercase hex SHA-256 of the certificate this build is signed with. */
+  val certSha256: String
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): AppVersionMessage {
+      val versionCode = pigeonVar_list[0] as Long
+      val versionName = pigeonVar_list[1] as String
+      val certSha256 = pigeonVar_list[2] as String
+      return AppVersionMessage(versionCode, versionName, certSha256)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      versionCode,
+      versionName,
+      certSha256,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as AppVersionMessage
+    return AgentApiPigeonUtils.deepEquals(this.versionCode, other.versionCode) && AgentApiPigeonUtils.deepEquals(this.versionName, other.versionName) && AgentApiPigeonUtils.deepEquals(this.certSha256, other.certSha256)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.versionCode)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.versionName)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.certSha256)
+    return result
+  }
+  override fun toString(): String {
+    return "AppVersionMessage(versionCode=$versionCode, versionName=$versionName, certSha256=$certSha256)"
+  }
+}
 private open class AgentApiPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
@@ -506,28 +568,38 @@ private open class AgentApiPigeonCodec : StandardMessageCodec() {
         }
       }
       132.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let {
-          AgentStatusMessage.fromList(it)
+        return (readValue(buffer) as Long?)?.let {
+          InstallOutcome.ofRaw(it.toInt())
         }
       }
       133.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          TaskRequest.fromList(it)
+          AgentStatusMessage.fromList(it)
         }
       }
       134.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StartTaskResult.fromList(it)
+          TaskRequest.fromList(it)
         }
       }
       135.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StepEvent.fromList(it)
+          StartTaskResult.fromList(it)
         }
       }
       136.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
+          StepEvent.fromList(it)
+        }
+      }
+      137.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
           DeviceSetupMessage.fromList(it)
+        }
+      }
+      138.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          AppVersionMessage.fromList(it)
         }
       }
       else -> super.readValueOfType(type, buffer)
@@ -547,24 +619,32 @@ private open class AgentApiPigeonCodec : StandardMessageCodec() {
         stream.write(131)
         writeValue(stream, value.raw.toLong())
       }
-      is AgentStatusMessage -> {
+      is InstallOutcome -> {
         stream.write(132)
-        writeValue(stream, value.toList())
+        writeValue(stream, value.raw.toLong())
       }
-      is TaskRequest -> {
+      is AgentStatusMessage -> {
         stream.write(133)
         writeValue(stream, value.toList())
       }
-      is StartTaskResult -> {
+      is TaskRequest -> {
         stream.write(134)
         writeValue(stream, value.toList())
       }
-      is StepEvent -> {
+      is StartTaskResult -> {
         stream.write(135)
         writeValue(stream, value.toList())
       }
-      is DeviceSetupMessage -> {
+      is StepEvent -> {
         stream.write(136)
+        writeValue(stream, value.toList())
+      }
+      is DeviceSetupMessage -> {
+        stream.write(137)
+        writeValue(stream, value.toList())
+      }
+      is AppVersionMessage -> {
+        stream.write(138)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -937,6 +1017,63 @@ interface DeviceHostApi {
               AgentApiPigeonUtils.wrapError(exception)
             }
             reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+    }
+  }
+}
+/** Generated interface from Pigeon that represents a handler of messages from Flutter. */
+interface UpdateHostApi {
+  fun appVersion(): AppVersionMessage
+  /**
+   * Checks that the APK at [path] is a newer com.alesle.ai signed with this
+   * build's certificate, which must also be [expectedCertSha256], then hands
+   * it to PackageInstaller.
+   */
+  suspend fun install(path: String, expectedCertSha256: String): InstallOutcome
+
+  companion object {
+    /** The codec used by UpdateHostApi. */
+    val codec: MessageCodec<Any?> by lazy {
+      AgentApiPigeonCodec()
+    }
+    /** Sets up an instance of `UpdateHostApi` to handle messages through the `binaryMessenger`. */
+    @JvmOverloads
+    fun setUp(binaryMessenger: BinaryMessenger, api: UpdateHostApi?, messageChannelSuffix: String = "") {
+      val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.UpdateHostApi.appVersion$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              listOf(api.appVersion())
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.UpdateHostApi.install$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val pathArg = args[0] as String
+            val expectedCertSha256Arg = args[1] as String
+            CoroutineScope(Dispatchers.Main).launch {
+              val wrapped: List<Any?> = try {
+                listOf(api.install(pathArg, expectedCertSha256Arg))
+              } catch (exception: Throwable) {
+                AgentApiPigeonUtils.wrapError(exception)
+              }
+              reply.reply(wrapped)
+            }
           }
         } else {
           channel.setMessageHandler(null)

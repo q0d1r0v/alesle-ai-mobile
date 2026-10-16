@@ -15,6 +15,7 @@ import 'package:alesle_ai/features/home/domain/server_health.dart';
 import 'package:alesle_ai/features/memory/domain/memory.dart';
 import 'package:alesle_ai/features/onboarding/domain/device_setup.dart';
 import 'package:alesle_ai/features/settings/domain/account.dart';
+import 'package:alesle_ai/features/update/domain/update.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Hand-written fakes for widget tests: they keep call counts and let a test
@@ -631,5 +632,52 @@ final class FakeBillingRepository implements BillingRepository {
       plan: current.planCode,
       subscription: current.subscription,
     );
+  }
+}
+
+Release testRelease({int versionCode = 5, int minSupported = 1}) => Release(
+  versionCode: versionCode,
+  versionName: '0.$versionCode.0',
+  apkUrl: Uri.parse('https://cdn.alesle.ai/alesle-0.$versionCode.0.apk'),
+  sha256: 'a' * 64,
+  certSha256: 'b' * 64,
+  sizeBytes: 42000000,
+  minSupportedVersionCode: minSupported,
+  notes: const <String, String>{
+    'en': 'Faster replies',
+    'uz': 'Tezroq javoblar',
+    'ru': 'Быстрее ответы',
+  },
+);
+
+/// The manifest and installer in memory.
+final class FakeUpdateRepository implements UpdateRepository {
+  Release? newest;
+  Object? failure;
+  InstallResult result = InstallResult.started;
+  final List<String> calls = <String>[];
+
+  @override
+  Future<Release?> latest() async {
+    calls.add('latest');
+    if (failure case final Object value) throw value;
+    return newest;
+  }
+
+  @override
+  Future<String> download(
+    Release release, {
+    void Function(double)? progress,
+  }) async {
+    calls.add('download:${release.versionCode}');
+    progress?.call(0.5);
+    progress?.call(1);
+    return '/cache/alesle-${release.versionCode}.apk';
+  }
+
+  @override
+  Future<InstallResult> install(Release release, String path) async {
+    calls.add('install:$path');
+    return result;
   }
 }

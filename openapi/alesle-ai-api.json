@@ -918,6 +918,73 @@
         ]
       }
     },
+    "/v1/app/releases/latest": {
+      "get": {
+        "operationId": "releasesLatest",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing published yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "releases"
+        ]
+      }
+    },
+    "/v1/app/releases": {
+      "get": {
+        "operationId": "releasesList",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReleaseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "releases"
+        ]
+      }
+    },
     "/v1/voice/transcribe": {
       "post": {
         "operationId": "voiceTranscribe",
@@ -1191,6 +1258,7 @@
           "GOOGLE_TOKEN_INVALID",
           "SIGN_IN_METHOD_UNAVAILABLE",
           "PAYMENT_PROVIDER_UNAVAILABLE",
+          "UPGRADE_REQUIRED",
           "INTERNAL"
         ]
       },
@@ -1825,6 +1893,75 @@
           "id",
           "state",
           "product"
+        ]
+      },
+      "ReleaseNotesDto": {
+        "type": "object",
+        "properties": {
+          "en": {
+            "type": "string"
+          },
+          "uz": {
+            "type": "string"
+          },
+          "ru": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "en",
+          "uz",
+          "ru"
+        ]
+      },
+      "ReleaseDto": {
+        "type": "object",
+        "properties": {
+          "versionCode": {
+            "type": "number",
+            "example": 2
+          },
+          "versionName": {
+            "type": "string",
+            "example": "0.2.0"
+          },
+          "apkUrl": {
+            "type": "string",
+            "example": "https://cdn.alesle.ai/apk/alesle-0.2.0.apk"
+          },
+          "sha256": {
+            "type": "string",
+            "description": "Lowercase hex SHA-256 of the APK file."
+          },
+          "certSha256": {
+            "type": "string",
+            "description": "Lowercase hex SHA-256 of the signing certificate."
+          },
+          "sizeBytes": {
+            "type": "number"
+          },
+          "minSupportedVersionCode": {
+            "type": "number",
+            "description": "Older version codes must update before using the app (EC-15)."
+          },
+          "notes": {
+            "$ref": "#/components/schemas/ReleaseNotesDto"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "versionCode",
+          "versionName",
+          "apkUrl",
+          "sha256",
+          "certSha256",
+          "sizeBytes",
+          "minSupportedVersionCode",
+          "notes",
+          "publishedAt"
         ]
       },
       "SpeechLanguage": {

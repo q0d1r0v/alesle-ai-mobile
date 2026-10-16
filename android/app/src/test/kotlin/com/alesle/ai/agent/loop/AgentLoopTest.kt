@@ -359,6 +359,15 @@ class AgentLoopTest {
     }
 
     @Test
+    fun `an outdated app ends at once instead of reconnecting`() {
+        accepted()
+        sockets.upgradeRequired()
+        sockets.upgradeRequired()
+        assertEquals(LoopEvent.Finished("failed", "upgrade_required", null), events.single { it is LoopEvent.Finished })
+        assertTrue(worker.delays.isEmpty())
+    }
+
+    @Test
     fun `ends on server errors that make the task impossible`() {
         accepted()
         sockets.receive("""{"type":"error","code":"bad_frame"}""")
@@ -433,6 +442,11 @@ class AgentLoopTest {
 
         fun gone() {
             listener!!.onGone()
+            worker.drain()
+        }
+
+        fun upgradeRequired() {
+            listener!!.onUpgradeRequired()
             worker.drain()
         }
     }

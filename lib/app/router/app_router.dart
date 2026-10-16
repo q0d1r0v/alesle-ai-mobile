@@ -14,6 +14,7 @@ import '../../features/memory/presentation/history_screen.dart';
 import '../../features/memory/presentation/memory_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
+import '../../features/update/presentation/update_screen.dart';
 import '../bootstrap/core_providers.dart';
 
 abstract final class AppRoutes {
@@ -25,6 +26,13 @@ abstract final class AppRoutes {
   static const String history = '/settings/history';
   static const String plan = '/settings/plan';
   static const String limit = '/limit';
+  static const String update = '/settings/update';
+
+  /// This version is no longer served (EC-15): the only screen left.
+  static const String updateRequired = '/update-required';
+
+  /// The update screen, downloading at once.
+  static const String updateNow = '/settings/update?start=1';
 
   static String payFor(String product) =>
       '/billing/pay/${Uri.encodeComponent(product)}';
@@ -48,6 +56,7 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
     // Onboarding first, then signing in (step 9); neither comes back once
     // done, except signing in after a sign-out.
     redirect: (BuildContext context, GoRouterState state) => gateFor(
+      upgradeRequired: ref.read(upgradeRequiredProvider),
       onboardingDone: ref.read(appSettingsProvider).onboardingDone,
       signedIn: ref.read(sessionProvider) != null,
       location: state.matchedLocation,
@@ -69,6 +78,15 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
         builder: (_, _) => const HistoryScreen(),
       ),
       GoRoute(path: AppRoutes.plan, builder: (_, _) => const PlanScreen()),
+      GoRoute(
+        path: AppRoutes.update,
+        builder: (_, GoRouterState state) =>
+            UpdateScreen(start: state.uri.queryParameters['start'] == '1'),
+      ),
+      GoRoute(
+        path: AppRoutes.updateRequired,
+        builder: (_, _) => const UpdateScreen(mandatory: true),
+      ),
       GoRoute(
         path: '/billing/pay/:product',
         builder: (_, GoRouterState state) =>
@@ -97,6 +115,7 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
   // Signing in or out moves the user at once, wherever they are.
   ref
     ..listen(sessionProvider, (_, _) => router.refresh())
+    ..listen(upgradeRequiredProvider, (_, _) => router.refresh())
     ..onDispose(router.dispose);
   return router;
 });
@@ -106,7 +125,15 @@ String? gateFor({
   required bool onboardingDone,
   required bool signedIn,
   required String location,
+  bool upgradeRequired = false,
 }) {
+  // An outdated app can do nothing but update (EC-15).
+  if (upgradeRequired) {
+    return location == AppRoutes.updateRequired
+        ? null
+        : AppRoutes.updateRequired;
+  }
+  if (location == AppRoutes.updateRequired) return AppRoutes.home;
   if (!onboardingDone) {
     return location == AppRoutes.onboarding ? null : AppRoutes.onboarding;
   }

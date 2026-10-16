@@ -1,4 +1,5 @@
 import 'package:alesle_ai/app/bootstrap/core_providers.dart';
+import 'package:alesle_ai/core/config/app_build.dart';
 import 'package:alesle_ai/core/errors/failure.dart';
 import 'package:alesle_ai/core/storage/app_settings.dart';
 import 'package:alesle_ai/features/settings/data/settings_data_providers.dart';
@@ -14,6 +15,8 @@ import '../../../helpers/pump_app.dart';
 void main() {
   late FakeAccountRepository account;
   late AppSettingsStore store;
+  late List<Uri> opened;
+  bool opens = true;
 
   Future<ProviderContainer> pump(WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 2340);
@@ -26,6 +29,13 @@ void main() {
       overrides: [
         accountRepositoryProvider.overrideWithValue(account),
         appSettingsStoreProvider.overrideWithValue(store),
+        appBuildProvider.overrideWithValue(
+          const AppBuild(versionCode: 3, versionName: '0.3.0', certSha256: ''),
+        ),
+        linkOpenerProvider.overrideWithValue((Uri url) async {
+          opened.add(url);
+          return opens;
+        }),
       ],
     );
     await tester.pumpAndSettle();
@@ -49,7 +59,11 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  setUp(() => account = FakeAccountRepository());
+  setUp(() {
+    account = FakeAccountRepository();
+    opened = <Uri>[];
+    opens = true;
+  });
 
   testWidgets(
     'shows the account and keeps the server’s settings on the phone',
@@ -191,4 +205,31 @@ void main() {
     await tap(tester, 'settings-confirm');
     expect(find.text('Internet aloqasini tekshiring'), findsOneWidget);
   });
+
+  testWidgets(
+    'shows the version and opens the legal pages in the user’s language',
+    (WidgetTester tester) async {
+      await pump(tester);
+      // A tall screen: every row is built and on screen at once.
+      tester.view.physicalSize = const Size(1080, 9000);
+      await tester.pumpAndSettle();
+      expect(find.text('Versiya 0.3.0 (3)'), findsOneWidget);
+      await tap(tester, 'settings-privacy');
+      await tap(tester, 'settings-terms');
+      await tap(tester, 'settings-refund');
+      await tap(tester, 'settings-delete-guide');
+      await tap(tester, 'settings-support');
+      expect(opened.map((Uri u) => u.path), <String>[
+        '/uz/privacy',
+        '/uz/terms',
+        '/uz/refund',
+        '/uz/delete-account',
+        '/uz/support',
+      ]);
+
+      opens = false;
+      await tap(tester, 'settings-privacy');
+      expect(find.text('Sahifani ochib bo‘lmadi.'), findsOneWidget);
+    },
+  );
 }

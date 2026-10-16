@@ -5,11 +5,13 @@ import com.alesle.ai.agent.AgentHostApiImpl
 import com.alesle.ai.agent.generated.AgentEventsApi
 import com.alesle.ai.agent.generated.AgentHostApi
 import com.alesle.ai.agent.generated.DeviceHostApi
+import com.alesle.ai.agent.generated.UpdateHostApi
 import com.alesle.ai.agent.task.AgentTaskController
 import com.alesle.ai.device.AudioPlayer
 import com.alesle.ai.device.DeviceHostApiImpl
 import com.alesle.ai.device.PermissionGate
 import com.alesle.ai.device.VoiceRecorder
+import com.alesle.ai.update.UpdateHostApiImpl
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import kotlinx.coroutines.MainScope
@@ -35,6 +37,7 @@ class MainActivity : FlutterActivity() {
             ),
         )
         DeviceHostApi.setUp(messenger, DeviceHostApiImpl(applicationContext, permissions, recorder, player))
+        UpdateHostApi.setUp(messenger, UpdateHostApiImpl(applicationContext))
         val events = AgentEventsApi(messenger)
         tasks.listener = { event ->
             // Pigeon sends on the platform thread; a Dart side that is gone is fine to miss.
@@ -58,6 +61,7 @@ class MainActivity : FlutterActivity() {
         player.stop()
         AgentHostApi.setUp(flutterEngine.dartExecutor.binaryMessenger, null)
         DeviceHostApi.setUp(flutterEngine.dartExecutor.binaryMessenger, null)
+        UpdateHostApi.setUp(flutterEngine.dartExecutor.binaryMessenger, null)
         super.cleanUpFlutterEngine(flutterEngine)
     }
 }

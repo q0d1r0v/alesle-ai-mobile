@@ -34,6 +34,10 @@ class OkHttpLoopSocketFactoryTest {
             override fun onGone() {
                 events += "gone"
             }
+
+            override fun onUpgradeRequired() {
+                events += "upgrade"
+            }
         }
 
     private fun next(): String = events.poll(5, TimeUnit.SECONDS) ?: error("no event")
@@ -61,10 +65,12 @@ class OkHttpLoopSocketFactoryTest {
             ),
         )
         server.start()
-        val factory = OkHttpLoopSocketFactory(server.url("/v1/agent/ws").toString().replace("http", "ws"), "dev-token")
+        val factory = OkHttpLoopSocketFactory(server.url("/v1/agent/ws").toString().replace("http", "ws"), "dev-token", appVersion = 7)
         val socket = factory.connect(listener)
 
-        assertEquals("Bearer dev-token", server.takeRequest(5, TimeUnit.SECONDS)!!.getHeader("Authorization"))
+        val upgrade = server.takeRequest(5, TimeUnit.SECONDS)!!
+        assertEquals("Bearer dev-token", upgrade.getHeader("Authorization"))
+        assertEquals("7", upgrade.getHeader("X-App-Version"))
         assertEquals("open", next())
         assertEquals("""message:{"type":"observe"}""", next())
         assertTrue(socket.send("hi"))
@@ -79,8 +85,16 @@ class OkHttpLoopSocketFactoryTest {
     fun `reports a refused upgrade as gone`() {
         server.enqueue(MockResponse().setResponseCode(401))
         server.start()
-        OkHttpLoopSocketFactory(server.url("/v1/agent/ws").toString(), "bad").connect(listener)
+        OkHttpLoopSocketFactory(server.url("/v1/agent/ws").toString(), "bad", appVersion = 7).connect(listener)
         assertEquals("gone", next())
+    }
+
+    @Test
+    fun `reports an outdated app as such`() {
+        server.enqueue(MockResponse().setResponseCode(426))
+        server.start()
+        OkHttpLoopSocketFactory(server.url("/v1/agent/ws").toString(), "dev-token", appVersion = 1).connect(listener)
+        assertEquals("upgrade", next())
     }
 
     @Test

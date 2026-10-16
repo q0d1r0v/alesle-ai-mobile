@@ -8,6 +8,7 @@ export 'clients/me_api.dart';
 export 'clients/memory_api.dart';
 export 'clients/history_api.dart';
 export 'clients/billing_api.dart';
+export 'clients/releases_api.dart';
 export 'clients/voice_api.dart';
 export 'clients/health_api.dart';
 // Data classes
@@ -41,6 +42,8 @@ export 'models/checkout_dto.dart';
 export 'models/checkout_result_dto.dart';
 export 'models/payment_state.dart';
 export 'models/payment_dto.dart';
+export 'models/release_notes_dto.dart';
+export 'models/release_dto.dart';
 export 'models/speech_language.dart';
 export 'models/transcript_dto.dart';
 export 'models/speak_dto.dart';

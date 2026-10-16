@@ -18,6 +18,7 @@ import com.alesle.ai.agent.loop.RuntimeLoopDevice
 import com.alesle.ai.agent.overlay.AgentOverlay
 import com.alesle.ai.agent.service.AgentForegroundService
 import com.alesle.ai.agent.service.StopRequests
+import com.alesle.ai.update.AppVersion
 
 /** A running task as the controller sees it: [AgentLoop] in production. */
 interface TaskLoop {
@@ -154,7 +155,12 @@ class AgentTaskController(
                             locale = request.locale,
                             policy = if (request.confirmEverySensitiveAction) ConfirmPolicy.CONFIRM else ConfirmPolicy.COUNTDOWN,
                         ),
-                    sockets = OkHttpLoopSocketFactory(OkHttpLoopSocketFactory.socketUrl(request.apiBaseUrl), request.accessToken),
+                    sockets =
+                        OkHttpLoopSocketFactory(
+                            OkHttpLoopSocketFactory.socketUrl(request.apiBaseUrl),
+                            request.accessToken,
+                            appVersion = AppVersion.code(service),
+                        ),
                     device = RuntimeLoopDevice({ AlesleAccessibilityService.instance }, { service.lastEventAt }, SystemClock::uptimeMillis),
                     ui = AgentOverlay(service, onStop = StopRequests::request, locale = request.locale),
                     worker = worker,

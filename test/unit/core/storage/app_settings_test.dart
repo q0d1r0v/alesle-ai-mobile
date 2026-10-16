@@ -43,6 +43,7 @@ void main() {
         const AppSettings(),
         isNot(const AppSettings(usageNoticeKey: 'k')),
       );
+      expect(const AppSettings(), isNot(const AppSettings(offeredUpdate: 1)));
     });
   });
 
@@ -62,6 +63,7 @@ void main() {
         voiceReplies: false,
         confirmSensitiveActions: false,
         usageNoticeKey: '2026-11-16T07:00:00.000Z:80',
+        offeredUpdate: 5,
       );
       await store.write(settings);
       expect(store.read(), settings);

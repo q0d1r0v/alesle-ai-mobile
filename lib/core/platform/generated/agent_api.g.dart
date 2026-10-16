@@ -132,6 +132,18 @@ enum PermissionState {
   permanentlyDenied,
 }
 
+enum InstallOutcome {
+  /// The system's install confirmation is showing.
+  started,
+
+  /// "Install unknown apps" is off for Alesle: its settings page was opened.
+  permissionNeeded,
+
+  /// Not Alesle, not newer, or not signed with Alesle's certificate (AC-APP-6).
+  rejected,
+  failed,
+}
+
 class AgentStatusMessage {
   AgentStatusMessage({required this.accessibilityEnabled});
 
@@ -425,6 +437,61 @@ class DeviceSetupMessage {
   }
 }
 
+class AppVersionMessage {
+  AppVersionMessage({
+    required this.versionCode,
+    required this.versionName,
+    required this.certSha256,
+  });
+
+  int versionCode;
+
+  String versionName;
+
+  /// Lowercase hex SHA-256 of the certificate this build is signed with.
+  String certSha256;
+
+  List<Object?> _toList() {
+    return <Object?>[versionCode, versionName, certSha256];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static AppVersionMessage decode(Object result) {
+    result as List<Object?>;
+    return AppVersionMessage(
+      versionCode: result[0]! as int,
+      versionName: result[1]! as String,
+      certSha256: result[2]! as String,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! AppVersionMessage || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(versionCode, other.versionCode) &&
+        _deepEquals(versionName, other.versionName) &&
+        _deepEquals(certSha256, other.certSha256);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'AppVersionMessage(versionCode: $versionCode, versionName: $versionName, certSha256: $certSha256)';
+  }
+}
+
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
   @override
@@ -441,20 +508,26 @@ class _PigeonCodec extends StandardMessageCodec {
     } else if (value is PermissionState) {
       buffer.putUint8(131);
       writeValue(buffer, value.index);
-    } else if (value is AgentStatusMessage) {
+    } else if (value is InstallOutcome) {
       buffer.putUint8(132);
-      writeValue(buffer, value.encode());
-    } else if (value is TaskRequest) {
+      writeValue(buffer, value.index);
+    } else if (value is AgentStatusMessage) {
       buffer.putUint8(133);
       writeValue(buffer, value.encode());
-    } else if (value is StartTaskResult) {
+    } else if (value is TaskRequest) {
       buffer.putUint8(134);
       writeValue(buffer, value.encode());
-    } else if (value is StepEvent) {
+    } else if (value is StartTaskResult) {
       buffer.putUint8(135);
       writeValue(buffer, value.encode());
-    } else if (value is DeviceSetupMessage) {
+    } else if (value is StepEvent) {
       buffer.putUint8(136);
+      writeValue(buffer, value.encode());
+    } else if (value is DeviceSetupMessage) {
+      buffer.putUint8(137);
+      writeValue(buffer, value.encode());
+    } else if (value is AppVersionMessage) {
+      buffer.putUint8(138);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -474,15 +547,20 @@ class _PigeonCodec extends StandardMessageCodec {
         final value = readValue(buffer) as int?;
         return value == null ? null : PermissionState.values[value];
       case 132:
-        return AgentStatusMessage.decode(readValue(buffer)!);
+        final value = readValue(buffer) as int?;
+        return value == null ? null : InstallOutcome.values[value];
       case 133:
-        return TaskRequest.decode(readValue(buffer)!);
+        return AgentStatusMessage.decode(readValue(buffer)!);
       case 134:
-        return StartTaskResult.decode(readValue(buffer)!);
+        return TaskRequest.decode(readValue(buffer)!);
       case 135:
-        return StepEvent.decode(readValue(buffer)!);
+        return StartTaskResult.decode(readValue(buffer)!);
       case 136:
+        return StepEvent.decode(readValue(buffer)!);
+      case 137:
         return DeviceSetupMessage.decode(readValue(buffer)!);
+      case 138:
+        return AppVersionMessage.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
     }
@@ -903,5 +981,66 @@ class DeviceHostApi {
       pigeonVar_channelName,
       isNullValid: true,
     );
+  }
+}
+
+class UpdateHostApi {
+  /// Constructor for [UpdateHostApi]. The [binaryMessenger] named argument is
+  /// available for dependency injection. If it is left null, the default
+  /// BinaryMessenger will be used which routes to the host platform.
+  UpdateHostApi({
+    BinaryMessenger? binaryMessenger,
+    String messageChannelSuffix = '',
+  }) : pigeonVar_binaryMessenger = binaryMessenger,
+       pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty
+           ? '.$messageChannelSuffix'
+           : '';
+
+  final BinaryMessenger? pigeonVar_binaryMessenger;
+  static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
+
+  final String pigeonVar_messageChannelSuffix;
+
+  Future<AppVersionMessage> appVersion() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.UpdateHostApi.appVersion$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as AppVersionMessage;
+  }
+
+  /// Checks that the APK at [path] is a newer com.alesle.ai signed with this
+  /// build's certificate, which must also be [expectedCertSha256], then hands
+  /// it to PackageInstaller.
+  Future<InstallOutcome> install(String path, String expectedCertSha256) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.UpdateHostApi.install$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[path, expectedCertSha256],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as InstallOutcome;
   }
 }

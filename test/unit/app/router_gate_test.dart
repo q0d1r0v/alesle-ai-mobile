@@ -23,4 +23,18 @@ void main() {
     expect(gate(true, true, AppRoutes.settings), isNull);
     expect(gate(true, true, AppRoutes.home), isNull);
   });
+
+  test('an outdated app can only update (EC-15)', () {
+    String? outdated(String at) => gateFor(
+      upgradeRequired: true,
+      onboardingDone: true,
+      signedIn: true,
+      location: at,
+    );
+    expect(outdated(AppRoutes.home), AppRoutes.updateRequired);
+    expect(outdated(AppRoutes.signIn), AppRoutes.updateRequired);
+    expect(outdated(AppRoutes.updateRequired), isNull);
+    // Updated meanwhile: the screen gives way.
+    expect(gate(true, true, AppRoutes.updateRequired), AppRoutes.home);
+  });
 }

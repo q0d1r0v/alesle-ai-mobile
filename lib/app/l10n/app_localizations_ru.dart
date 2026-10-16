@@ -720,4 +720,82 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get commonDone => 'Готово';
+
+  @override
+  String get updateTitle => 'Обновление';
+
+  @override
+  String get updateAvailableTitle => 'Вышла новая версия';
+
+  @override
+  String get updateAvailableBody => 'Это займёт около минуты.';
+
+  @override
+  String get updateRequiredBody =>
+      'Чтобы продолжить, обновите приложение. Это займёт около минуты.';
+
+  @override
+  String get updateNow => 'Обновить';
+
+  @override
+  String get updateUpToDate => 'Установлена последняя версия';
+
+  @override
+  String updateVersion(Object version) {
+    return 'Версия $version';
+  }
+
+  @override
+  String updateNewVersion(Object version) {
+    return 'Новая версия: $version';
+  }
+
+  @override
+  String updateDownloading(Object percent) {
+    return 'Загрузка… $percent%';
+  }
+
+  @override
+  String get updateInstalling => 'Установка…';
+
+  @override
+  String get updatePermissionNeeded =>
+      'Разрешите Alesle устанавливать приложения, затем вернитесь и нажмите «Обновить».';
+
+  @override
+  String get updateRejected =>
+      'Файл не прошёл проверку и не установлен. Скачайте приложение на сайте alesle.ai.';
+
+  @override
+  String get updateFailed => 'Не удалось обновить. Попробуйте ещё раз.';
+
+  @override
+  String get updateStarted => 'Подтвердите установку.';
+
+  @override
+  String get settingsUpdate => 'Обновление';
+
+  @override
+  String get settingsLegal => 'Правовая информация';
+
+  @override
+  String get settingsPrivacy => 'Политика конфиденциальности';
+
+  @override
+  String get settingsTerms => 'Условия использования';
+
+  @override
+  String get settingsRefund => 'Возврат средств';
+
+  @override
+  String get settingsSupport => 'Поддержка';
+
+  @override
+  String get settingsLinkFailed => 'Не удалось открыть страницу.';
+
+  @override
+  String get reasonUpgrade => 'Эта версия приложения устарела. Обновите её.';
+
+  @override
+  String get settingsDeleteGuide => 'Об удалении аккаунта';
 }

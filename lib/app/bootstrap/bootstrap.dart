@@ -7,7 +7,9 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 
 import '../../core/auth/auth_session.dart';
 import '../../core/auth/session_store.dart';
+import '../../core/config/app_build.dart';
 import '../../core/config/app_config.dart';
+import '../../core/platform/app_build_reader.dart';
 import '../../core/storage/app_settings.dart';
 import '../app.dart';
 import 'core_providers.dart';
@@ -33,6 +35,7 @@ Future<void> bootstrap({List<Override> overrides = const <Override>[]}) async {
   final AppSettingsStore settings = await AppSettingsStore.load();
   final SessionStore sessions = SecureSessionStore();
   final AuthSession? session = await sessions.read();
+  final AppBuild build = await readAppBuild();
   runApp(
     ProviderScope(
       overrides: <Override>[
@@ -40,6 +43,7 @@ Future<void> bootstrap({List<Override> overrides = const <Override>[]}) async {
         appSettingsStoreProvider.overrideWithValue(settings),
         sessionStoreProvider.overrideWithValue(sessions),
         initialSessionProvider.overrideWithValue(session),
+        appBuildProvider.overrideWithValue(build),
         ...overrides,
       ],
       child: const AlesleApp(),

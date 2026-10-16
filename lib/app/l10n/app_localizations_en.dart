@@ -718,4 +718,83 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commonDone => 'Done';
+
+  @override
+  String get updateTitle => 'Update';
+
+  @override
+  String get updateAvailableTitle => 'A new version is here';
+
+  @override
+  String get updateAvailableBody => 'It takes about a minute.';
+
+  @override
+  String get updateRequiredBody =>
+      'Update the app to keep going. It takes about a minute.';
+
+  @override
+  String get updateNow => 'Update';
+
+  @override
+  String get updateUpToDate => 'You have the latest version';
+
+  @override
+  String updateVersion(Object version) {
+    return 'Version $version';
+  }
+
+  @override
+  String updateNewVersion(Object version) {
+    return 'New version: $version';
+  }
+
+  @override
+  String updateDownloading(Object percent) {
+    return 'Downloading… $percent%';
+  }
+
+  @override
+  String get updateInstalling => 'Installing…';
+
+  @override
+  String get updatePermissionNeeded =>
+      'Allow Alesle to install apps, then come back and tap Update.';
+
+  @override
+  String get updateRejected =>
+      'The file failed the check and wasn’t installed. Download the app from alesle.ai.';
+
+  @override
+  String get updateFailed => 'Couldn’t update. Try again.';
+
+  @override
+  String get updateStarted => 'Confirm the installation.';
+
+  @override
+  String get settingsUpdate => 'Updates';
+
+  @override
+  String get settingsLegal => 'Legal';
+
+  @override
+  String get settingsPrivacy => 'Privacy policy';
+
+  @override
+  String get settingsTerms => 'Terms of use';
+
+  @override
+  String get settingsRefund => 'Refund policy';
+
+  @override
+  String get settingsSupport => 'Support';
+
+  @override
+  String get settingsLinkFailed => 'Couldn’t open the page.';
+
+  @override
+  String get reasonUpgrade =>
+      'This version of the app is out of date. Please update it.';
+
+  @override
+  String get settingsDeleteGuide => 'About deleting your account';
 }

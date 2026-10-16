@@ -25,6 +25,9 @@ interface LoopSocketListener {
 
     /** Closed or failed: either way the connection is gone. */
     fun onGone()
+
+    /** The server refused this app version (426, EC-15): reconnecting cannot help. */
+    fun onUpgradeRequired() = onGone()
 }
 
 fun interface LoopSocketFactory {
@@ -157,6 +160,11 @@ class AgentLoop(
                 override fun onMessage(text: String) = worker.post { received(text) }
 
                 override fun onGone() = worker.post(::gone)
+
+                override fun onUpgradeRequired() =
+                    worker.post {
+                        if (!ended.get()) end(LoopEvent.Finished("failed", "upgrade_required", null), notifyServer = false)
+                    }
             }
         socket = sockets.connect(listener)
     }

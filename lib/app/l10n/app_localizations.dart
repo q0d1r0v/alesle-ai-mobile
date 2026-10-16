@@ -1407,6 +1407,144 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Tayyor'**
   String get commonDone;
+
+  /// No description provided for @updateTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangilanish'**
+  String get updateTitle;
+
+  /// No description provided for @updateAvailableTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi versiya chiqdi'**
+  String get updateAvailableTitle;
+
+  /// No description provided for @updateAvailableBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bir daqiqacha vaqt oladi.'**
+  String get updateAvailableBody;
+
+  /// No description provided for @updateRequiredBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Davom etish uchun ilovani yangilang. Bir daqiqacha vaqt oladi.'**
+  String get updateRequiredBody;
+
+  /// No description provided for @updateNow.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangilash'**
+  String get updateNow;
+
+  /// No description provided for @updateUpToDate.
+  ///
+  /// In uz, this message translates to:
+  /// **'Eng so‘nggi versiya o‘rnatilgan'**
+  String get updateUpToDate;
+
+  /// No description provided for @updateVersion.
+  ///
+  /// In uz, this message translates to:
+  /// **'Versiya {version}'**
+  String updateVersion(Object version);
+
+  /// No description provided for @updateNewVersion.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi versiya: {version}'**
+  String updateNewVersion(Object version);
+
+  /// No description provided for @updateDownloading.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yuklanmoqda… {percent}%'**
+  String updateDownloading(Object percent);
+
+  /// No description provided for @updateInstalling.
+  ///
+  /// In uz, this message translates to:
+  /// **'O‘rnatilmoqda…'**
+  String get updateInstalling;
+
+  /// No description provided for @updatePermissionNeeded.
+  ///
+  /// In uz, this message translates to:
+  /// **'Alesle’ga ilova o‘rnatishga ruxsat bering, so‘ng qaytib «Yangilash»ni bosing.'**
+  String get updatePermissionNeeded;
+
+  /// No description provided for @updateRejected.
+  ///
+  /// In uz, this message translates to:
+  /// **'Fayl tekshiruvdan o‘tmadi va o‘rnatilmadi. Ilovani alesle.ai saytidan yuklab oling.'**
+  String get updateRejected;
+
+  /// No description provided for @updateFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangilab bo‘lmadi. Qayta urinib ko‘ring.'**
+  String get updateFailed;
+
+  /// No description provided for @updateStarted.
+  ///
+  /// In uz, this message translates to:
+  /// **'O‘rnatishni tasdiqlang.'**
+  String get updateStarted;
+
+  /// No description provided for @settingsUpdate.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangilanish'**
+  String get settingsUpdate;
+
+  /// No description provided for @settingsLegal.
+  ///
+  /// In uz, this message translates to:
+  /// **'Huquqiy ma’lumot'**
+  String get settingsLegal;
+
+  /// No description provided for @settingsPrivacy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Maxfiylik siyosati'**
+  String get settingsPrivacy;
+
+  /// No description provided for @settingsTerms.
+  ///
+  /// In uz, this message translates to:
+  /// **'Foydalanish shartlari'**
+  String get settingsTerms;
+
+  /// No description provided for @settingsRefund.
+  ///
+  /// In uz, this message translates to:
+  /// **'Pulni qaytarish'**
+  String get settingsRefund;
+
+  /// No description provided for @settingsSupport.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yordam'**
+  String get settingsSupport;
+
+  /// No description provided for @settingsLinkFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sahifani ochib bo‘lmadi.'**
+  String get settingsLinkFailed;
+
+  /// No description provided for @reasonUpgrade.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ilovaning bu versiyasi eskirgan. Uni yangilang.'**
+  String get reasonUpgrade;
+
+  /// No description provided for @settingsDeleteGuide.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkauntni o‘chirish haqida'**
+  String get settingsDeleteGuide;
 }
 
 class _AppLocalizationsDelegate

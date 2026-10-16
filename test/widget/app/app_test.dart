@@ -5,8 +5,10 @@ import 'package:alesle_ai/app/app.dart';
 import 'package:alesle_ai/app/bootstrap/core_providers.dart';
 import 'package:alesle_ai/core/api/generated/models/error_code.dart';
 import 'package:alesle_ai/core/auth/session_store.dart';
+import 'package:alesle_ai/core/config/app_build.dart';
 import 'package:alesle_ai/core/config/app_config.dart';
 import 'package:alesle_ai/core/errors/failure.dart';
+import 'package:alesle_ai/core/storage/app_settings.dart';
 import 'package:alesle_ai/features/agent_debug/data/agent_debug_data_providers.dart';
 import 'package:alesle_ai/features/agent_debug/domain/agent_console.dart';
 import 'package:alesle_ai/features/agent_debug/presentation/agent_debug_screen.dart';
@@ -21,10 +23,14 @@ import 'package:alesle_ai/features/onboarding/data/onboarding_data_providers.dar
 import 'package:alesle_ai/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:alesle_ai/features/settings/data/settings_data_providers.dart';
 import 'package:alesle_ai/features/settings/domain/account.dart';
+import 'package:alesle_ai/features/update/data/update_data_providers.dart';
+import 'package:alesle_ai/features/update/presentation/update_screen.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http_mock_adapter/http_mock_adapter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../helpers/fakes.dart';
 import '../../helpers/pump_app.dart';
@@ -364,13 +370,6 @@ void main() {
       return ProviderScope.containerOf(tester.element(find.byType(AlesleApp)));
     }
 
-    /// The payment status screen's orb never settles.
-    Future<void> settleFor(WidgetTester tester) async {
-      for (int i = 0; i < 30; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
-    }
-
     testWidgets('reminds once per period from 80 %', (
       WidgetTester tester,
     ) async {
@@ -467,6 +466,181 @@ void main() {
       expect(find.byType(PaymentStatusScreen), findsOneWidget);
     });
   });
+
+  group('updates', () {
+    late FakeUpdateRepository updates;
+    late FakeAssistantRepository assistant;
+
+    setUp(() {
+      updates = FakeUpdateRepository();
+      assistant = FakeAssistantRepository();
+    });
+
+    Future<ProviderContainer> pumpApp(WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appConfigProvider.overrideWithValue(config),
+            healthRepositoryProvider.overrideWithValue(
+              FakeHealthRepository(() async => readyHealth),
+            ),
+            agentRepositoryProvider.overrideWithValue(
+              FakeAgentRepository(() async => enabledAgent),
+            ),
+            appSettingsStoreProvider.overrideWithValue(
+              await testSettingsStore(language: 'uz'),
+            ),
+            ...signedInOverrides(),
+            assistantRepositoryProvider.overrideWithValue(assistant),
+            voiceRepositoryProvider.overrideWithValue(FakeVoiceRepository()),
+            billingRepositoryProvider.overrideWithValue(
+              FakeBillingRepository(),
+            ),
+            updateRepositoryProvider.overrideWithValue(updates),
+            appBuildProvider.overrideWithValue(
+              const AppBuild(
+                versionCode: 3,
+                versionName: '0.3.0',
+                certSha256: '',
+              ),
+            ),
+          ],
+          child: const AlesleApp(),
+        ),
+      );
+      await settleFor(tester);
+      return ProviderScope.containerOf(tester.element(find.byType(AlesleApp)));
+    }
+
+    testWidgets('a newer version is offered once', (WidgetTester tester) async {
+      updates.newest = testRelease();
+      final ProviderContainer container = await pumpApp(tester);
+      expect(find.byKey(const Key('update-sheet-title')), findsOneWidget);
+      expect(container.read(appSettingsProvider).offeredUpdate, 5);
+      await tester.tap(find.byKey(const Key('update-sheet-later')));
+      await settleFor(tester);
+      expect(find.byType(HomeScreen), findsOneWidget);
+    });
+
+    testWidgets('"update" from the sheet downloads and installs', (
+      WidgetTester tester,
+    ) async {
+      updates.newest = testRelease();
+      await pumpApp(tester);
+      await tester.tap(find.byKey(const Key('update-sheet-update')));
+      await settleFor(tester);
+      expect(find.byType(UpdateScreen), findsOneWidget);
+      expect(updates.calls, contains('install:/cache/alesle-5.apk'));
+    });
+
+    testWidgets('an offered version is not offered again', (
+      WidgetTester tester,
+    ) async {
+      updates.newest = testRelease();
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final AppSettingsStore store = await testSettingsStore(language: 'uz');
+      await store.write(store.read().copyWith(offeredUpdate: 5));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appConfigProvider.overrideWithValue(config),
+            healthRepositoryProvider.overrideWithValue(
+              FakeHealthRepository(() async => readyHealth),
+            ),
+            agentRepositoryProvider.overrideWithValue(
+              FakeAgentRepository(() async => enabledAgent),
+            ),
+            appSettingsStoreProvider.overrideWithValue(store),
+            ...signedInOverrides(),
+            assistantRepositoryProvider.overrideWithValue(assistant),
+            voiceRepositoryProvider.overrideWithValue(FakeVoiceRepository()),
+            billingRepositoryProvider.overrideWithValue(
+              FakeBillingRepository(),
+            ),
+            updateRepositoryProvider.overrideWithValue(updates),
+            appBuildProvider.overrideWithValue(
+              const AppBuild(
+                versionCode: 3,
+                versionName: '0.3.0',
+                certSha256: '',
+              ),
+            ),
+          ],
+          child: const AlesleApp(),
+        ),
+      );
+      await settleFor(tester);
+      expect(updates.calls, <String>['latest']);
+      expect(find.byKey(const Key('update-sheet-title')), findsNothing);
+    });
+
+    testWidgets('a required version leaves only the update screen', (
+      WidgetTester tester,
+    ) async {
+      updates.newest = testRelease(minSupported: 4);
+      await pumpApp(tester);
+      expect(find.byType(UpdateScreen), findsOneWidget);
+      expect(find.byType(HomeScreen), findsNothing);
+      expect(
+        find.text(
+          'Davom etish uchun ilovani yangilang. Bir daqiqacha vaqt oladi.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a task refused for an old version shows the update screen', (
+      WidgetTester tester,
+    ) async {
+      await pumpApp(tester);
+      assistant.push(
+        const TaskUpdate(
+          TaskUpdateKind.finished,
+          status: 'failed',
+          reason: 'upgrade_required',
+        ),
+      );
+      await settleFor(tester);
+      expect(find.byType(UpdateScreen), findsOneWidget);
+    });
+
+    testWidgets('offline, nothing is offered', (WidgetTester tester) async {
+      updates.failure = const NetworkFailure();
+      await pumpApp(tester);
+      expect(find.byType(HomeScreen), findsOneWidget);
+    });
+
+    test('a 426 from the API asks for the update', () async {
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          appConfigProvider.overrideWithValue(config),
+          sessionStoreProvider.overrideWithValue(MemorySessionStore()),
+          appBuildProvider.overrideWithValue(
+            const AppBuild(
+              versionCode: 1,
+              versionName: '0.1.0',
+              certSha256: '',
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      for (final Dio dio in <Dio>[
+        container.read(dioProvider),
+        container.read(anonymousDioProvider),
+      ]) {
+        DioAdapter(
+          dio: dio,
+        ).onGet('/v1/me', (server) => server.reply(426, <String, Object?>{}));
+        await expectLater(
+          dio.get<Object?>('/v1/me'),
+          throwsA(isA<DioException>()),
+        );
+      }
+      expect(container.read(upgradeRequiredProvider), isTrue);
+      expect(container.read(linkOpenerProvider), isNotNull);
+    });
+  });
 }
 
 final class _SilentConsole implements AgentConsoleRepository {
@@ -485,4 +659,11 @@ final class _SilentConsole implements AgentConsoleRepository {
 
   @override
   Future<void> stopTask() async {}
+}
+
+/// Screens with turning orbs never settle: pump by time.
+Future<void> settleFor(WidgetTester tester) async {
+  for (int i = 0; i < 30; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
 }

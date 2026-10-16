@@ -42,6 +42,8 @@ enum ErrorCode {
   signInMethodUnavailable('SIGN_IN_METHOD_UNAVAILABLE'),
   @JsonValue('PAYMENT_PROVIDER_UNAVAILABLE')
   paymentProviderUnavailable('PAYMENT_PROVIDER_UNAVAILABLE'),
+  @JsonValue('UPGRADE_REQUIRED')
+  upgradeRequired('UPGRADE_REQUIRED'),
   @JsonValue('INTERNAL')
   internal('INTERNAL'),
 

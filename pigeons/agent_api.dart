@@ -174,3 +174,43 @@ abstract class DeviceHostApi {
 
   void stopAudio();
 }
+
+// ── App updates (Sprint 8, SOW 02 §3) ───────────────────────────────────────
+
+class AppVersionMessage {
+  AppVersionMessage({
+    required this.versionCode,
+    required this.versionName,
+    required this.certSha256,
+  });
+
+  final int versionCode;
+  final String versionName;
+
+  /// Lowercase hex SHA-256 of the certificate this build is signed with.
+  final String certSha256;
+}
+
+enum InstallOutcome {
+  /// The system's install confirmation is showing.
+  started,
+
+  /// "Install unknown apps" is off for Alesle: its settings page was opened.
+  permissionNeeded,
+
+  /// Not Alesle, not newer, or not signed with Alesle's certificate (AC-APP-6).
+  rejected,
+
+  failed,
+}
+
+@HostApi()
+abstract class UpdateHostApi {
+  AppVersionMessage appVersion();
+
+  /// Checks that the APK at [path] is a newer com.alesle.ai signed with this
+  /// build's certificate, which must also be [expectedCertSha256], then hands
+  /// it to PackageInstaller.
+  @async
+  InstallOutcome install(String path, String expectedCertSha256);
+}

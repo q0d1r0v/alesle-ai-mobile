@@ -1,10 +1,14 @@
 @Tags(<String>['golden'])
 library;
 
+import 'package:alesle_ai/app/bootstrap/core_providers.dart';
+import 'package:alesle_ai/core/config/app_build.dart';
 import 'package:alesle_ai/features/billing/data/billing_data_providers.dart';
 import 'package:alesle_ai/features/billing/presentation/limit_screen.dart';
 import 'package:alesle_ai/features/billing/presentation/pay_screen.dart';
 import 'package:alesle_ai/features/billing/presentation/plan_screen.dart';
+import 'package:alesle_ai/features/update/data/update_data_providers.dart';
+import 'package:alesle_ai/features/update/presentation/update_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -46,5 +50,26 @@ void main() {
 
   testWidgets('limit used up', (WidgetTester tester) async {
     await shoot(tester, const LimitScreen(kind: LimitKind.month), 'limit');
+  });
+
+  testWidgets('new version', (WidgetTester tester) async {
+    phone(tester);
+    await pumpLocalized(
+      tester,
+      const UpdateScreen(),
+      overrides: [
+        updateRepositoryProvider.overrideWithValue(
+          FakeUpdateRepository()..newest = testRelease(),
+        ),
+        appBuildProvider.overrideWithValue(
+          const AppBuild(versionCode: 3, versionName: '0.3.0', certSha256: ''),
+        ),
+      ],
+    );
+    await tester.pumpAndSettle();
+    await expectLater(
+      find.byType(UpdateScreen),
+      matchesGoldenFile('goldens/update.png'),
+    );
   });
 }

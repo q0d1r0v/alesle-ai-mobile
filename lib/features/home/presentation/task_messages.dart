@@ -33,6 +33,7 @@ String? taskExplanation(
     'accessibility_off' => l10n.accessibilityDisabled,
     'not_signed_in' => l10n.reasonNotSignedIn,
     'already_running' => l10n.reasonAlreadyRunning,
+    'upgrade_required' => l10n.reasonUpgrade,
     _ => l10n.reasonGeneric,
   };
 }

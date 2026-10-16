@@ -7,6 +7,7 @@ import 'bootstrap/core_providers.dart';
 import 'l10n/app_localizations.dart';
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
+import 'update_checks.dart';
 import 'usage_notices.dart';
 
 /// Uzbek first: it is the product's primary language and the fallback for
@@ -40,7 +41,9 @@ class AlesleApp extends ConsumerWidget {
       routerConfig: ref.watch(routerProvider),
       scaffoldMessengerKey: appMessengerKey,
       builder: (BuildContext context, Widget? child) => AccountLinks(
-        child: UsageNotices(child: child ?? const SizedBox.shrink()),
+        child: UpdateChecks(
+          child: UsageNotices(child: child ?? const SizedBox.shrink()),
+        ),
       ),
       localizationsDelegates: const <LocalizationsDelegate<Object?>>[
         AppLocalizations.delegate,

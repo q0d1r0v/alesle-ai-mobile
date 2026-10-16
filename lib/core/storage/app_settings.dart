@@ -9,6 +9,7 @@ final class AppSettings {
     this.voiceReplies = true,
     this.confirmSensitiveActions = true,
     this.usageNoticeKey,
+    this.offeredUpdate,
   });
 
   final bool onboardingDone;
@@ -26,6 +27,10 @@ final class AppSettings {
   /// period.
   final String? usageNoticeKey;
 
+  /// The newest version code the "new version" sheet was shown for: each
+  /// release is offered once (Settings › Updates always shows it).
+  final int? offeredUpdate;
+
   AppSettings copyWith({
     bool? onboardingDone,
     String? language,
@@ -33,6 +38,7 @@ final class AppSettings {
     bool? voiceReplies,
     bool? confirmSensitiveActions,
     String? usageNoticeKey,
+    int? offeredUpdate,
   }) => AppSettings(
     onboardingDone: onboardingDone ?? this.onboardingDone,
     language: clearLanguage ? null : (language ?? this.language),
@@ -40,6 +46,7 @@ final class AppSettings {
     confirmSensitiveActions:
         confirmSensitiveActions ?? this.confirmSensitiveActions,
     usageNoticeKey: usageNoticeKey ?? this.usageNoticeKey,
+    offeredUpdate: offeredUpdate ?? this.offeredUpdate,
   );
 
   @override
@@ -49,7 +56,8 @@ final class AppSettings {
       other.language == language &&
       other.voiceReplies == voiceReplies &&
       other.confirmSensitiveActions == confirmSensitiveActions &&
-      other.usageNoticeKey == usageNoticeKey;
+      other.usageNoticeKey == usageNoticeKey &&
+      other.offeredUpdate == offeredUpdate;
 
   @override
   int get hashCode => Object.hash(
@@ -58,6 +66,7 @@ final class AppSettings {
     voiceReplies,
     confirmSensitiveActions,
     usageNoticeKey,
+    offeredUpdate,
   );
 }
 
@@ -70,6 +79,7 @@ final class AppSettingsStore {
   static const String _voice = 'voice_replies';
   static const String _confirm = 'confirm_sensitive_actions';
   static const String _usageNotice = 'usage_notice_key';
+  static const String _offeredUpdate = 'offered_update';
 
   static const Set<String> languages = <String>{'en', 'uz', 'ru'};
 
@@ -86,6 +96,7 @@ final class AppSettingsStore {
       voiceReplies: _prefs.getBool(_voice) ?? true,
       confirmSensitiveActions: _prefs.getBool(_confirm) ?? true,
       usageNoticeKey: _prefs.getString(_usageNotice),
+      offeredUpdate: _prefs.getInt(_offeredUpdate),
     );
   }
 
@@ -104,6 +115,12 @@ final class AppSettingsStore {
       await _prefs.remove(_usageNotice);
     } else {
       await _prefs.setString(_usageNotice, notice);
+    }
+    final int? offered = settings.offeredUpdate;
+    if (offered == null) {
+      await _prefs.remove(_offeredUpdate);
+    } else {
+      await _prefs.setInt(_offeredUpdate, offered);
     }
   }
 }

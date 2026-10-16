@@ -2,6 +2,8 @@
 
     <!-- API calls. The Flutter template only adds this to debug/profile. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- In-app update: installs a newer, same-signed Alesle APK (SOW 02 §3). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!--
       Agent intents (SOW 03 §4). Contacts and calls are runtime permissions the
@@ -109,6 +111,10 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- PackageInstaller's answer for an in-app update. -->
+        <receiver
+            android:name=".update.InstallResultReceiver"
+            android:exported="false" />
     </application>
     <!-- Required to query activities that can process text (Flutter ProcessTextPlugin). -->
     <queries>

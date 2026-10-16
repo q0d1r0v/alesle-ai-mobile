@@ -11,6 +11,8 @@ import '../../../app/router/app_router.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../app/widgets/capsule_button.dart';
 import '../../../app/widgets/grouped_card.dart';
+import '../../../core/config/app_build.dart';
+import '../../../core/config/legal_links.dart';
 import '../../../core/storage/app_settings.dart';
 import '../data/settings_data_providers.dart';
 import '../domain/account.dart';
@@ -220,6 +222,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     });
   }
 
+  Future<void> _openPage(WebPage page) async {
+    final AppLocalizations l10n = context.l10n;
+    final String language = Localizations.localeOf(context).languageCode;
+    final bool opened = await ref
+        .read(linkOpenerProvider)(webPageUrl(page, language))
+        .catchError((Object _) => false);
+    if (!opened && mounted) _say(l10n.settingsLinkFailed);
+  }
+
   String _date(DateTime value) =>
       MaterialLocalizations.of(context).formatMediumDate(value.toLocal());
 
@@ -231,6 +242,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final bool voiceReplies = ref.watch(
       appSettingsProvider.select((AppSettings s) => s.voiceReplies),
     );
+    final AppBuild build = ref.watch(appBuildProvider);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: profile == null
@@ -392,6 +404,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: () => unawaited(context.push(AppRoutes.history)),
                     ),
+                    ListTile(
+                      key: const Key('settings-update'),
+                      leading: const Icon(Icons.system_update_rounded),
+                      title: Text(l10n.settingsUpdate),
+                      subtitle: build.known
+                          ? Text(
+                              l10n.updateVersion(
+                                '${build.versionName} (${build.versionCode})',
+                              ),
+                            )
+                          : null,
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => unawaited(context.push(AppRoutes.update)),
+                    ),
+                  ],
+                ),
+                _Header(l10n.settingsLegal),
+                AlesleGroup(
+                  children: <Widget>[
+                    for (final (WebPage page, String label, String key)
+                        in <(WebPage, String, String)>[
+                          (WebPage.privacy, l10n.settingsPrivacy, 'privacy'),
+                          (WebPage.terms, l10n.settingsTerms, 'terms'),
+                          (WebPage.refund, l10n.settingsRefund, 'refund'),
+                          (
+                            WebPage.deleteAccount,
+                            l10n.settingsDeleteGuide,
+                            'delete-guide',
+                          ),
+                          (WebPage.support, l10n.settingsSupport, 'support'),
+                        ])
+                      ListTile(
+                        key: Key('settings-$key'),
+                        title: Text(label),
+                        trailing: const Icon(Icons.open_in_new_rounded),
+                        onTap: () => unawaited(_openPage(page)),
+                      ),
                   ],
                 ),
                 _Header(l10n.settingsDevices),
