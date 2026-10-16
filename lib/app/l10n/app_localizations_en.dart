@@ -452,4 +452,85 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commonRetry => 'Try again';
+
+  @override
+  String get memoryTitle => 'Memory';
+
+  @override
+  String get memoryBody =>
+      'What Alesle remembers to keep your commands short. The text of your messages is never kept.';
+
+  @override
+  String get memoryEmpty => 'Nothing remembered yet. Say “Remember: …”.';
+
+  @override
+  String get memoryKindPreference => 'Preference';
+
+  @override
+  String get memoryKindContact => 'Contact';
+
+  @override
+  String get memoryKindFact => 'Fact';
+
+  @override
+  String get memoryKindEpisode => 'Event';
+
+  @override
+  String get memoryForget => 'Forget';
+
+  @override
+  String get memoryForgetAll => 'Forget everything';
+
+  @override
+  String get memoryForgetAllTitle => 'Forget everything?';
+
+  @override
+  String get memoryForgetAllBody =>
+      'Alesle deletes everything it remembered about you. This cannot be undone.';
+
+  @override
+  String get memoryForgotten => 'Forgotten.';
+
+  @override
+  String get historyTitle => 'History';
+
+  @override
+  String get historyEmpty => 'No tasks yet.';
+
+  @override
+  String get historyClear => 'Clear history';
+
+  @override
+  String get historyClearTitle => 'Clear the history?';
+
+  @override
+  String get historyClearBody =>
+      'Every past task and what was said is deleted.';
+
+  @override
+  String get historyDelete => 'Delete';
+
+  @override
+  String get historyLoadMore => 'Show more';
+
+  @override
+  String get historyStatusDone => 'Done';
+
+  @override
+  String get historyStatusFailed => 'Failed';
+
+  @override
+  String get historyStatusCannot => 'Not possible';
+
+  @override
+  String get historyStatusStopped => 'Stopped';
+
+  @override
+  String get historyStatusInterrupted => 'Interrupted';
+
+  @override
+  String get settingsMemory => 'Memory';
+
+  @override
+  String get settingsHistory => 'History';
 }

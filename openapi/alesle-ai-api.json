@@ -528,6 +528,192 @@
         ]
       }
     },
+    "/v1/memory": {
+      "get": {
+        "operationId": "memoryList",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemoryItemDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "memory"
+        ]
+      },
+      "delete": {
+        "operationId": "memoryForgetAll",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Everything the assistant remembered is gone (AC-MEM-3)."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "memory"
+        ]
+      }
+    },
+    "/v1/memory/{id}": {
+      "delete": {
+        "operationId": "memoryRemove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "memory"
+        ]
+      }
+    },
+    "/v1/history": {
+      "get": {
+        "operationId": "historyList",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "before",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryPageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "history"
+        ]
+      },
+      "delete": {
+        "operationId": "historyClear",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "history"
+        ]
+      }
+    },
+    "/v1/history/{id}": {
+      "delete": {
+        "operationId": "historyRemove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "history"
+        ]
+      }
+    },
     "/v1/voice/transcribe": {
       "post": {
         "operationId": "voiceTranscribe",
@@ -1121,6 +1307,119 @@
         },
         "required": [
           "deletionScheduledAt"
+        ]
+      },
+      "MemoryKind": {
+        "type": "string",
+        "enum": [
+          "preference",
+          "contact_alias",
+          "fact",
+          "episode"
+        ]
+      },
+      "MemoryItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MemoryKind"
+              }
+            ]
+          },
+          "content": {
+            "type": "string",
+            "example": "onam = contact \"Ona ❤️\", Telegram"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "content",
+          "updatedAt"
+        ]
+      },
+      "TaskStatus": {
+        "type": "string",
+        "enum": [
+          "done",
+          "failed",
+          "cannot",
+          "stopped",
+          "interrupted"
+        ]
+      },
+      "HistoryItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "example": "Text Mom"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TaskStatus"
+              }
+            ]
+          },
+          "command": {
+            "type": "string",
+            "nullable": true,
+            "description": "What the user said."
+          },
+          "reply": {
+            "type": "string",
+            "nullable": true,
+            "description": "What the agent answered."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "status",
+          "command",
+          "reply",
+          "createdAt"
+        ]
+      },
+      "HistoryPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistoryItemDto"
+            }
+          },
+          "next": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Pass as `before` for the next page; null on the last page."
+          }
+        },
+        "required": [
+          "items",
+          "next"
         ]
       },
       "SpeechLanguage": {

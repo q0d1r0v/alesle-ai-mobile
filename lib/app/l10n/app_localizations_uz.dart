@@ -456,4 +456,86 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get commonRetry => 'Qayta urinish';
+
+  @override
+  String get memoryTitle => 'Xotira';
+
+  @override
+  String get memoryBody =>
+      'Alesle buyruqlarni qisqartirish uchun eslab qolgan narsalar. Xabarlaringiz matni saqlanmaydi.';
+
+  @override
+  String get memoryEmpty =>
+      'Hozircha hech narsa eslab qolinmagan. «Eslab qol: …» deb ayting.';
+
+  @override
+  String get memoryKindPreference => 'Afzallik';
+
+  @override
+  String get memoryKindContact => 'Kontakt';
+
+  @override
+  String get memoryKindFact => 'Fakt';
+
+  @override
+  String get memoryKindEpisode => 'Voqea';
+
+  @override
+  String get memoryForget => 'Unutish';
+
+  @override
+  String get memoryForgetAll => 'Hammasini unutish';
+
+  @override
+  String get memoryForgetAllTitle => 'Hammasi unutilsinmi?';
+
+  @override
+  String get memoryForgetAllBody =>
+      'Alesle siz haqingizda eslab qolgan hamma narsani o‘chiradi. Buni qaytarib bo‘lmaydi.';
+
+  @override
+  String get memoryForgotten => 'Unutildi.';
+
+  @override
+  String get historyTitle => 'Tarix';
+
+  @override
+  String get historyEmpty => 'Hali vazifalar yo‘q.';
+
+  @override
+  String get historyClear => 'Tarixni tozalash';
+
+  @override
+  String get historyClearTitle => 'Tarix tozalansinmi?';
+
+  @override
+  String get historyClearBody =>
+      'Barcha o‘tgan vazifalar va ularning matni o‘chiriladi.';
+
+  @override
+  String get historyDelete => 'O‘chirish';
+
+  @override
+  String get historyLoadMore => 'Yana ko‘rsatish';
+
+  @override
+  String get historyStatusDone => 'Bajarildi';
+
+  @override
+  String get historyStatusFailed => 'Bo‘lmadi';
+
+  @override
+  String get historyStatusCannot => 'Imkonsiz';
+
+  @override
+  String get historyStatusStopped => 'To‘xtatildi';
+
+  @override
+  String get historyStatusInterrupted => 'Uzildi';
+
+  @override
+  String get settingsMemory => 'Xotira';
+
+  @override
+  String get settingsHistory => 'Tarix';
 }

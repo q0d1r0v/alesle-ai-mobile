@@ -11,6 +11,7 @@ import 'package:alesle_ai/features/auth/domain/auth_repository.dart';
 import 'package:alesle_ai/features/home/domain/agent_status.dart';
 import 'package:alesle_ai/features/home/domain/home_repositories.dart';
 import 'package:alesle_ai/features/home/domain/server_health.dart';
+import 'package:alesle_ai/features/memory/domain/memory.dart';
 import 'package:alesle_ai/features/onboarding/domain/device_setup.dart';
 import 'package:alesle_ai/features/settings/domain/account.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -424,3 +425,87 @@ TokenPairDto testPair({String access = 'access-token'}) => TokenPairDto(
     email: 'aziz@example.com',
   ),
 );
+
+/// Memory and history kept in a list.
+final class FakeMemoryRepository implements MemoryRepository {
+  List<MemoryEntry> entries = <MemoryEntry>[
+    MemoryEntry(
+      id: 'm1',
+      kind: MemoryKind.contactAlias,
+      content: 'onam = kontakt «Ona ❤️»',
+      updatedAt: DateTime(2026, 10, 16),
+    ),
+    MemoryEntry(
+      id: 'm2',
+      kind: MemoryKind.preference,
+      content: 'Telegram afzal',
+      updatedAt: DateTime(2026, 10, 15),
+    ),
+  ];
+  List<List<PastTask>> pages = <List<PastTask>>[
+    <PastTask>[
+      PastTask(
+        id: 't1',
+        title: 'Onamga yozish',
+        status: PastTaskStatus.done,
+        command: 'Onamga yoz',
+        reply: 'Yozdim',
+        createdAt: DateTime(2026, 10, 16, 9, 30),
+      ),
+      PastTask(
+        id: 't2',
+        title: 'Budilnik',
+        status: PastTaskStatus.stopped,
+        command: 'Budilnik qo‘y',
+        reply: null,
+        createdAt: DateTime(2026, 10, 16, 8),
+      ),
+    ],
+  ];
+  Object? failure;
+  final List<String> calls = <String>[];
+
+  Future<void> _check(String call) async {
+    calls.add(call);
+    if (failure case final Object value) throw value;
+  }
+
+  @override
+  Future<List<MemoryEntry>> memories() async {
+    await _check('memories');
+    return entries;
+  }
+
+  @override
+  Future<void> forget(String id) async {
+    await _check('forget:$id');
+    entries = <MemoryEntry>[
+      for (final MemoryEntry e in entries)
+        if (e.id != id) e,
+    ];
+  }
+
+  @override
+  Future<void> forgetAll() async {
+    await _check('forgetAll');
+    entries = <MemoryEntry>[];
+  }
+
+  @override
+  Future<HistoryPage> history({DateTime? before}) async {
+    await _check('history:${before?.toIso8601String() ?? 'first'}');
+    final List<PastTask> page = pages.isEmpty
+        ? <PastTask>[]
+        : pages.removeAt(0);
+    return HistoryPage(
+      tasks: page,
+      next: pages.isEmpty ? null : page.last.createdAt,
+    );
+  }
+
+  @override
+  Future<void> removeTask(String id) => _check('removeTask:$id');
+
+  @override
+  Future<void> clearHistory() => _check('clearHistory');
+}

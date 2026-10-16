@@ -939,6 +939,162 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Qayta urinish'**
   String get commonRetry;
+
+  /// No description provided for @memoryTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xotira'**
+  String get memoryTitle;
+
+  /// No description provided for @memoryBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Alesle buyruqlarni qisqartirish uchun eslab qolgan narsalar. Xabarlaringiz matni saqlanmaydi.'**
+  String get memoryBody;
+
+  /// No description provided for @memoryEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha hech narsa eslab qolinmagan. «Eslab qol: …» deb ayting.'**
+  String get memoryEmpty;
+
+  /// No description provided for @memoryKindPreference.
+  ///
+  /// In uz, this message translates to:
+  /// **'Afzallik'**
+  String get memoryKindPreference;
+
+  /// No description provided for @memoryKindContact.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kontakt'**
+  String get memoryKindContact;
+
+  /// No description provided for @memoryKindFact.
+  ///
+  /// In uz, this message translates to:
+  /// **'Fakt'**
+  String get memoryKindFact;
+
+  /// No description provided for @memoryKindEpisode.
+  ///
+  /// In uz, this message translates to:
+  /// **'Voqea'**
+  String get memoryKindEpisode;
+
+  /// No description provided for @memoryForget.
+  ///
+  /// In uz, this message translates to:
+  /// **'Unutish'**
+  String get memoryForget;
+
+  /// No description provided for @memoryForgetAll.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hammasini unutish'**
+  String get memoryForgetAll;
+
+  /// No description provided for @memoryForgetAllTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hammasi unutilsinmi?'**
+  String get memoryForgetAllTitle;
+
+  /// No description provided for @memoryForgetAllBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Alesle siz haqingizda eslab qolgan hamma narsani o‘chiradi. Buni qaytarib bo‘lmaydi.'**
+  String get memoryForgetAllBody;
+
+  /// No description provided for @memoryForgotten.
+  ///
+  /// In uz, this message translates to:
+  /// **'Unutildi.'**
+  String get memoryForgotten;
+
+  /// No description provided for @historyTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tarix'**
+  String get historyTitle;
+
+  /// No description provided for @historyEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hali vazifalar yo‘q.'**
+  String get historyEmpty;
+
+  /// No description provided for @historyClear.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tarixni tozalash'**
+  String get historyClear;
+
+  /// No description provided for @historyClearTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tarix tozalansinmi?'**
+  String get historyClearTitle;
+
+  /// No description provided for @historyClearBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha o‘tgan vazifalar va ularning matni o‘chiriladi.'**
+  String get historyClearBody;
+
+  /// No description provided for @historyDelete.
+  ///
+  /// In uz, this message translates to:
+  /// **'O‘chirish'**
+  String get historyDelete;
+
+  /// No description provided for @historyLoadMore.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana ko‘rsatish'**
+  String get historyLoadMore;
+
+  /// No description provided for @historyStatusDone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bajarildi'**
+  String get historyStatusDone;
+
+  /// No description provided for @historyStatusFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bo‘lmadi'**
+  String get historyStatusFailed;
+
+  /// No description provided for @historyStatusCannot.
+  ///
+  /// In uz, this message translates to:
+  /// **'Imkonsiz'**
+  String get historyStatusCannot;
+
+  /// No description provided for @historyStatusStopped.
+  ///
+  /// In uz, this message translates to:
+  /// **'To‘xtatildi'**
+  String get historyStatusStopped;
+
+  /// No description provided for @historyStatusInterrupted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uzildi'**
+  String get historyStatusInterrupted;
+
+  /// No description provided for @settingsMemory.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xotira'**
+  String get settingsMemory;
+
+  /// No description provided for @settingsHistory.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tarix'**
+  String get settingsHistory;
 }
 
 class _AppLocalizationsDelegate

@@ -4,6 +4,8 @@ library;
 import 'package:alesle_ai/app/bootstrap/core_providers.dart';
 import 'package:alesle_ai/features/auth/data/auth_data_providers.dart';
 import 'package:alesle_ai/features/auth/presentation/sign_in_screen.dart';
+import 'package:alesle_ai/features/memory/data/memory_data_providers.dart';
+import 'package:alesle_ai/features/memory/presentation/memory_screen.dart';
 import 'package:alesle_ai/features/settings/data/settings_data_providers.dart';
 import 'package:alesle_ai/features/settings/presentation/settings_screen.dart';
 import 'package:flutter/material.dart';
@@ -51,6 +53,22 @@ void main() {
     await expectLater(
       find.byType(SettingsScreen),
       matchesGoldenFile('goldens/settings.png'),
+    );
+  });
+
+  testWidgets('memory', (WidgetTester tester) async {
+    phone(tester);
+    await pumpLocalized(
+      tester,
+      const MemoryScreen(),
+      overrides: [
+        memoryRepositoryProvider.overrideWithValue(FakeMemoryRepository()),
+      ],
+    );
+    await tester.pumpAndSettle();
+    await expectLater(
+      find.byType(MemoryScreen),
+      matchesGoldenFile('goldens/memory.png'),
     );
   });
 }

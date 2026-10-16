@@ -5,6 +5,8 @@
 // Clients
 export 'clients/auth_api.dart';
 export 'clients/me_api.dart';
+export 'clients/memory_api.dart';
+export 'clients/history_api.dart';
 export 'clients/voice_api.dart';
 export 'clients/health_api.dart';
 // Data classes
@@ -25,6 +27,11 @@ export 'models/profile_dto.dart';
 export 'models/update_profile_dto.dart';
 export 'models/session_dto.dart';
 export 'models/deletion_dto.dart';
+export 'models/memory_kind.dart';
+export 'models/memory_item_dto.dart';
+export 'models/task_status.dart';
+export 'models/history_item_dto.dart';
+export 'models/history_page_dto.dart';
 export 'models/speech_language.dart';
 export 'models/transcript_dto.dart';
 export 'models/speak_dto.dart';

@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/bootstrap/core_providers.dart';
 import '../../../app/l10n/app_localizations.dart';
 import '../../../app/l10n/l10n.dart';
+import '../../../app/router/app_router.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../app/widgets/capsule_button.dart';
 import '../../../app/widgets/grouped_card.dart';
@@ -364,6 +366,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   s.copyWith(voiceReplies: value),
                             ),
                       ),
+                    ),
+                  ],
+                ),
+                AlesleGroup(
+                  children: <Widget>[
+                    ListTile(
+                      key: const Key('settings-memory'),
+                      leading: const Icon(Icons.psychology_outlined),
+                      title: Text(l10n.settingsMemory),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => unawaited(context.push(AppRoutes.memory)),
+                    ),
+                    ListTile(
+                      key: const Key('settings-history'),
+                      leading: const Icon(Icons.history_rounded),
+                      title: Text(l10n.settingsHistory),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => unawaited(context.push(AppRoutes.history)),
                     ),
                   ],
                 ),

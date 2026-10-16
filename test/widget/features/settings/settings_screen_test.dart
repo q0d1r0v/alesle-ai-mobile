@@ -36,15 +36,15 @@ void main() {
 
   Future<void> tap(WidgetTester tester, String key) async {
     final Finder target = find.byKey(Key(key));
-    // The list builds lazily: scroll rows below the fold into existence.
-    if (target.evaluate().isEmpty) {
+    // Rows below the fold may be built (cache extent) but not on screen, or
+    // not built yet: scroll until it can be tapped.
+    if (target.hitTestable().evaluate().isEmpty) {
       await tester.scrollUntilVisible(
-        target,
+        target.hitTestable(),
         200,
         scrollable: find.byType(Scrollable).first,
       );
     }
-    await tester.ensureVisible(target);
     await tester.tap(target);
     await tester.pumpAndSettle();
   }

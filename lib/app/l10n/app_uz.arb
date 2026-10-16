@@ -167,5 +167,31 @@
         "type": "String"
       }
     }
-  }
+  },
+  "memoryTitle": "Xotira",
+  "memoryBody": "Alesle buyruqlarni qisqartirish uchun eslab qolgan narsalar. Xabarlaringiz matni saqlanmaydi.",
+  "memoryEmpty": "Hozircha hech narsa eslab qolinmagan. «Eslab qol: …» deb ayting.",
+  "memoryKindPreference": "Afzallik",
+  "memoryKindContact": "Kontakt",
+  "memoryKindFact": "Fakt",
+  "memoryKindEpisode": "Voqea",
+  "memoryForget": "Unutish",
+  "memoryForgetAll": "Hammasini unutish",
+  "memoryForgetAllTitle": "Hammasi unutilsinmi?",
+  "memoryForgetAllBody": "Alesle siz haqingizda eslab qolgan hamma narsani o‘chiradi. Buni qaytarib bo‘lmaydi.",
+  "memoryForgotten": "Unutildi.",
+  "historyTitle": "Tarix",
+  "historyEmpty": "Hali vazifalar yo‘q.",
+  "historyClear": "Tarixni tozalash",
+  "historyClearTitle": "Tarix tozalansinmi?",
+  "historyClearBody": "Barcha o‘tgan vazifalar va ularning matni o‘chiriladi.",
+  "historyDelete": "O‘chirish",
+  "historyLoadMore": "Yana ko‘rsatish",
+  "historyStatusDone": "Bajarildi",
+  "historyStatusFailed": "Bo‘lmadi",
+  "historyStatusCannot": "Imkonsiz",
+  "historyStatusStopped": "To‘xtatildi",
+  "historyStatusInterrupted": "Uzildi",
+  "settingsMemory": "Xotira",
+  "settingsHistory": "Tarix"
 }

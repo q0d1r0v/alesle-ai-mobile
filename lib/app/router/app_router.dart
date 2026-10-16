@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../features/agent_debug/presentation/agent_debug_screen.dart';
 import '../../features/auth/presentation/sign_in_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
+import '../../features/memory/presentation/history_screen.dart';
+import '../../features/memory/presentation/memory_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../bootstrap/core_providers.dart';
@@ -15,6 +17,8 @@ abstract final class AppRoutes {
   static const String onboarding = '/onboarding';
   static const String signIn = '/sign-in';
   static const String settings = '/settings';
+  static const String memory = '/settings/memory';
+  static const String history = '/settings/history';
 
   /// Developer console; registered in debug builds only.
   static const String agentDebug = '/debug/agent';
@@ -40,6 +44,11 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
       GoRoute(
         path: AppRoutes.settings,
         builder: (_, _) => const SettingsScreen(),
+      ),
+      GoRoute(path: AppRoutes.memory, builder: (_, _) => const MemoryScreen()),
+      GoRoute(
+        path: AppRoutes.history,
+        builder: (_, _) => const HistoryScreen(),
       ),
       if (kDebugMode)
         GoRoute(

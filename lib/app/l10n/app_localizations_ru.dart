@@ -453,4 +453,85 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get commonRetry => 'Повторить';
+
+  @override
+  String get memoryTitle => 'Память';
+
+  @override
+  String get memoryBody =>
+      'Что Alesle запомнил, чтобы команды были короче. Тексты ваших сообщений не сохраняются.';
+
+  @override
+  String get memoryEmpty => 'Пока ничего не запомнено. Скажите «Запомни: …».';
+
+  @override
+  String get memoryKindPreference => 'Предпочтение';
+
+  @override
+  String get memoryKindContact => 'Контакт';
+
+  @override
+  String get memoryKindFact => 'Факт';
+
+  @override
+  String get memoryKindEpisode => 'Событие';
+
+  @override
+  String get memoryForget => 'Забыть';
+
+  @override
+  String get memoryForgetAll => 'Забыть всё';
+
+  @override
+  String get memoryForgetAllTitle => 'Забыть всё?';
+
+  @override
+  String get memoryForgetAllBody =>
+      'Alesle удалит всё, что запомнил о вас. Это нельзя отменить.';
+
+  @override
+  String get memoryForgotten => 'Забыто.';
+
+  @override
+  String get historyTitle => 'История';
+
+  @override
+  String get historyEmpty => 'Задач пока нет.';
+
+  @override
+  String get historyClear => 'Очистить историю';
+
+  @override
+  String get historyClearTitle => 'Очистить историю?';
+
+  @override
+  String get historyClearBody =>
+      'Все прошлые задачи и их тексты будут удалены.';
+
+  @override
+  String get historyDelete => 'Удалить';
+
+  @override
+  String get historyLoadMore => 'Показать ещё';
+
+  @override
+  String get historyStatusDone => 'Выполнено';
+
+  @override
+  String get historyStatusFailed => 'Не получилось';
+
+  @override
+  String get historyStatusCannot => 'Невозможно';
+
+  @override
+  String get historyStatusStopped => 'Остановлено';
+
+  @override
+  String get historyStatusInterrupted => 'Прервано';
+
+  @override
+  String get settingsMemory => 'Память';
+
+  @override
+  String get settingsHistory => 'История';
 }
