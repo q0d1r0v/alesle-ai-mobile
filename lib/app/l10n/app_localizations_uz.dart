@@ -286,6 +286,37 @@ class AppLocalizationsUz extends AppLocalizations {
   String get voiceMicDenied => 'Mikrofonga ruxsat kerak.';
 
   @override
+  String get handsFreeLabel => 'Doim tinglash';
+
+  @override
+  String get handsFreeListening => 'Tinglayapman — shunchaki gapiring';
+
+  @override
+  String get handsFreeMuted => 'Mikrofon o‘chiq';
+
+  @override
+  String get handsFreeUnderstanding => 'Tushunyapman…';
+
+  @override
+  String get handsFreeMute => 'Ovozsiz qilish';
+
+  @override
+  String get handsFreeUnmute => 'Tinglashni yoqish';
+
+  @override
+  String handsFreeHeard(String text) {
+    return '«$text»';
+  }
+
+  @override
+  String get handsFreeWhileRunning =>
+      'Gapiring: vazifaga qo‘shing, o‘zgartiring yoki «to‘xta» deng';
+
+  @override
+  String get handsFreeStartFailed =>
+      'Mikrofonni yoqib bo‘lmadi. Ilovani ochiq holda qayta urining.';
+
+  @override
   String get signInTitle => 'Alesle’ga kiring';
 
   @override

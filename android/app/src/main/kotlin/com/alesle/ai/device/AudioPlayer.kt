@@ -2,10 +2,16 @@ package com.alesle.ai.device
 
 import android.media.AudioAttributes
 import android.media.MediaPlayer
+import com.alesle.ai.listen.HandsFree
 
-/** Plays the agent's spoken reply; one at a time, released when done. */
+/**
+ * Plays the agent's spoken reply; one at a time, released when done. While
+ * it plays, hands-free listening drops what it hears: Alesle must not take
+ * its own voice for a command.
+ */
 class AudioPlayer(
     private val newPlayer: () -> MediaPlayer = ::MediaPlayer,
+    private val speaking: (Boolean) -> Unit = { HandsFree.setSpeaking(it) },
 ) {
     private var player: MediaPlayer? = null
 
@@ -23,15 +29,21 @@ class AudioPlayer(
             created.setDataSource(path)
             created.setOnCompletionListener { finished ->
                 finished.release()
-                if (player === finished) player = null
+                if (player === finished) {
+                    player = null
+                    speaking(false)
+                }
             }
+            speaking(true)
             created.prepare()
             created.start()
             player = created
         } catch (e: java.io.IOException) {
             created.release()
+            speaking(false)
         } catch (e: RuntimeException) {
             created.release()
+            speaking(false)
         }
     }
 
@@ -43,6 +55,7 @@ class AudioPlayer(
                 // Already finished.
             }
             it.release()
+            speaking(false)
         }
         player = null
     }

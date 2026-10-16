@@ -22,6 +22,10 @@ abstract interface class AssistantRepository {
 
   Future<void> stop();
 
+  /// What the user said while a task runs: answers the sheet on screen or
+  /// changes the task. False when no task runs.
+  Future<bool> amend(String text);
+
   /// Updates of the running task, while anyone listens.
   Stream<TaskUpdate> get updates;
 }
@@ -55,6 +59,45 @@ abstract interface class VoiceRepository {
 
   Future<void> cancelListening();
 
+  /// Transcribes an utterance hands-free listening recorded, and deletes it.
+  /// A null [language] leaves it to the speech service to tell.
+  Future<Transcript> transcribeFile(String path, {String? language});
+
   /// Reads [text] aloud.
   Future<void> speak(String text);
+}
+
+/// Whether hands-free listening runs, and whether the user muted it.
+final class ListenStatus {
+  const ListenStatus({required this.active, required this.muted});
+
+  static const ListenStatus off = ListenStatus(active: false, muted: false);
+
+  final bool active;
+  final bool muted;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ListenStatus && other.active == active && other.muted == muted;
+
+  @override
+  int get hashCode => Object.hash(active, muted);
+}
+
+/// Hands-free listening (SOW 04 §4.3): the microphone stays open and every
+/// utterance arrives as an audio file. Throws a `Failure` from core/errors.
+abstract interface class HandsFreeRepository {
+  /// Android allows it only while the app is in front.
+  Future<ListenStatus> start();
+
+  Future<void> stop();
+
+  Future<void> setMuted(bool muted);
+
+  Future<ListenStatus> status();
+
+  Stream<ListenStatus> get statusChanges;
+
+  /// Audio files of what was said; whoever takes one transcribes it and it is deleted.
+  Stream<String> get utterances;
 }

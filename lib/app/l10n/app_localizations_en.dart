@@ -284,6 +284,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get voiceMicDenied => 'Microphone access is needed.';
 
   @override
+  String get handsFreeLabel => 'Always listen';
+
+  @override
+  String get handsFreeListening => 'Listening — just speak';
+
+  @override
+  String get handsFreeMuted => 'Microphone off';
+
+  @override
+  String get handsFreeUnderstanding => 'Understanding…';
+
+  @override
+  String get handsFreeMute => 'Mute';
+
+  @override
+  String get handsFreeUnmute => 'Unmute';
+
+  @override
+  String handsFreeHeard(String text) {
+    return '“$text”';
+  }
+
+  @override
+  String get handsFreeWhileRunning =>
+      'Speak to add to the task, change it, or say “stop”';
+
+  @override
+  String get handsFreeStartFailed =>
+      'Couldn\'t turn the microphone on. Try again with the app open.';
+
+  @override
   String get signInTitle => 'Sign in to Alesle';
 
   @override

@@ -505,6 +505,49 @@ data class DeviceSetupMessage (
 }
 
 /** Generated class from Pigeon that represents data sent in messages. */
+data class ListenStateMessage (
+  /** The microphone service runs. */
+  val active: Boolean,
+  /** The user muted it: nothing is heard until unmuted. */
+  val muted: Boolean
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ListenStateMessage {
+      val active = pigeonVar_list[0] as Boolean
+      val muted = pigeonVar_list[1] as Boolean
+      return ListenStateMessage(active, muted)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      active,
+      muted,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as ListenStateMessage
+    return AgentApiPigeonUtils.deepEquals(this.active, other.active) && AgentApiPigeonUtils.deepEquals(this.muted, other.muted)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.active)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.muted)
+    return result
+  }
+  override fun toString(): String {
+    return "ListenStateMessage(active=$active, muted=$muted)"
+  }
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
 data class AppVersionMessage (
   val versionCode: Long,
   val versionName: String,
@@ -599,6 +642,11 @@ private open class AgentApiPigeonCodec : StandardMessageCodec() {
       }
       138.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
+          ListenStateMessage.fromList(it)
+        }
+      }
+      139.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
           AppVersionMessage.fromList(it)
         }
       }
@@ -643,8 +691,12 @@ private open class AgentApiPigeonCodec : StandardMessageCodec() {
         stream.write(137)
         writeValue(stream, value.toList())
       }
-      is AppVersionMessage -> {
+      is ListenStateMessage -> {
         stream.write(138)
+        writeValue(stream, value.toList())
+      }
+      is AppVersionMessage -> {
+        stream.write(139)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -662,6 +714,11 @@ interface AgentHostApi {
   fun startTask(request: TaskRequest): StartTaskResult
   /** Stops the running task, if any. */
   fun stopTask()
+  /**
+   * What the user said while a task runs (hands-free): answers the sheet on
+   * screen or changes the task. False when no task runs.
+   */
+  fun amendTask(text: String): Boolean
   /**
    * Debug builds only (fails with `debug_only` otherwise): the current
    * screen as snapshot JSON, with `captureMs`.
@@ -738,6 +795,23 @@ interface AgentHostApi {
             val wrapped: List<Any?> = try {
               api.stopTask()
               listOf(null)
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.AgentHostApi.amendTask$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val textArg = args[0] as String
+            val wrapped: List<Any?> = try {
+              listOf(api.amendTask(textArg))
             } catch (exception: Throwable) {
               AgentApiPigeonUtils.wrapError(exception)
             }
@@ -1021,6 +1095,141 @@ interface DeviceHostApi {
         } else {
           channel.setMessageHandler(null)
         }
+      }
+    }
+  }
+}
+/** Generated interface from Pigeon that represents a handler of messages from Flutter. */
+interface ListenHostApi {
+  /**
+   * Starts listening; Android allows it only while the app is in front.
+   * The state after (not active when the microphone could not be opened).
+   */
+  fun startListening(): ListenStateMessage
+  fun stopListening()
+  fun setMuted(muted: Boolean)
+  fun listenState(): ListenStateMessage
+
+  companion object {
+    /** The codec used by ListenHostApi. */
+    val codec: MessageCodec<Any?> by lazy {
+      AgentApiPigeonCodec()
+    }
+    /** Sets up an instance of `ListenHostApi` to handle messages through the `binaryMessenger`. */
+    @JvmOverloads
+    fun setUp(binaryMessenger: BinaryMessenger, api: ListenHostApi?, messageChannelSuffix: String = "") {
+      val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.ListenHostApi.startListening$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              listOf(api.startListening())
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.ListenHostApi.stopListening$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.stopListening()
+              listOf(null)
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.ListenHostApi.setMuted$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val mutedArg = args[0] as Boolean
+            val wrapped: List<Any?> = try {
+              api.setMuted(mutedArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.ListenHostApi.listenState$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              listOf(api.listenState())
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+    }
+  }
+}
+/** Generated class from Pigeon that represents Flutter messages that can be called from Kotlin. */
+class ListenEventsApi(private val binaryMessenger: BinaryMessenger, private val messageChannelSuffix: String = "") {
+  companion object {
+    /** The codec used by ListenEventsApi. */
+    val codec: MessageCodec<Any?> by lazy {
+      AgentApiPigeonCodec()
+    }
+  }
+  /** One utterance as a 16 kHz mono WAV in the app cache; the receiver deletes it. */
+  suspend fun onUtterance(pathArg: String)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    return suspendCancellableCoroutine { continuation ->
+      val channelName = "dev.flutter.pigeon.alesle_ai.ListenEventsApi.onUtterance$separatedMessageChannelSuffix"
+      val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+      channel.send(listOf(pathArg)) {
+        if (it is List<*>) {
+          if (it.size > 1) {
+            continuation.resumeWithException(FlutterError(it[0] as String, it[1] as String, it[2] as String?))
+          } else {
+            continuation.resume(Unit)
+          }
+        } else {
+          continuation.resumeWithException(AgentApiPigeonUtils.createConnectionError(channelName))
+        } 
+      }
+    }
+  }
+  suspend fun onListenState(stateArg: ListenStateMessage)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    return suspendCancellableCoroutine { continuation ->
+      val channelName = "dev.flutter.pigeon.alesle_ai.ListenEventsApi.onListenState$separatedMessageChannelSuffix"
+      val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+      channel.send(listOf(stateArg)) {
+        if (it is List<*>) {
+          if (it.size > 1) {
+            continuation.resumeWithException(FlutterError(it[0] as String, it[1] as String, it[2] as String?))
+          } else {
+            continuation.resume(Unit)
+          }
+        } else {
+          continuation.resumeWithException(AgentApiPigeonUtils.createConnectionError(channelName))
+        } 
       }
     }
   }

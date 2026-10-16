@@ -6,6 +6,12 @@
     <string name="notification_channel_agent">Agent vazifalari</string>
     <string name="notification_agent_running">Alesle ishlayapti</string>
     <string name="notification_agent_stop">To\'xtatish</string>
+    <string name="notification_channel_listening">Ovozli rejim</string>
+    <string name="notification_listening">Alesle sizni tinglayapti</string>
+    <string name="notification_listening_muted">Mikrofon o\'chirilgan</string>
+    <string name="notification_listening_mute">Ovozsiz</string>
+    <string name="notification_listening_unmute">Tinglash</string>
+    <string name="notification_listening_off">O\'chirish</string>
     <string name="overlay_stop">To\'xtatish</string>
     <string name="overlay_cancel">Bekor qilish</string>
     <string name="overlay_confirm">Tasdiqlash</string>

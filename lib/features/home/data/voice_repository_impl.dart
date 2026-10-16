@@ -52,7 +52,14 @@ final class VoiceRepositoryImpl implements VoiceRepository {
   Future<Transcript?> finishListening({String? language}) async {
     final String? path = await _platform(_device.stopRecording);
     if (path == null) return null;
-    final File audio = File(path);
+    return _transcribe(File(path), language);
+  }
+
+  @override
+  Future<Transcript> transcribeFile(String path, {String? language}) =>
+      _transcribe(File(path), language);
+
+  Future<Transcript> _transcribe(File audio, String? language) async {
     try {
       final TranscriptDto dto = await _api.voiceTranscribe(
         audio: audio,

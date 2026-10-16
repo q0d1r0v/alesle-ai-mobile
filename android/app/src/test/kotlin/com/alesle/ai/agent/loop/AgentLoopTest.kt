@@ -176,6 +176,29 @@ class AgentLoopTest {
     }
 
     @Test
+    fun `the call sheet names the contact the call reaches, not the words heard`() {
+        device.callee = "Eval Tester ··0100"
+        accepted()
+        sockets.receive(act("s1", """{"type":"intent","kind":"call","to":{"contact":"Эвел Тестер"}}"""))
+        assertEquals(
+            "Eval Tester ··0100",
+            ui.confirmations
+                .single()
+                .first.detail,
+        )
+        device.callee = null
+        ui.answerConfirm(false)
+        worker.drain()
+        sockets.receive(act("s2", """{"type":"intent","kind":"call","to":{"contact":"Onam"}}"""))
+        assertEquals(
+            "Onam",
+            ui.confirmations
+                .last()
+                .first.detail,
+        )
+    }
+
+    @Test
     fun `never runs a sensitive step without a yes`() {
         accepted()
         sockets.receive(
@@ -252,6 +275,77 @@ class AgentLoopTest {
                 .toString(),
             sockets.sent.last(),
         )
+    }
+
+    // ── Hands-free: speaking while the task runs ─────────────────────────────
+
+    @Test
+    fun `words said while it runs go to the server as a change to the task`() {
+        val loop = accepted()
+        loop.amend("  buni ham qilib ket  ")
+        loop.amend("   ")
+        worker.drain()
+        assertEquals(JSONObject().put("type", "task.amend").put("text", "buni ham qilib ket").toString(), sockets.sent.last())
+        assertEquals(1, sockets.sent.count { it.contains("task.amend") })
+    }
+
+    @Test
+    fun `a spoken name answers the open question`() {
+        val loop = accepted()
+        sockets.receive(
+            """{"type":"ask","askId":"a1","question":"Qaysi Aziz?","choices":[{"ref":"c1","label":"Aziz Karimov"},{"ref":"c2","label":"Aziz Ish"}]}""",
+        )
+        loop.amend("Aziz Ish")
+        worker.drain()
+        assertEquals(
+            JSONObject()
+                .put("type", "reply")
+                .put("askId", "a1")
+                .put("choice", "c2")
+                .toString(),
+            sockets.sent.last(),
+        )
+        assertEquals(1, ui.dismissals)
+        // The sheet's own answer, arriving late, is not sent a second time.
+        ui.answerAsk("c1")
+        worker.drain()
+        assertEquals(1, sockets.sent.count { it.contains("\"reply\"") })
+    }
+
+    @Test
+    fun `other words close the question and change the task`() {
+        val loop = accepted()
+        sockets.receive("""{"type":"ask","askId":"a1","question":"Qaysi?","choices":[{"ref":"c1","label":"Aziz"}]}""")
+        loop.amend("Onamga yoz")
+        worker.drain()
+        assertTrue(sockets.sent.last().contains("task.amend"))
+        assertEquals(1, ui.dismissals)
+    }
+
+    @Test
+    fun `yes and no answer a confirmation by voice, but a payment needs the tap`() {
+        val loop = accepted()
+        sockets.receive(act("s1", """{"type":"back"}""", """{"title":"Yuborilsinmi?","detail":"","always":false}"""))
+        loop.amend("ha, yubor")
+        worker.drain()
+        assertEquals(1, device.executed.size)
+        assertEquals(1, ui.dismissals)
+
+        sockets.receive(act("s2", """{"type":"back"}""", """{"title":"Yuborilsinmi?","detail":"","always":false}"""))
+        loop.amend("yo'q")
+        worker.drain()
+        assertEquals(1, device.executed.size)
+        assertEquals("declined", JSONObject(sockets.sent.last()).getJSONObject("result").getString("status"))
+
+        sockets.receive(act("s3", """{"type":"back"}""", """{"title":"To'lov","detail":"10 000","always":true}"""))
+        val before = sockets.sent.size
+        loop.amend("ha")
+        worker.drain()
+        assertEquals(1, device.executed.size)
+        assertEquals(before, sockets.sent.size)
+        ui.answerConfirm(true)
+        worker.drain()
+        assertEquals(2, device.executed.size)
     }
 
     @Test
@@ -493,6 +587,10 @@ private class QueueWorker : LoopWorker {
 }
 
 private class FakeDevice : LoopDevice {
+    var callee: String? = null
+
+    override fun recipientLabel(action: DecodedAction): String? = callee
+
     var screen: CapturedScreen? = screen()
     var lastCapture: CapturedScreen? = null
     var captures = 0
@@ -582,6 +680,12 @@ private class FakeUi : LoopUi {
 
     override fun hide() {
         hides++
+    }
+
+    var dismissals = 0
+
+    override fun dismissSheet() {
+        dismissals++
     }
 
     var concealments = 0

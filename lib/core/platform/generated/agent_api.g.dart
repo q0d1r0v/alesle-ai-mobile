@@ -437,6 +437,53 @@ class DeviceSetupMessage {
   }
 }
 
+class ListenStateMessage {
+  ListenStateMessage({required this.active, required this.muted});
+
+  /// The microphone service runs.
+  bool active;
+
+  /// The user muted it: nothing is heard until unmuted.
+  bool muted;
+
+  List<Object?> _toList() {
+    return <Object?>[active, muted];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static ListenStateMessage decode(Object result) {
+    result as List<Object?>;
+    return ListenStateMessage(
+      active: result[0]! as bool,
+      muted: result[1]! as bool,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ListenStateMessage || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(active, other.active) && _deepEquals(muted, other.muted);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'ListenStateMessage(active: $active, muted: $muted)';
+  }
+}
+
 class AppVersionMessage {
   AppVersionMessage({
     required this.versionCode,
@@ -526,8 +573,11 @@ class _PigeonCodec extends StandardMessageCodec {
     } else if (value is DeviceSetupMessage) {
       buffer.putUint8(137);
       writeValue(buffer, value.encode());
-    } else if (value is AppVersionMessage) {
+    } else if (value is ListenStateMessage) {
       buffer.putUint8(138);
+      writeValue(buffer, value.encode());
+    } else if (value is AppVersionMessage) {
+      buffer.putUint8(139);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -560,6 +610,8 @@ class _PigeonCodec extends StandardMessageCodec {
       case 137:
         return DeviceSetupMessage.decode(readValue(buffer)!);
       case 138:
+        return ListenStateMessage.decode(readValue(buffer)!);
+      case 139:
         return AppVersionMessage.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
@@ -661,6 +713,29 @@ class AgentHostApi {
       pigeonVar_channelName,
       isNullValid: true,
     );
+  }
+
+  /// What the user said while a task runs (hands-free): answers the sheet on
+  /// screen or changes the task. False when no task runs.
+  Future<bool> amendTask(String text) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.AgentHostApi.amendTask$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[text],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as bool;
   }
 
   /// Debug builds only (fails with `debug_only` otherwise): the current
@@ -981,6 +1056,171 @@ class DeviceHostApi {
       pigeonVar_channelName,
       isNullValid: true,
     );
+  }
+}
+
+class ListenHostApi {
+  /// Constructor for [ListenHostApi]. The [binaryMessenger] named argument is
+  /// available for dependency injection. If it is left null, the default
+  /// BinaryMessenger will be used which routes to the host platform.
+  ListenHostApi({
+    BinaryMessenger? binaryMessenger,
+    String messageChannelSuffix = '',
+  }) : pigeonVar_binaryMessenger = binaryMessenger,
+       pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty
+           ? '.$messageChannelSuffix'
+           : '';
+
+  final BinaryMessenger? pigeonVar_binaryMessenger;
+  static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
+
+  final String pigeonVar_messageChannelSuffix;
+
+  /// Starts listening; Android allows it only while the app is in front.
+  /// The state after (not active when the microphone could not be opened).
+  Future<ListenStateMessage> startListening() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.ListenHostApi.startListening$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as ListenStateMessage;
+  }
+
+  Future<void> stopListening() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.ListenHostApi.stopListening$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  Future<void> setMuted(bool muted) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.ListenHostApi.setMuted$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[muted],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  Future<ListenStateMessage> listenState() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.ListenHostApi.listenState$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as ListenStateMessage;
+  }
+}
+
+abstract class ListenEventsApi {
+  static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
+
+  /// One utterance as a 16 kHz mono WAV in the app cache; the receiver deletes it.
+  void onUtterance(String path);
+
+  void onListenState(ListenStateMessage state);
+
+  static void setUp(
+    ListenEventsApi? api, {
+    BinaryMessenger? binaryMessenger,
+    String messageChannelSuffix = '',
+  }) {
+    messageChannelSuffix = messageChannelSuffix.isNotEmpty
+        ? '.$messageChannelSuffix'
+        : '';
+    {
+      final pigeonVar_channel = BasicMessageChannel<Object?>(
+        'dev.flutter.pigeon.alesle_ai.ListenEventsApi.onUtterance$messageChannelSuffix',
+        pigeonChannelCodec,
+        binaryMessenger: binaryMessenger,
+      );
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          final List<Object?> args = message! as List<Object?>;
+          final String arg_path = args[0]! as String;
+          try {
+            api.onUtterance(arg_path);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          } catch (e) {
+            return wrapResponse(
+              error: PlatformException(code: 'error', message: e.toString()),
+            );
+          }
+        });
+      }
+    }
+    {
+      final pigeonVar_channel = BasicMessageChannel<Object?>(
+        'dev.flutter.pigeon.alesle_ai.ListenEventsApi.onListenState$messageChannelSuffix',
+        pigeonChannelCodec,
+        binaryMessenger: binaryMessenger,
+      );
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          final List<Object?> args = message! as List<Object?>;
+          final ListenStateMessage arg_state = args[0]! as ListenStateMessage;
+          try {
+            api.onListenState(arg_state);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          } catch (e) {
+            return wrapResponse(
+              error: PlatformException(code: 'error', message: e.toString()),
+            );
+          }
+        });
+      }
+    }
   }
 }
 

@@ -25,6 +25,9 @@ interface TaskLoop {
     fun start()
 
     fun stop()
+
+    /** The user spoke while it runs (hands-free). */
+    fun amend(text: String) {}
 }
 
 /** Builds the loop for a request; null when the AccessibilityService is not connected. */
@@ -85,6 +88,13 @@ class AgentTaskController(
         emit(StepEvent(StepEventKind.STARTED, command))
         created.start()
         return StartTaskResult(started = true)
+    }
+
+    /** What the user said while the task runs; false when none runs (then it is a new command). */
+    fun amend(text: String): Boolean {
+        val running = synchronized(this) { loop } ?: return false
+        running.amend(text)
+        return true
     }
 
     /** The user stopped the task; a no-op when none runs. The loop reports the end. */
@@ -173,6 +183,8 @@ class AgentTaskController(
                 override fun start() = loop.start()
 
                 override fun stop() = loop.stop()
+
+                override fun amend(text: String) = loop.amend(text)
             }
         }
     }

@@ -50,6 +50,15 @@ final class AssistantRepositoryImpl implements AssistantRepository {
   }
 
   @override
+  Future<bool> amend(String text) async {
+    try {
+      return await _api.amendTask(text);
+    } on PlatformException catch (error) {
+      throw UnexpectedFailure(error);
+    }
+  }
+
+  @override
   Future<void> stop() async {
     try {
       await _api.stopTask();

@@ -3,6 +3,7 @@ package com.alesle.ai.agent.loop
 import com.alesle.ai.agent.AgentRuntime
 import com.alesle.ai.agent.action.ActionExecutor
 import com.alesle.ai.agent.action.ActionResult
+import com.alesle.ai.agent.intent.IntentAction
 import com.alesle.ai.agent.protocol.DecodedAction
 import com.alesle.ai.agent.snapshot.CapturedScreen
 import com.alesle.ai.agent.vision.Screenshot
@@ -17,6 +18,11 @@ class RuntimeLoopDevice(
     override fun capture(): CapturedScreen? = runtime()?.capture()
 
     override fun screenshot(): Screenshot = runtime()?.screenshot() ?: Screenshot.Unavailable
+
+    override fun recipientLabel(action: DecodedAction): String? {
+        val call = (action as? DecodedAction.Intent)?.action as? IntentAction.Call ?: return null
+        return runtime()?.intentLauncher?.recipientLabel(call.to)
+    }
 
     override fun execute(
         action: DecodedAction,

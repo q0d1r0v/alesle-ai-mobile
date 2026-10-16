@@ -284,6 +284,37 @@ class AppLocalizationsRu extends AppLocalizations {
   String get voiceMicDenied => 'Нужен доступ к микрофону.';
 
   @override
+  String get handsFreeLabel => 'Слушать всегда';
+
+  @override
+  String get handsFreeListening => 'Слушаю — просто говорите';
+
+  @override
+  String get handsFreeMuted => 'Микрофон выключен';
+
+  @override
+  String get handsFreeUnderstanding => 'Распознаю…';
+
+  @override
+  String get handsFreeMute => 'Выключить микрофон';
+
+  @override
+  String get handsFreeUnmute => 'Включить микрофон';
+
+  @override
+  String handsFreeHeard(String text) {
+    return '«$text»';
+  }
+
+  @override
+  String get handsFreeWhileRunning =>
+      'Говорите: добавьте к задаче, измените её или скажите «стоп»';
+
+  @override
+  String get handsFreeStartFailed =>
+      'Не удалось включить микрофон. Попробуйте снова, когда приложение открыто.';
+
+  @override
   String get signInTitle => 'Войдите в Alesle';
 
   @override

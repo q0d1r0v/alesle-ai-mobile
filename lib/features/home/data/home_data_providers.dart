@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/bootstrap/core_providers.dart';
@@ -5,6 +7,7 @@ import '../../../core/api/generated/clients/health_api.dart';
 import '../domain/home_repositories.dart';
 import 'agent_repository_impl.dart';
 import 'assistant_repository_impl.dart';
+import 'hands_free_repository_impl.dart';
 import 'health_repository_impl.dart';
 import 'voice_repository_impl.dart';
 
@@ -31,3 +34,10 @@ final Provider<VoiceRepository> voiceRepositoryProvider =
     Provider<VoiceRepository>(
       (Ref ref) => VoiceRepositoryImpl(dio: ref.watch(dioProvider)),
     );
+
+final Provider<HandsFreeRepository> handsFreeRepositoryProvider =
+    Provider<HandsFreeRepository>((Ref ref) {
+      final HandsFreeRepositoryImpl repository = HandsFreeRepositoryImpl();
+      ref.onDispose(() => unawaited(repository.dispose()));
+      return repository;
+    });

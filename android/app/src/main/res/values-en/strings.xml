@@ -5,6 +5,12 @@
     <string name="notification_channel_agent">Agent tasks</string>
     <string name="notification_agent_running">Alesle is working</string>
     <string name="notification_agent_stop">Stop</string>
+    <string name="notification_channel_listening">Hands-free listening</string>
+    <string name="notification_listening">Alesle is listening</string>
+    <string name="notification_listening_muted">Microphone muted</string>
+    <string name="notification_listening_mute">Mute</string>
+    <string name="notification_listening_unmute">Unmute</string>
+    <string name="notification_listening_off">Turn off</string>
     <string name="overlay_stop">Stop</string>
     <string name="overlay_cancel">Cancel</string>
     <string name="overlay_confirm">Confirm</string>

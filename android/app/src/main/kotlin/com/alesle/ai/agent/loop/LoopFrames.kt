@@ -120,6 +120,11 @@ object LoopFrames {
 
     fun stop(): String = JSONObject().put("type", "task.stop").toString()
 
+    /** What the user said while the task runs (hands-free); the server caps it at 500 characters. */
+    fun amend(text: String): String = JSONObject().put("type", "task.amend").put("text", text.take(MAX_AMEND_CHARS)).toString()
+
+    const val MAX_AMEND_CHARS = 500
+
     /**
      * [snapshot] is SnapshotBuilder JSON, or null when nothing is readable.
      * [screenshot] (base64 JPEG) and [secure] only answer a screenshot request.

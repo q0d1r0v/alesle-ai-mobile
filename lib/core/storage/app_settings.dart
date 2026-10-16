@@ -10,6 +10,7 @@ final class AppSettings {
     this.confirmSensitiveActions = true,
     this.usageNoticeKey,
     this.offeredUpdate,
+    this.handsFree = false,
   });
 
   final bool onboardingDone;
@@ -31,6 +32,10 @@ final class AppSettings {
   /// release is offered once (Settings › Updates always shows it).
   final int? offeredUpdate;
 
+  /// Hands-free: listen all the time (mute in the app or the notification),
+  /// no button to press (SOW 04 §4.3). Off until the user turns it on.
+  final bool handsFree;
+
   AppSettings copyWith({
     bool? onboardingDone,
     String? language,
@@ -39,6 +44,7 @@ final class AppSettings {
     bool? confirmSensitiveActions,
     String? usageNoticeKey,
     int? offeredUpdate,
+    bool? handsFree,
   }) => AppSettings(
     onboardingDone: onboardingDone ?? this.onboardingDone,
     language: clearLanguage ? null : (language ?? this.language),
@@ -47,6 +53,7 @@ final class AppSettings {
         confirmSensitiveActions ?? this.confirmSensitiveActions,
     usageNoticeKey: usageNoticeKey ?? this.usageNoticeKey,
     offeredUpdate: offeredUpdate ?? this.offeredUpdate,
+    handsFree: handsFree ?? this.handsFree,
   );
 
   @override
@@ -57,7 +64,8 @@ final class AppSettings {
       other.voiceReplies == voiceReplies &&
       other.confirmSensitiveActions == confirmSensitiveActions &&
       other.usageNoticeKey == usageNoticeKey &&
-      other.offeredUpdate == offeredUpdate;
+      other.offeredUpdate == offeredUpdate &&
+      other.handsFree == handsFree;
 
   @override
   int get hashCode => Object.hash(
@@ -67,6 +75,7 @@ final class AppSettings {
     confirmSensitiveActions,
     usageNoticeKey,
     offeredUpdate,
+    handsFree,
   );
 }
 
@@ -80,6 +89,7 @@ final class AppSettingsStore {
   static const String _confirm = 'confirm_sensitive_actions';
   static const String _usageNotice = 'usage_notice_key';
   static const String _offeredUpdate = 'offered_update';
+  static const String _handsFree = 'hands_free';
 
   static const Set<String> languages = <String>{'en', 'uz', 'ru'};
 
@@ -97,6 +107,7 @@ final class AppSettingsStore {
       confirmSensitiveActions: _prefs.getBool(_confirm) ?? true,
       usageNoticeKey: _prefs.getString(_usageNotice),
       offeredUpdate: _prefs.getInt(_offeredUpdate),
+      handsFree: _prefs.getBool(_handsFree) ?? false,
     );
   }
 
@@ -116,6 +127,7 @@ final class AppSettingsStore {
     } else {
       await _prefs.setString(_usageNotice, notice);
     }
+    await _prefs.setBool(_handsFree, settings.handsFree);
     final int? offered = settings.offeredUpdate;
     if (offered == null) {
       await _prefs.remove(_offeredUpdate);

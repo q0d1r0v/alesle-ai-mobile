@@ -1,6 +1,8 @@
 @Tags(<String>['golden'])
 library;
 
+import 'package:alesle_ai/app/bootstrap/core_providers.dart';
+import 'package:alesle_ai/core/storage/app_settings.dart';
 import 'package:alesle_ai/features/home/presentation/home_providers.dart';
 import 'package:alesle_ai/features/home/presentation/home_screen.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +14,10 @@ import '../helpers/pump_app.dart';
 /// Update after an intentional UI change:
 ///   flutter test --tags golden --update-goldens
 void main() {
+  late AppSettingsStore settings;
+
+  setUp(() async => settings = await testSettingsStore());
+
   Future<void> pumpAt(WidgetTester tester, FakeAgentRepository agent) async {
     tester.view.physicalSize = const Size(1080, 1920);
     tester.view.devicePixelRatio = 2.625;
@@ -28,6 +34,10 @@ void main() {
           FakeHealthRepository(() async => readyHealth),
         ),
         agentRepositoryProvider.overrideWithValue(agent),
+        appSettingsStoreProvider.overrideWithValue(settings),
+        handsFreeRepositoryProvider.overrideWithValue(
+          FakeHandsFreeRepository(),
+        ),
       ],
     );
     await tester.pumpAndSettle();

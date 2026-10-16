@@ -100,6 +100,15 @@ void main() {
     await expectLater(repository.stop(), throwsA(isA<UnexpectedFailure>()));
   });
 
+  test('passes what the user said to the running task', () async {
+    when(() => api.amendTask('buni ham qil')).thenAnswer((_) async => true);
+    when(() => api.amendTask('x')).thenAnswer((_) async => false);
+    expect(await repository.amend('buni ham qil'), isTrue);
+    expect(await repository.amend('x'), isFalse);
+    when(() => api.amendTask('y')).thenThrow(PlatformException(code: 'x'));
+    await expectLater(repository.amend('y'), throwsA(isA<UnexpectedFailure>()));
+  });
+
   test('updates come from the shared bridge', () async {
     final List<TaskUpdate> seen = <TaskUpdate>[];
     final StreamSubscription<TaskUpdate> sub = repository.updates.listen(

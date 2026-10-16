@@ -22,6 +22,7 @@ void main() {
   late FakeAgentRepository agent;
   late FakeAssistantRepository assistant;
   late FakeVoiceRepository voice;
+  late FakeHandsFreeRepository listen;
   late AppSettingsStore settings;
 
   setUp(() async {
@@ -29,6 +30,7 @@ void main() {
     agent = FakeAgentRepository(() async => enabledAgent);
     assistant = FakeAssistantRepository();
     voice = FakeVoiceRepository();
+    listen = FakeHandsFreeRepository();
     settings = await testSettingsStore();
   });
 
@@ -37,6 +39,7 @@ void main() {
     agentRepositoryProvider.overrideWithValue(agent),
     assistantRepositoryProvider.overrideWithValue(assistant),
     voiceRepositoryProvider.overrideWithValue(voice),
+    handsFreeRepositoryProvider.overrideWithValue(listen),
     appSettingsStoreProvider.overrideWithValue(settings),
     if (policy != null) executionPolicyProvider.overrideWithValue(policy),
   ];
@@ -71,6 +74,67 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
   }
+
+  group('hands-free', () {
+    testWidgets('the switch turns listening on; speaking starts a command, '
+        'the orb and the bar mute it', (WidgetTester tester) async {
+      await pumpHome(tester);
+      expect(find.text('Doim tinglash'), findsOneWidget);
+      expect(find.byKey(const Key('hands-free-mute')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('hands-free-switch')));
+      await tester.pumpAndSettle();
+      expect(listen.starts, 1);
+      expect(settings.read().handsFree, isTrue);
+      expect(find.text('Tinglayapman — shunchaki gapiring'), findsWidgets);
+
+      // The orb mutes now instead of push-to-talk.
+      await tester.tap(find.byKey(const Key('orb')));
+      await tester.pumpAndSettle();
+      expect(listen.mutes, <bool>[true]);
+      expect(voice.starts, 0);
+      expect(find.text('Mikrofon o‘chiq'), findsWidgets);
+      await tester.tap(find.byKey(const Key('hands-free-mute')));
+      await tester.pumpAndSettle();
+      expect(listen.mutes, <bool>[true, false]);
+
+      voice.heard = const Transcript(
+        text: 'Soat ilovasini och',
+        language: 'uz',
+        confidence: 0.9,
+      );
+      listen.say('/cache/u.wav');
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(assistant.commands.single.text, 'Soat ilovasini och');
+      expect(find.byKey(const Key('hands-free-running-hint')), findsOneWidget);
+      expect(find.text('«Soat ilovasini och»'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('hands-free-switch')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(listen.stops, 1);
+      expect(settings.read().handsFree, isFalse);
+    });
+
+    testWidgets(
+      'left on, it listens again when home opens; a refusal is said',
+      (WidgetTester tester) async {
+        settings = await testSettingsStore();
+        await settings.write(settings.read().copyWith(handsFree: true));
+        listen.startWorks = false;
+        await pumpHome(tester);
+        expect(listen.starts, 1);
+        expect(
+          find.text(
+            'Mikrofonni yoqib bo‘lmadi. Ilovani ochiq holda qayta urining.',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+  });
 
   group('idle', () {
     testWidgets('greets by the time of day and invites a command', (

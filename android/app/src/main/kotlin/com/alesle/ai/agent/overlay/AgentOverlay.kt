@@ -111,6 +111,10 @@ class AgentOverlay(
         listOf(glow, pill, sheet).forEach { it?.visibility = state }
     }
 
+    override fun dismissSheet() {
+        main.post { closeSheet() }
+    }
+
     override fun hide() {
         main.post {
             closeSheet()

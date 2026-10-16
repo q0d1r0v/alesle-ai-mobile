@@ -622,6 +622,60 @@ abstract class AppLocalizations {
   /// **'Mikrofonga ruxsat kerak.'**
   String get voiceMicDenied;
 
+  /// No description provided for @handsFreeLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Doim tinglash'**
+  String get handsFreeLabel;
+
+  /// No description provided for @handsFreeListening.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tinglayapman — shunchaki gapiring'**
+  String get handsFreeListening;
+
+  /// No description provided for @handsFreeMuted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mikrofon o‘chiq'**
+  String get handsFreeMuted;
+
+  /// No description provided for @handsFreeUnderstanding.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tushunyapman…'**
+  String get handsFreeUnderstanding;
+
+  /// No description provided for @handsFreeMute.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ovozsiz qilish'**
+  String get handsFreeMute;
+
+  /// No description provided for @handsFreeUnmute.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tinglashni yoqish'**
+  String get handsFreeUnmute;
+
+  /// No description provided for @handsFreeHeard.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{text}»'**
+  String handsFreeHeard(String text);
+
+  /// No description provided for @handsFreeWhileRunning.
+  ///
+  /// In uz, this message translates to:
+  /// **'Gapiring: vazifaga qo‘shing, o‘zgartiring yoki «to‘xta» deng'**
+  String get handsFreeWhileRunning;
+
+  /// No description provided for @handsFreeStartFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mikrofonni yoqib bo‘lmadi. Ilovani ochiq holda qayta urining.'**
+  String get handsFreeStartFailed;
+
   /// No description provided for @signInTitle.
   ///
   /// In uz, this message translates to:

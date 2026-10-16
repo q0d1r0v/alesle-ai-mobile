@@ -96,6 +96,17 @@ final class FakeAssistantRepository implements AssistantRepository {
     if (failure case final Failure value) throw value;
   }
 
+  /// What the user said while a task ran; [amendAccepted] says whether one ran.
+  final List<String> amendments = <String>[];
+  bool amendAccepted = true;
+
+  @override
+  Future<bool> amend(String text) async {
+    if (failure case final Failure value) throw value;
+    amendments.add(text);
+    return amendAccepted;
+  }
+
   void push(TaskUpdate update) => updatesController.add(update);
 }
 
@@ -132,10 +143,78 @@ final class FakeVoiceRepository implements VoiceRepository {
   @override
   Future<void> cancelListening() async => cancels++;
 
+  /// Hands-free utterances transcribed, by path.
+  final List<String> transcribed = <String>[];
+
+  @override
+  Future<Transcript> transcribeFile(String path, {String? language}) async {
+    transcribed.add(path);
+    if (failure case final Failure value) throw value;
+    return heard ??
+        const Transcript(text: '', language: 'other', confidence: 0);
+  }
+
   @override
   Future<void> speak(String text) async {
     if (failure case final Failure value) throw value;
     spoken.add(text);
+  }
+}
+
+/// Hands-free listening a test drives: the service's answers and what it hears.
+final class FakeHandsFreeRepository implements HandsFreeRepository {
+  final StreamController<ListenStatus> statusController =
+      StreamController<ListenStatus>.broadcast();
+  final StreamController<String> utteranceController =
+      StreamController<String>.broadcast();
+  ListenStatus current = ListenStatus.off;
+
+  /// What start() reports; inactive when the microphone would not open.
+  bool startWorks = true;
+  Failure? failure;
+  int starts = 0;
+  int stops = 0;
+  final List<bool> mutes = <bool>[];
+
+  @override
+  Stream<ListenStatus> get statusChanges => statusController.stream;
+
+  @override
+  Stream<String> get utterances => utteranceController.stream;
+
+  @override
+  Future<ListenStatus> start() async {
+    starts++;
+    if (failure case final Failure value) throw value;
+    current = ListenStatus(active: startWorks, muted: current.muted);
+    return current;
+  }
+
+  @override
+  Future<void> stop() async {
+    stops++;
+    if (failure case final Failure value) throw value;
+    current = ListenStatus(active: false, muted: current.muted);
+  }
+
+  @override
+  Future<void> setMuted(bool muted) async {
+    if (failure case final Failure value) throw value;
+    mutes.add(muted);
+    current = ListenStatus(active: current.active, muted: muted);
+  }
+
+  @override
+  Future<ListenStatus> status() async {
+    if (failure case final Failure value) throw value;
+    return current;
+  }
+
+  void say(String path) => utteranceController.add(path);
+
+  void report(ListenStatus status) {
+    current = status;
+    statusController.add(status);
   }
 }
 

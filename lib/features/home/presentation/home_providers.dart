@@ -9,6 +9,7 @@ export '../data/home_data_providers.dart'
     show
         agentRepositoryProvider,
         assistantRepositoryProvider,
+        handsFreeRepositoryProvider,
         healthRepositoryProvider,
         voiceRepositoryProvider;
 

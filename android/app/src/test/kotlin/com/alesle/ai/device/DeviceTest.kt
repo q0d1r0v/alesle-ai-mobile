@@ -17,6 +17,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
+import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
@@ -177,7 +178,8 @@ class VoiceRecorderTest {
 @RunWith(RobolectricTestRunner::class)
 class AudioPlayerTest {
     private val media = mockk<MediaPlayer>(relaxed = true)
-    private val player = AudioPlayer { media }
+    private val speaking = mutableListOf<Boolean>()
+    private val player = AudioPlayer({ media }, { speaking += it })
 
     @Test
     fun `plays a file and stops the previous one`() {
@@ -191,6 +193,17 @@ class AudioPlayerTest {
         verify(exactly = 1) { media.stop() }
         player.stop()
         player.stop()
+        // Hands-free hears nothing while Alesle speaks.
+        assertEquals(listOf(true, false, true, false), speaking)
+    }
+
+    @Test
+    fun `the end of a reply lets hands-free listen again`() {
+        val done = slot<MediaPlayer.OnCompletionListener>()
+        every { media.setOnCompletionListener(capture(done)) } returns Unit
+        player.play("/tmp/a.wav")
+        done.captured.onCompletion(media)
+        assertEquals(listOf(true, false), speaking)
     }
 
     @Test
@@ -198,6 +211,7 @@ class AudioPlayerTest {
         every { media.prepare() } throws java.io.IOException("bad")
         player.play("/tmp/bad.wav")
         verify { media.release() }
+        assertEquals(listOf(true, false), speaking)
         every { media.setDataSource(any<String>()) } throws IllegalStateException("x")
         player.play("/tmp/x.wav")
         every { media.stop() } throws IllegalStateException("done")

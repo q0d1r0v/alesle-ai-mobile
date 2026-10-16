@@ -22,6 +22,8 @@
     -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- Hands-free listening keeps the microphone open in a foreground service. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Push-to-talk (SOW 04 §4.1), asked for in onboarding. -->
@@ -96,7 +98,7 @@
 
         <!--
           specialUse: no other type fits "carry out the task the user asked for".
-          Voice listening adds the microphone type in Sprint 4.
+          Hands-free listening is its own microphone service below.
         -->
         <service
             android:name=".agent.service.AgentForegroundService"
@@ -106,6 +108,12 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Voice assistant carrying out a task the user started; stoppable from the notification" />
         </service>
+
+        <!-- Hands-free: the microphone stays open while the user wants it (mute / off in the notification). -->
+        <service
+            android:name=".listen.ListeningService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

@@ -38,6 +38,8 @@ class AgentHostApiImpl(
 
     override fun stopTask() = tasks.stop()
 
+    override fun amendTask(text: String): Boolean = tasks.amend(text)
+
     override fun debugSnapshot(): String = debugOnly { debug.snapshot().toString() }
 
     override fun debugExecute(actionJson: String): String = debugOnly { debug.execute(actionJson).toString() }

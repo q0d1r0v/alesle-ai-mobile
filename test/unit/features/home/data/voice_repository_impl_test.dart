@@ -131,6 +131,22 @@ void main() {
       expect(audio.existsSync(), isFalse);
     });
 
+    test('a hands-free utterance is transcribed and deleted', () async {
+      final File audio = File('${scratch.path}/utterance.wav')
+        ..writeAsBytesSync(<int>[1, 2, 3]);
+      when(() => api.voiceTranscribe(audio: any(named: 'audio'))).thenAnswer(
+        (_) async => const TranscriptDto(
+          text: 'Soat nechi?',
+          language: SpeechLanguage.uz,
+          confidence: 0.9,
+        ),
+      );
+      final Transcript transcript = await repository.transcribeFile(audio.path);
+      expect(transcript.text, 'Soat nechi?');
+      expect(audio.existsSync(), isFalse);
+      verifyNever(device.stopRecording);
+    });
+
     test('an unknown language reads as other', () async {
       final File audio = recording();
       when(device.stopRecording).thenAnswer((_) async => audio.path);

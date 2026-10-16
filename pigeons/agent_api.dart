@@ -94,6 +94,10 @@ abstract class AgentHostApi {
   /// Stops the running task, if any.
   void stopTask();
 
+  /// What the user said while a task runs (hands-free): answers the sheet on
+  /// screen or changes the task. False when no task runs.
+  bool amendTask(String text);
+
   /// Debug builds only (fails with `debug_only` otherwise): the current
   /// screen as snapshot JSON, with `captureMs`.
   @TaskQueue(type: TaskQueueType.serialBackgroundThread)
@@ -173,6 +177,39 @@ abstract class DeviceHostApi {
   void playAudio(String path);
 
   void stopAudio();
+}
+
+// ── Hands-free listening (SOW 04 §4.3) ──────────────────────────────────────
+
+class ListenStateMessage {
+  ListenStateMessage({required this.active, required this.muted});
+
+  /// The microphone service runs.
+  final bool active;
+
+  /// The user muted it: nothing is heard until unmuted.
+  final bool muted;
+}
+
+@HostApi()
+abstract class ListenHostApi {
+  /// Starts listening; Android allows it only while the app is in front.
+  /// The state after (not active when the microphone could not be opened).
+  ListenStateMessage startListening();
+
+  void stopListening();
+
+  void setMuted(bool muted);
+
+  ListenStateMessage listenState();
+}
+
+@FlutterApi()
+abstract class ListenEventsApi {
+  /// One utterance as a 16 kHz mono WAV in the app cache; the receiver deletes it.
+  void onUtterance(String path);
+
+  void onListenState(ListenStateMessage state);
 }
 
 // ── App updates (Sprint 8, SOW 02 §3) ───────────────────────────────────────

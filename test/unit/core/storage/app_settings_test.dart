@@ -44,6 +44,8 @@ void main() {
         isNot(const AppSettings(usageNoticeKey: 'k')),
       );
       expect(const AppSettings(), isNot(const AppSettings(offeredUpdate: 1)));
+      expect(const AppSettings(), isNot(const AppSettings(handsFree: true)));
+      expect(const AppSettings().copyWith(handsFree: true).handsFree, isTrue);
     });
   });
 
@@ -64,6 +66,7 @@ void main() {
         confirmSensitiveActions: false,
         usageNoticeKey: '2026-11-16T07:00:00.000Z:80',
         offeredUpdate: 5,
+        handsFree: true,
       );
       await store.write(settings);
       expect(store.read(), settings);

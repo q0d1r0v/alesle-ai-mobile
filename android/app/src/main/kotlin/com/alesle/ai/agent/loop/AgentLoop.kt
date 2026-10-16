@@ -3,6 +3,8 @@ package com.alesle.ai.agent.loop
 import com.alesle.ai.agent.action.ActionResult
 import com.alesle.ai.agent.action.AgentAction
 import com.alesle.ai.agent.action.Choice
+import com.alesle.ai.agent.intent.IntentAction
+import com.alesle.ai.agent.intent.Recipient
 import com.alesle.ai.agent.protocol.ActionDecodeException
 import com.alesle.ai.agent.protocol.ActionJson
 import com.alesle.ai.agent.protocol.DecodedAction
@@ -49,6 +51,9 @@ interface LoopDevice {
 
     /** The screen as a picture (SOW 03 §3). */
     fun screenshot(): Screenshot
+
+    /** The contact a call would reach, by its name in the contacts; null when not exactly one. */
+    fun recipientLabel(action: DecodedAction): String? = null
 }
 
 /** What the user sees while a task runs: the overlay. Answers may come back on any thread. */
@@ -69,6 +74,9 @@ interface LoopUi {
     )
 
     fun hide()
+
+    /** Takes the open question or confirmation off the screen: the user answered by voice. */
+    fun dismissSheet() {}
 
     /**
      * Runs [capture] with the overlay out of the picture: the glow and the
@@ -139,6 +147,12 @@ class AgentLoop(
     private var waitingStep: String? = null
     private var reconnects = 0
 
+    /** The question on screen, so a spoken answer can pick from it. Worker thread only. */
+    private var openAsk: ServerFrame.Ask? = null
+
+    /** The confirmation on screen and how to answer it once. Worker thread only. */
+    private var openConfirm: Pair<Confirmation, (Boolean) -> Unit>? = null
+
     fun start() {
         worker.post(::connect)
     }
@@ -149,6 +163,47 @@ class AgentLoop(
      */
     fun stop() {
         end(LoopEvent.Finished("stopped", "user_stopped", null), notifyServer = true)
+    }
+
+    /**
+     * The user spoke while the task runs (hands-free). A short answer to the
+     * sheet on screen answers it; anything else goes to the server as a
+     * change to the task. A purchase, payment or deletion still needs a tap.
+     */
+    fun amend(text: String) {
+        val said = text.trim()
+        if (said.isEmpty()) return
+        worker.post {
+            if (ended.get()) return@post
+            openConfirm?.let { (confirmation, answer) ->
+                when (VoiceAnswers.yesNo(said)) {
+                    VoiceAnswers.YesNo.YES -> {
+                        // A purchase, payment or deletion waits for the tap.
+                        if (confirmation.always) return@post
+                        ui.dismissSheet()
+                        answer(true)
+                        return@post
+                    }
+                    VoiceAnswers.YesNo.NO -> {
+                        ui.dismissSheet()
+                        answer(false)
+                        return@post
+                    }
+                    null -> Unit
+                }
+            }
+            openAsk?.let { ask ->
+                openAsk = null
+                ui.dismissSheet()
+                val picked = VoiceAnswers.pick(said, ask.choices)
+                if (picked != null) {
+                    send(LoopFrames.reply(ask.askId, picked.ref))
+                    return@post
+                }
+                // Not one of the choices: the server drops the question and reads the words.
+            }
+            send(LoopFrames.amend(said))
+        }
     }
 
     private fun connect() {
@@ -200,10 +255,16 @@ class AgentLoop(
             }
             is ServerFrame.Observe -> if (frame.screenshot) look() else observe(null, null)
             is ServerFrame.Act -> act(frame)
-            is ServerFrame.Ask ->
+            is ServerFrame.Ask -> {
+                openAsk = frame
                 ui.ask(frame.question, frame.choices) { ref ->
-                    worker.post { if (!ended.get()) send(LoopFrames.reply(frame.askId, ref)) }
+                    worker.post {
+                        if (ended.get() || openAsk !== frame) return@post
+                        openAsk = null
+                        send(LoopFrames.reply(frame.askId, ref))
+                    }
                 }
+            }
             is ServerFrame.Finish ->
                 end(LoopEvent.Finished(frame.status, frame.reason, frame.reply), notifyServer = false)
             is ServerFrame.Error ->
@@ -239,7 +300,7 @@ class AgentLoop(
         }
         // The phone's own rules come first: the server's view can be steered
         // by text on the screen (prompt injection); these cannot.
-        val confirm =
+        var confirm =
             when (val verdict = SafetyPolicy.check(decoded, lastScreen, request.locale)) {
                 is SafetyVerdict.Block -> {
                     finishStep(frame.stepId, ActionResult.blocked(verdict.reason))
@@ -257,12 +318,22 @@ class AgentLoop(
             return
         }
         val ask = request.policy == ConfirmPolicy.CONFIRM || confirm.always
-        ui.confirm(confirm, countdown = !ask) { approved ->
-            worker.post {
-                if (ended.get()) return@post
-                if (approved) run(frame.stepId, decoded) else finishStep(frame.stepId, ActionResult.DECLINED)
+        // A call shows who it really reaches: the words heard may be spelled another way.
+        val callee = if (isContactCall(decoded)) device.recipientLabel(decoded) else null
+        if (callee != null) confirm = confirm.copy(detail = callee)
+        // Answered once: by a tap on the sheet (any thread) or by voice (the worker).
+        val answered = AtomicBoolean(false)
+        val answer: (Boolean) -> Unit = { approved ->
+            if (answered.compareAndSet(false, true)) {
+                worker.post {
+                    openConfirm = null
+                    if (ended.get()) return@post
+                    if (approved) run(frame.stepId, decoded) else finishStep(frame.stepId, ActionResult.DECLINED)
+                }
             }
         }
+        openConfirm = confirm to answer
+        ui.confirm(confirm, countdown = !ask, answer = answer)
     }
 
     private fun run(
@@ -318,6 +389,11 @@ class AgentLoop(
                 else -> pollUser(stepId, before, polls - 1)
             }
         }
+    }
+
+    private fun isContactCall(action: DecodedAction): Boolean {
+        val call = (action as? DecodedAction.Intent)?.action as? IntentAction.Call ?: return false
+        return call.to !is Recipient.Phone
     }
 
     /** Actions that may fall back to a gesture; waits, global keys and intents never touch the screen. */

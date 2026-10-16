@@ -9,7 +9,12 @@ import com.alesle.ai.agent.generated.TaskRequest
 import com.alesle.ai.agent.service.AgentForegroundService
 import com.alesle.ai.agent.service.StopRequests
 import com.alesle.ai.agent.task.AgentTaskController
+import com.alesle.ai.listen.HandsFree
+import com.alesle.ai.listen.ListeningService
+import com.alesle.ai.listen.VoiceActivityDetector
+import com.alesle.ai.listen.Wav
 import org.json.JSONObject
+import java.io.File
 import kotlin.concurrent.thread
 
 /**
@@ -24,9 +29,15 @@ import kotlin.concurrent.thread
  * adb shell am broadcast -n com.alesle.ai/.debug.AgentDebugReceiver --es cmd task_start \
  *     --es step "'Budilnik 7:30'" --es url http://127.0.0.1:3000 --es token <DEV_AUTH_TOKEN> \
  *     [--es locale en] [--ez confirm false]
+ * adb exec-in run-as com.alesle.ai sh -c 'cat > files/say.wav' < say.wav   # the app's own files
+ * adb shell am broadcast -n com.alesle.ai/.debug.AgentDebugReceiver --es cmd inject_audio \
+ *     --es path /data/user/0/com.alesle.ai/files/say.wav
+ * adb shell am broadcast -n com.alesle.ai/.debug.AgentDebugReceiver --es cmd amend --es step "'Sekundomerni och'"
  * ```
  *
- * Commands: `snapshot`, `action`, `task_start`, `task_stop`, `fgs_step`, `status`.
+ * Commands: `snapshot`, `action`, `task_start`, `task_stop`, `amend`, `inject_audio`
+ * (a 16 kHz mono WAV played to hands-free listening in place of the microphone),
+ * `fgs_step`, `status`.
  *
  * Guarded by the DUMP permission, which the adb shell holds and ordinary apps
  * cannot get.
@@ -41,6 +52,7 @@ class AgentDebugReceiver : BroadcastReceiver() {
         val json = intent.getStringExtra("json")
         val step = intent.getStringExtra("step")
         val url = intent.getStringExtra("url")
+        val path = intent.getStringExtra("path")
         val token = intent.getStringExtra("token")
         // --ez confirm false: a 3 s countdown instead of a question (the eval runs unattended).
         val confirm = intent.getBooleanExtra("confirm", true)
@@ -49,7 +61,7 @@ class AgentDebugReceiver : BroadcastReceiver() {
         thread(name = "alesle-debug") {
             val answer =
                 try {
-                    handle(app, cmd, json, step, Server(url, token, locale, confirm))
+                    handle(app, cmd, json, step, Server(url, token, locale, confirm, path))
                 } catch (e: RuntimeException) {
                     // A debug tool should report a crash, not take the app down with it.
                     error("exception:${e.javaClass.simpleName}")
@@ -87,6 +99,13 @@ class AgentDebugReceiver : BroadcastReceiver() {
                 tasks.stop()
                 JSONObject().put("status", "ok")
             }
+            "amend" -> JSONObject().put("amended", tasks.amend(step.orEmpty()))
+            "inject_audio" -> {
+                val pcm = server.path?.let { runCatching { Wav.read(File(it)) }.getOrNull() } ?: return error("bad_wav")
+                // A second of quiet after the words ends the utterance as a pause would.
+                val injected = ListeningService.inject(pcm + ShortArray(VoiceActivityDetector.SAMPLE_RATE))
+                JSONObject().put("injected", injected)
+            }
             "fgs_step" -> {
                 AgentForegroundService.updateStep(context, step)
                 JSONObject().put("status", "ok")
@@ -98,6 +117,8 @@ class AgentDebugReceiver : BroadcastReceiver() {
                     .put("fgsRunning", AgentForegroundService.running)
                     .put("stopRequests", stopRequests)
                     .put("lastReply", tasks.lastFinished?.text)
+                    .put("listening", HandsFree.state.active)
+                    .put("muted", HandsFree.state.muted)
             else -> error("unknown_cmd")
         }
     }
@@ -109,6 +130,8 @@ class AgentDebugReceiver : BroadcastReceiver() {
         val token: String?,
         val locale: String,
         val confirm: Boolean,
+        /** A WAV for `inject_audio`. */
+        val path: String?,
     )
 
     private companion object {

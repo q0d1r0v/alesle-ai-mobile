@@ -16,6 +16,7 @@ import '../../../core/errors/failure.dart';
 import '../domain/agent_status.dart';
 import '../domain/server_health.dart';
 import 'failure_message.dart';
+import 'hands_free_controller.dart';
 import 'home_providers.dart';
 import 'home_task_controller.dart';
 import 'task_messages.dart';
@@ -43,8 +44,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // The user enables accessibility in system settings and comes back:
     // re-read the status then, not on a timer.
     _lifecycle = AppLifecycleListener(
-      onResume: () => ref.invalidate(agentStatusProvider),
+      onResume: () {
+        ref.invalidate(agentStatusProvider);
+        _resumeHandsFree();
+      },
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) => _resumeHandsFree());
+  }
+
+  /// Hands-free stays on across visits; Android lets it start only now,
+  /// while the app is in front.
+  void _resumeHandsFree() {
+    if (!mounted) return;
+    unawaited(
+      ref
+          .read(handsFreeProvider.notifier)
+          .resume(appLocale: Localizations.localeOf(context).toLanguageTag()),
+    );
+  }
+
+  void _showHandsFreeProblem(HandsFreeState? previous, HandsFreeState next) {
+    final HandsFreeProblem? problem = next.problem;
+    if (problem == null || problem == previous?.problem) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(switch (problem) {
+            HandsFreeProblem.microphoneDenied => context.l10n.voiceMicDenied,
+            HandsFreeProblem.startFailed => context.l10n.handsFreeStartFailed,
+          }),
+        ),
+      );
+    ref.read(handsFreeProvider.notifier).clearProblem();
   }
 
   @override
@@ -96,7 +128,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ref
       ..listen<HomeTask>(homeTaskProvider, _speakResult)
       ..listen<HomeTask>(homeTaskProvider, _offerMore)
-      ..listen<VoiceState>(voiceProvider, _showVoiceProblem);
+      ..listen<VoiceState>(voiceProvider, _showVoiceProblem)
+      ..listen<HandsFreeState>(handsFreeProvider, _showHandsFreeProblem);
     final HomeTask task = ref.watch(homeTaskProvider);
     return Scaffold(
       body: DecoratedBox(
@@ -110,11 +143,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: switch (task) {
-              TaskIdle() => _IdleView(now: widget.now),
-              final TaskRunning running => _RunningView(task: running),
-              final TaskResult result => _ResultView(result: result),
-            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                const _HandsFreeBar(),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: switch (task) {
+                    TaskIdle() => _IdleView(now: widget.now),
+                    final TaskRunning running => _RunningView(task: running),
+                    final TaskResult result => _ResultView(result: result),
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -160,6 +202,11 @@ class _IdleView extends ConsumerWidget {
   }
 
   Future<void> _onOrb(BuildContext context, WidgetRef ref) async {
+    // Hands-free has the microphone: the orb mutes and unmutes it.
+    if (ref.read(handsFreeProvider).on) {
+      await ref.read(handsFreeProvider.notifier).toggleMute();
+      return;
+    }
     final String language = Localizations.localeOf(context).languageCode;
     final String? heard = await ref
         .read(voiceProvider.notifier)
@@ -175,6 +222,9 @@ class _IdleView extends ConsumerWidget {
     final AsyncValue<AgentStatus> status = ref.watch(agentStatusProvider);
     final VoicePhase phase = ref.watch(
       voiceProvider.select((VoiceState state) => state.phase),
+    );
+    final HandsFreePhase handsFree = ref.watch(
+      handsFreeProvider.select((HandsFreeState state) => state.phase),
     );
     final bool off = status.value?.needsSetup ?? false;
     return Column(
@@ -233,25 +283,39 @@ class _IdleView extends ConsumerWidget {
                           },
                           child: AlesleOrb(
                             size: orb,
-                            state: switch (phase) {
-                              VoicePhase.idle => OrbState.idle,
-                              VoicePhase.listening => OrbState.listening,
-                              VoicePhase.transcribing => OrbState.working,
+                            state: switch (handsFree) {
+                              HandsFreePhase.listening => OrbState.listening,
+                              HandsFreePhase.understanding => OrbState.working,
+                              HandsFreePhase.muted => OrbState.idle,
+                              HandsFreePhase.off => switch (phase) {
+                                VoicePhase.idle => OrbState.idle,
+                                VoicePhase.listening => OrbState.listening,
+                                VoicePhase.transcribing => OrbState.working,
+                              },
                             },
                           ),
                         ),
                       ),
                       const SizedBox(height: 32),
                       Text(
-                        switch (phase) {
-                          VoicePhase.idle => context.l10n.homeTapToSpeak,
-                          VoicePhase.listening => context.l10n.homeListening,
-                          VoicePhase.transcribing =>
-                            context.l10n.homeUnderstanding,
+                        switch (handsFree) {
+                          HandsFreePhase.listening =>
+                            context.l10n.handsFreeListening,
+                          HandsFreePhase.muted => context.l10n.handsFreeMuted,
+                          HandsFreePhase.understanding =>
+                            context.l10n.handsFreeUnderstanding,
+                          HandsFreePhase.off => switch (phase) {
+                            VoicePhase.idle => context.l10n.homeTapToSpeak,
+                            VoicePhase.listening => context.l10n.homeListening,
+                            VoicePhase.transcribing =>
+                              context.l10n.homeUnderstanding,
+                          },
                         },
                         key: const Key('voice-title'),
                         style: text.headlineSmall?.copyWith(
-                          color: phase == VoicePhase.listening
+                          color:
+                              phase == VoicePhase.listening ||
+                                  handsFree == HandsFreePhase.listening
                               ? AlesleColors.violet
                               : null,
                         ),
@@ -459,6 +523,101 @@ class _CommandSheetState extends State<_CommandSheet> {
   }
 }
 
+// ── Hands-free ───────────────────────────────────────────────────────────────
+
+/// Always-listen switch, mute, and what was last heard (SOW 04 §4.3).
+class _HandsFreeBar extends ConsumerWidget {
+  const _HandsFreeBar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final HandsFreeState state = ref.watch(handsFreeProvider);
+    final HandsFreeController controller = ref.read(handsFreeProvider.notifier);
+    final TextTheme text = Theme.of(context).textTheme;
+    final bool muted = state.phase == HandsFreePhase.muted;
+    final String? heard = state.heard;
+    return DecoratedBox(
+      key: const Key('hands-free-bar'),
+      decoration: BoxDecoration(
+        color: state.on ? const Color(0x1F7C5CE0) : Colors.white,
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
+        child: Row(
+          children: <Widget>[
+            Icon(
+              muted || !state.on ? Icons.mic_off_rounded : Icons.mic_rounded,
+              color: state.on && !muted
+                  ? AlesleColors.violet
+                  : AlesleColors.text2,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    switch (state.phase) {
+                      HandsFreePhase.off => context.l10n.handsFreeLabel,
+                      HandsFreePhase.listening =>
+                        context.l10n.handsFreeListening,
+                      HandsFreePhase.muted => context.l10n.handsFreeMuted,
+                      HandsFreePhase.understanding =>
+                        context.l10n.handsFreeUnderstanding,
+                    },
+                    key: const Key('hands-free-status'),
+                    style: text.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (state.on && heard != null)
+                    Text(
+                      context.l10n.handsFreeHeard(heard),
+                      key: const Key('hands-free-heard'),
+                      style: text.bodySmall?.copyWith(
+                        color: AlesleColors.text2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
+            ),
+            if (state.on)
+              IconButton(
+                key: const Key('hands-free-mute'),
+                tooltip: muted
+                    ? context.l10n.handsFreeUnmute
+                    : context.l10n.handsFreeMute,
+                onPressed: () => unawaited(controller.toggleMute()),
+                icon: Icon(muted ? Icons.mic_rounded : Icons.mic_off_outlined),
+              ),
+            Semantics(
+              label: context.l10n.handsFreeLabel,
+              child: Switch(
+                key: const Key('hands-free-switch'),
+                value: state.on,
+                onChanged: (bool on) => unawaited(
+                  on
+                      ? controller.turnOn(
+                          appLocale: Localizations.localeOf(context)
+                              .toLanguageTag(),
+                        )
+                      : controller.turnOff(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ── Running ──────────────────────────────────────────────────────────────────
 
 class _RunningView extends ConsumerWidget {
@@ -489,6 +648,17 @@ class _RunningView extends ConsumerWidget {
                 if (task.command.isNotEmpty) ...<Widget>[
                   const SizedBox(height: 12),
                   _Chip(label: task.command),
+                ],
+                if (ref.watch(
+                  handsFreeProvider.select((s) => s.on),
+                )) ...<Widget>[
+                  const SizedBox(height: 16),
+                  Text(
+                    context.l10n.handsFreeWhileRunning,
+                    key: const Key('hands-free-running-hint'),
+                    style: text.bodyMedium?.copyWith(color: AlesleColors.text2),
+                    textAlign: TextAlign.center,
+                  ),
                 ],
               ],
             ),
