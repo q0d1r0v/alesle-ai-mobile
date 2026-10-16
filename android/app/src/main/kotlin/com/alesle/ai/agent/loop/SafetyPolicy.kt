@@ -35,25 +35,55 @@ object SafetyPolicy {
     /** A dialable number: digits with + ( ) - and spaces, 3–20 digits. No * or # (USSD). */
     private val PHONE = Regex("""^\+?[0-9 ()\-]{3,24}$""")
 
-    private val SEND = listOf("send", "отправ", "yubor", "жўнат", "post", "опублик")
-    private val CALL = listOf("call", "позвон", "звон", "qo'ng'iroq", "qo‘ng‘iroq", "qongiroq")
+    /**
+     * Action words, matched as whole words on short button labels only, so
+     * navigation ("Call history", "Payments", "Sent") is not mistaken for the
+     * action itself. No inline flags: Android's regex engine (ICU) rejects
+     * some the JVM takes; labels are lower-cased first instead.
+     */
+    private fun words(vararg alternatives: String) = Regex("""(^|[^\p{L}'‘’])(${alternatives.joinToString("|")})($|[^\p{L}'‘’])""")
+
+    private val SEND = words("send", "отправить", "отправ[иь]ть", "yuborish", "yubor", "post", "опубликовать")
+    private val CALL = words("call", "voice call", "video call", "позвонить", "звонок", "qo['‘’]ng['‘’]iroq qilish", "qo['‘’]ng['‘’]iroq")
     private val PAY =
-        listOf(
+        words(
             "pay",
-            "оплат",
-            "to'la",
-            "to‘la",
+            "pay now",
+            "оплатить",
+            "to['‘’]lash",
             "buy",
             "купить",
-            "sotib ol",
+            "sotib olish",
             "purchase",
-            "transfer",
-            "перев",
-            "o'tkaz",
-            "o‘tkaz",
             "checkout",
+            "transfer",
+            "перевести",
+            "o['‘’]tkazish",
         )
-    private val DELETE = listOf("delete", "удал", "o'chir", "o‘chir", "remove")
+    private val DELETE = words("delete", "удалить", "o['‘’]chirish", "remove")
+
+    /** A button, not a row of text: a few words at most. */
+    private const val MAX_ACTION_WORDS = 4
+
+    /** Words that make a label a place to go, not the action ("Call history", "Payment methods"). */
+    private val NAVIGATION =
+        words(
+            "history",
+            "log",
+            "logs",
+            "settings",
+            "methods",
+            "recents",
+            "list",
+            "история",
+            "журнал",
+            "настройки",
+            "способы",
+            "tarixi",
+            "tarix",
+            "sozlamalar",
+            "usullari",
+        )
 
     fun isDialable(number: String): Boolean = PHONE.matches(number.trim()) && number.count(Char::isDigit) in 3..20
 
@@ -110,12 +140,15 @@ object SafetyPolicy {
         if (screen?.snapshot?.packageName == OWN_PACKAGE) return SafetyVerdict.Block("own_app")
         val label = labelAt(target, screen) ?: return SafetyVerdict.Allow
         val lower = label.lowercase(Locale.ROOT)
+        if (lower.split(Regex("\\s+")).size > MAX_ACTION_WORDS || NAVIGATION.containsMatchIn(lower)) {
+            return SafetyVerdict.Allow
+        }
         val title =
             when {
-                PAY.any(lower::contains) -> return SafetyVerdict.Confirm(Confirmation(words.pay, label, always = true))
-                DELETE.any(lower::contains) -> return SafetyVerdict.Confirm(Confirmation(words.delete, label, always = true))
-                SEND.any(lower::contains) -> words.send
-                CALL.any(lower::contains) -> words.call
+                PAY.containsMatchIn(lower) -> return SafetyVerdict.Confirm(Confirmation(words.pay, label, always = true))
+                DELETE.containsMatchIn(lower) -> return SafetyVerdict.Confirm(Confirmation(words.delete, label, always = true))
+                SEND.containsMatchIn(lower) -> words.send
+                CALL.containsMatchIn(lower) -> words.call
                 else -> return SafetyVerdict.Allow
             }
         return SafetyVerdict.Confirm(Confirmation(title, label, always = false))

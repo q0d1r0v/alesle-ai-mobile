@@ -55,7 +55,8 @@ class DebugCommandsTest {
     @Test
     fun `actions tap nodes of the last snapshot`() {
         commands.snapshot()
-        assertEquals("""{"status":"ok"}""", commands.execute("""{"type":"tap","nodeId":0}""").toString())
+        // The button's label is an action word: the console reports the sheet a task would show.
+        assertEquals("""{"status":"ok","safety":"confirm"}""", commands.execute("""{"type":"tap","nodeId":0}""").toString())
         assertEquals(1, button.clicks)
         assertEquals(0, device.captures)
     }
@@ -64,6 +65,12 @@ class DebugCommandsTest {
     fun `without a snapshot an action captures the screen first`() {
         assertEquals("ok", commands.execute("""{"type":"tap","nodeId":0}""").getString("status"))
         assertEquals(1, device.captures)
+    }
+
+    @Test
+    fun `the console obeys the phone's safety rules`() {
+        assertEquals("unsafe_number", commands.execute("""{"type":"intent","kind":"call","to":{"phone":"*100#"}}""").getString("reason"))
+        assertEquals("own_app", commands.execute("""{"type":"launch_app","package":"com.alesle.ai"}""").getString("reason"))
     }
 
     @Test

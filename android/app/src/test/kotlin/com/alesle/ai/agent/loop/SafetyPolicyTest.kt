@@ -108,6 +108,22 @@ class SafetyPolicyTest {
     }
 
     @Test
+    fun `navigation that only mentions an action word passes`() {
+        val s =
+            screen(
+                Node(text = "Call history", bounds = Bounds(0, 0, 1000, 100)),
+                Node(text = "Payments", bounds = Bounds(0, 100, 1000, 200)),
+                Node(text = "Sent", bounds = Bounds(0, 200, 1000, 300)),
+                Node(text = "Please send me the report tomorrow", bounds = Bounds(0, 300, 1000, 400)),
+                Node(text = "Video call", bounds = Bounds(0, 400, 1000, 500)),
+                Node(text = "O‘chirish", bounds = Bounds(0, 500, 1000, 600)),
+            )
+        for (id in 0..3) assertEquals("node $id", SafetyVerdict.Allow, SafetyPolicy.check(tap(Target.Node(id)), s, "en"))
+        assertTrue(SafetyPolicy.check(tap(Target.Node(4)), s, "en") is SafetyVerdict.Confirm)
+        assertTrue((SafetyPolicy.check(tap(Target.Node(5)), s, "uz") as SafetyVerdict.Confirm).confirmation.always)
+    }
+
+    @Test
     fun `other actions and unknown targets pass`() {
         assertEquals(SafetyVerdict.Allow, SafetyPolicy.check(DecodedAction.Screen(AgentAction.Global(GlobalAction.BACK)), null, "en"))
         assertEquals(SafetyVerdict.Allow, SafetyPolicy.check(tap(Target.Node(9)), screen(), "en"))

@@ -21,4 +21,17 @@ void main() {
     final AgentStatus status = await AgentRepositoryImpl().status();
     expect(status.needsSetup, isTrue);
   });
+
+  // The JVM unit tests cannot catch what only Android's own runtime rejects
+  // (its regex engine differs): the safety rules must load on a device.
+  testWidgets('the phone\'s safety rules run on the device', (_) async {
+    final String refused = await AgentHostApi().debugExecute(
+      '{"type":"intent","kind":"call","to":{"phone":"*880*1*50000#"}}',
+    );
+    expect(refused, contains('unsafe_number'));
+    final String own = await AgentHostApi().debugExecute(
+      '{"type":"launch_app","package":"com.alesle.ai"}',
+    );
+    expect(own, contains('own_app'));
+  });
 }

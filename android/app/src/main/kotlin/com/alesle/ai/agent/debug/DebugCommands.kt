@@ -3,11 +3,14 @@ package com.alesle.ai.agent.debug
 import com.alesle.ai.agent.AgentRuntime
 import com.alesle.ai.agent.AlesleAccessibilityService
 import com.alesle.ai.agent.action.ActionExecutor
+import com.alesle.ai.agent.loop.SafetyPolicy
+import com.alesle.ai.agent.loop.SafetyVerdict
 import com.alesle.ai.agent.protocol.ActionDecodeException
 import com.alesle.ai.agent.protocol.ActionJson
 import com.alesle.ai.agent.protocol.DecodedAction
 import com.alesle.ai.agent.snapshot.CapturedScreen
 import org.json.JSONObject
+import java.util.Locale
 
 /**
  * Snapshot and single actions for developer tools (the debug screen and the
@@ -43,6 +46,10 @@ class DebugCommands(
             } catch (e: ActionDecodeException) {
                 return error(e.reason)
             }
+        // The console obeys the phone's own safety rules too; a sheet it would
+        // need is reported, as the console has no user to ask.
+        val verdict = SafetyPolicy.check(decoded, lastScreen, Locale.getDefault().toLanguageTag())
+        if (verdict is SafetyVerdict.Block) return error(verdict.reason)
         val runtime = runtime() ?: return error("accessibility_off")
         val result =
             when (decoded) {
@@ -54,7 +61,9 @@ class DebugCommands(
                 }
                 is DecodedAction.WaitForUser -> return error("loop_only")
             }
-        return ActionJson.encode(result)
+        return ActionJson.encode(result).apply {
+            if (verdict is SafetyVerdict.Confirm) put("safety", "confirm")
+        }
     }
 
     private fun error(reason: String) = JSONObject().put("status", "error").put("reason", reason)
