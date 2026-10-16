@@ -105,6 +105,10 @@ class IntentLauncher(
     }
 
     private fun webSearch(query: String): ActionResult {
+        // Chrome answers web searches too, and with no default set Android asks
+        // which app to use; the Google app, when installed, answers without asking.
+        val google = Intent(Intent.ACTION_WEB_SEARCH).setPackage(GOOGLE_APP_PACKAGE).putExtra(SearchManager.QUERY, query)
+        if (starter.start(google.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))) return ActionResult.OK
         val search = Intent(Intent.ACTION_WEB_SEARCH).putExtra(SearchManager.QUERY, query)
         if (starter.start(search.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))) return ActionResult.OK
         return start(Intent(Intent.ACTION_VIEW, "https://www.google.com/search?q=${Uri.encode(query)}".toUri()))
@@ -138,9 +142,17 @@ class IntentLauncher(
             ActionResult.notFound("no_app_for_intent")
         }
 
+    /**
+     * Who a call to [recipient] would reach, as the contacts name them
+     * ("Eval Tester ··0100"): the confirmation shows that, not the words heard.
+     * Null when it is not exactly one contact (the call then asks or fails).
+     */
+    fun recipientLabel(recipient: Recipient): String? = (resolve(recipient) as? Resolved.Number)?.who
+
     private sealed interface Resolved {
         data class Number(
             val number: String,
+            val who: String? = null,
         ) : Resolved
 
         data class Failed(
@@ -164,13 +176,20 @@ class IntentLauncher(
             is Recipient.ContactRef -> {
                 val id = recipient.ref.removePrefix(CONTACT_REF).toLongOrNull()
                 val phone = id?.let(contacts::byId)
-                if (phone == null) Resolved.Failed(ActionResult.notFound("contact_not_found")) else Resolved.Number(phone.number)
+                if (phone ==
+                    null
+                ) {
+                    Resolved.Failed(ActionResult.notFound("contact_not_found"))
+                } else {
+                    Resolved.Number(phone.number, contactChoice(phone).label)
+                }
             }
             is Recipient.ContactName -> {
                 // A name may come back as we showed it in a choice ("Aziz Ish ··0122",
                 // remembered that way): the digits then pick among same-named contacts.
                 val (name, tail) = splitChoiceLabel(recipient.name)
-                val found = matchContacts(name, contacts.search(name))
+                // A name heard in one script and saved in the other ("Эвел Тестер" / "Eval Tester").
+                val found = matchContacts(name, contacts.search(name)).ifEmpty { matchAcrossScripts(name, contacts.all()) }
                 val matches =
                     if (tail == null) {
                         found
@@ -179,7 +198,7 @@ class IntentLauncher(
                     }
                 when (matches.size) {
                     0 -> Resolved.Failed(ActionResult.notFound("contact_not_found"))
-                    1 -> Resolved.Number(matches.single().number)
+                    1 -> Resolved.Number(matches.single().number, contactChoice(matches.single()).label)
                     else ->
                         Resolved.Failed(
                             ActionResult.ambiguous("several_contacts", matches.take(MAX_CHOICES).map(::contactChoice)),
@@ -194,6 +213,7 @@ class IntentLauncher(
         const val MAX_CHOICES = 5
         const val YOUTUBE_PACKAGE = "com.google.android.youtube"
         const val MAPS_PACKAGE = "com.google.android.apps.maps"
+        const val GOOGLE_APP_PACKAGE = "com.google.android.googlequicksearchbox"
         private const val CONTACT_REF = "contact:"
 
         /** Lower-case, no accents or apostrophes, single spaces: "O'zbek  Telekom" == "ozbek telekom". */
@@ -219,6 +239,104 @@ class IntentLauncher(
             val exact = phones.filter { normalize(it.name) == wanted }
             val candidates = exact.ifEmpty { phones.filter { normalize(it.name).contains(wanted) } }
             return candidates.distinctBy { it.number.filter(Char::isDigit) }
+        }
+
+        /**
+         * Names compared in Latin letters, one slip allowed per short word: speech
+         * recognition writes a name in the language it was spoken in, while the
+         * address book may hold it in the other script. Several hits are asked
+         * about; a call is confirmed on a sheet that shows the contact's real name.
+         */
+        internal fun matchAcrossScripts(
+            query: String,
+            phones: List<ContactPhone>,
+        ): List<ContactPhone> {
+            val wanted = latin(query).split(' ').filter { it.isNotEmpty() }
+            if (wanted.isEmpty()) return emptyList()
+            return phones
+                .filter { phone ->
+                    val words = latin(phone.name).split(' ').filter { it.isNotEmpty() }
+                    wanted.all { word -> words.any { close(word, it) } }
+                }.distinctBy { it.number.filter(Char::isDigit) }
+        }
+
+        private fun close(
+            a: String,
+            b: String,
+        ): Boolean {
+            val allowed = maxOf(a.length, b.length) / SLIP_EVERY_LETTERS
+            return a == b || (minOf(a.length, b.length) >= MIN_FUZZY_LETTERS && editDistance(a, b) <= maxOf(1, allowed))
+        }
+
+        private const val SLIP_EVERY_LETTERS = 4
+        private const val MIN_FUZZY_LETTERS = 3
+
+        internal fun editDistance(
+            a: String,
+            b: String,
+        ): Int {
+            var previous = IntArray(b.length + 1) { it }
+            for (i in 1..a.length) {
+                val current = IntArray(b.length + 1)
+                current[0] = i
+                for (j in 1..b.length) {
+                    val cost = if (a[i - 1] == b[j - 1]) 0 else 1
+                    current[j] = minOf(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + cost)
+                }
+                previous = current
+            }
+            return previous[b.length]
+        }
+
+        private val CYRILLIC_TO_LATIN =
+            mapOf(
+                'а' to "a",
+                'б' to "b",
+                'в' to "v",
+                'г' to "g",
+                'д' to "d",
+                'е' to "e",
+                'ж' to "j",
+                'з' to "z",
+                'и' to "i",
+                'к' to "k",
+                'л' to "l",
+                'м' to "m",
+                'н' to "n",
+                'о' to "o",
+                'п' to "p",
+                'р' to "r",
+                'с' to "s",
+                'т' to "t",
+                'у' to "u",
+                'ф' to "f",
+                'х' to "x",
+                'ц' to "s",
+                'ч' to "ch",
+                'ш' to "sh",
+                'щ' to "sh",
+                'ъ' to "",
+                'ы' to "i",
+                'ь' to "",
+                'э' to "e",
+                'ю' to "yu",
+                'я' to "ya",
+                'ў' to "o",
+                'қ' to "q",
+                'ғ' to "g",
+                'ҳ' to "h",
+                'й' to "y",
+                'ё' to "yo",
+            )
+
+        /** Cyrillic (Russian and Uzbek) in Latin letters, then [normalize]d, Latin spelling variants folded. */
+        internal fun latin(value: String): String {
+            // Before normalize(): it would strip the marks that tell й from и and ў from у.
+            val spelled =
+                buildString {
+                    for (char in value.lowercase(Locale.ROOT)) append(CYRILLIC_TO_LATIN[char] ?: char.toString())
+                }
+            return normalize(spelled).replace("kh", "x").replace("yo", "e").replace("w", "v")
         }
 
         /** Exact label, then label prefix, then label containing the query, then the package name itself. */

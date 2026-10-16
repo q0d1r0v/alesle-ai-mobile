@@ -123,6 +123,17 @@ class AccessibilityUiNodeTest {
     }
 
     @Test
+    fun `reads the state and whether a section is open`() {
+        val open = AccessibilityNodeInfo().apply { addAction(AccessibilityAction.ACTION_COLLAPSE) }
+        val closed = AccessibilityNodeInfo().apply { addAction(AccessibilityAction.ACTION_EXPAND) }
+        val switch = AccessibilityNodeInfo().apply { stateDescription = "On" }
+        assertEquals(true, AccessibilityUiNode(open).expanded)
+        assertEquals(false, AccessibilityUiNode(closed).expanded)
+        assertNull(AccessibilityUiNode(switch).expanded)
+        assertEquals("On", AccessibilityUiNode(switch).stateDescription)
+    }
+
+    @Test
     fun `an empty node has no text`() {
         val node = AccessibilityUiNode(AccessibilityNodeInfo())
         assertNull(node.packageName)
@@ -131,6 +142,7 @@ class AccessibilityUiNodeTest {
         assertNull(node.contentDescription)
         assertNull(node.hintText)
         assertNull(node.viewId)
+        assertNull(node.stateDescription)
         assertFalse(node.isChecked)
     }
 }

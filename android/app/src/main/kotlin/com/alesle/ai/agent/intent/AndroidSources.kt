@@ -20,15 +20,18 @@ class ContentResolverContacts(
 
     override fun byId(id: Long): ContactPhone? = query("${Phone._ID} = ?", arrayOf(id.toString())).firstOrNull()
 
+    override fun all(): List<ContactPhone> = query(null, null, MAX_ALL_ROWS)
+
     private fun query(
-        selection: String,
-        args: Array<String>,
+        selection: String?,
+        args: Array<String>?,
+        limit: Int = MAX_ROWS,
     ): List<ContactPhone> {
         val projection = arrayOf(Phone._ID, Phone.DISPLAY_NAME, Phone.NUMBER)
         val cursor = resolver.query(Phone.CONTENT_URI, projection, selection, args, "${Phone.DISPLAY_NAME} ASC") ?: return emptyList()
         return cursor.use {
             val result = mutableListOf<ContactPhone>()
-            while (it.moveToNext() && result.size < MAX_ROWS) {
+            while (it.moveToNext() && result.size < limit) {
                 val name = it.getString(1) ?: continue
                 val number = it.getString(2) ?: continue
                 result += ContactPhone(it.getLong(0), name, number)
@@ -40,6 +43,9 @@ class ContentResolverContacts(
     private companion object {
         /** A name like "a" can match the whole address book; the agent only needs the top few. */
         const val MAX_ROWS = 50
+
+        /** Enough for a full address book; names and numbers only, read on the phone. */
+        const val MAX_ALL_ROWS = 5_000
     }
 }
 

@@ -20,6 +20,9 @@ interface ContactsSource {
     fun search(query: String): List<ContactPhone>
 
     fun byId(id: Long): ContactPhone?
+
+    /** Every phone in the contacts (capped): for names written in another script. */
+    fun all(): List<ContactPhone> = emptyList()
 }
 
 interface AppCatalog {

@@ -107,6 +107,24 @@ class SnapshotBuilderTest {
     }
 
     @Test
+    fun `a section header says whether it is open`() {
+        val nodes =
+            build(
+                screenRoot(
+                    FakeNode(isClickable = true, expanded = false, bounds = Bounds(0, 0, 500, 100)),
+                    FakeNode(isClickable = true, expanded = true, bounds = Bounds(0, 100, 500, 200)),
+                    FakeNode(
+                        contentDescription = "Wi-Fi",
+                        stateDescription = "Off",
+                        isClickable = true,
+                        bounds = Bounds(0, 200, 500, 300),
+                    ),
+                ),
+            ).nodes
+        assertEquals(listOf("collapsed", "expanded", "Wi-Fi, Off"), nodes.map { it.desc })
+    }
+
+    @Test
     fun `collapses whitespace and caps long text`() {
         val nodes =
             build(screenRoot(FakeNode(text = "  Salom\n\n  dunyo  "), FakeNode(text = "x".repeat(500)))).nodes
@@ -258,6 +276,8 @@ private data class FakeNode(
     override val className: String? = "android.widget.TextView",
     override val text: String? = null,
     override val contentDescription: String? = null,
+    override val stateDescription: String? = null,
+    override val expanded: Boolean? = null,
     override val hintText: String? = null,
     override val isShowingHintText: Boolean = false,
     override val viewId: String? = null,

@@ -33,6 +33,12 @@ interface UiNode {
     val text: String?
     val contentDescription: String?
 
+    /** What a widget says about its state ("Expanded", "On", "3 of 5"), when it says it. */
+    val stateDescription: String? get() = null
+
+    /** True when an expandable section is open, false when closed, null when it is neither. */
+    val expanded: Boolean? get() = null
+
     /** Placeholder text, when [isShowingHintText] is true. */
     val hintText: String?
     val isShowingHintText: Boolean

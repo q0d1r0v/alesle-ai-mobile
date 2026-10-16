@@ -14,6 +14,22 @@ class AccessibilityUiNode(
     override val className: String? get() = info.className?.toString()
     override val text: String? get() = info.text?.toString()
     override val contentDescription: String? get() = info.contentDescription?.toString()
+    override val stateDescription: String? get() = info.stateDescription?.toString()
+    override val expanded: Boolean?
+        get() =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA &&
+                info.expandedState != AccessibilityNodeInfo.EXPANDED_STATE_UNDEFINED
+            ) {
+                info.expandedState != AccessibilityNodeInfo.EXPANDED_STATE_COLLAPSED
+            } else {
+                // Before API 36 the offered action is the only sign: an open section offers to collapse.
+                val actions = info.actionList
+                when {
+                    AccessibilityAction.ACTION_COLLAPSE in actions -> true
+                    AccessibilityAction.ACTION_EXPAND in actions -> false
+                    else -> null
+                }
+            }
     override val hintText: String? get() = info.hintText?.toString()
     override val isShowingHintText: Boolean get() = info.isShowingHintText
     override val viewId: String? get() = info.viewIdResourceName

@@ -95,6 +95,27 @@ class AgentForegroundServiceTest {
     }
 
     @Test
+    fun `a task that ends before the service goes foreground still ends it, without the crash`() {
+        // No service running (the flag is process-wide).
+        startCommand(startIntent()).destroy()
+        assertTrue(AgentForegroundService.start(app, "x"))
+        // The task is over before Android ran onStartCommand.
+        AgentForegroundService.stop(app)
+        val service = startCommand(startIntent()).get()
+        assertTrue(shadowOf(service).isStoppedBySelf)
+        assertTrue(shadowOf(service).isForegroundStopped)
+
+        // Once foreground, a stop goes straight to the service.
+        val running = startCommand(startIntent()).get()
+        assertFalse(shadowOf(running).isStoppedBySelf)
+        AgentForegroundService.stop(app)
+        assertEquals(
+            AgentForegroundService::class.java.name,
+            shadowOf(app).nextStoppedService.component?.className,
+        )
+    }
+
+    @Test
     fun `is not running once destroyed and ignores step updates then`() {
         val controller = startCommand(startIntent())
         controller.destroy()

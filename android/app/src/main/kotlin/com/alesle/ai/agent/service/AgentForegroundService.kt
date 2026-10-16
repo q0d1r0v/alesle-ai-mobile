@@ -40,17 +40,26 @@ class AgentForegroundService : Service() {
         }
         val notification = notifications.build(intent?.getStringExtra(EXTRA_STEP))
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            // TODO(sprint-4): add FOREGROUND_SERVICE_TYPE_MICROPHONE while listening for voice.
+            // The microphone has its own service (listen.ListeningService) while hands-free is on.
             startForeground(AgentNotifications.NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         } else {
             startForeground(AgentNotifications.NOTIFICATION_ID, notification)
         }
-        running = true
+        val finished =
+            synchronized(lock) {
+                running = true
+                finishPending.also { finishPending = false }
+            }
+        if (finished) {
+            // The task ended before Android got here; it was foreground for a moment, as required.
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }
         return START_NOT_STICKY
     }
 
     override fun onDestroy() {
-        running = false
+        synchronized(lock) { running = false }
         super.onDestroy()
     }
 
@@ -62,6 +71,11 @@ class AgentForegroundService : Service() {
         var running = false
             private set
 
+        private val lock = Any()
+
+        /** stop() came before the service went foreground (a task that ended at once). */
+        private var finishPending = false
+
         /**
          * Starts the service for a task. False when Android refuses a
          * foreground service from the background (Android 12+); the caller
@@ -72,6 +86,7 @@ class AgentForegroundService : Service() {
             step: String? = null,
         ): Boolean {
             val intent = Intent(context, AgentForegroundService::class.java).putExtra(EXTRA_STEP, step)
+            synchronized(lock) { finishPending = false }
             return try {
                 ContextCompat.startForegroundService(context, intent)
                 true
@@ -90,8 +105,19 @@ class AgentForegroundService : Service() {
             if (running) AgentNotifications(context).update(step)
         }
 
-        /** The task ended on its own: remove the notification, no stop request. */
+        /**
+         * The task ended on its own: remove the notification, no stop request.
+         * Stopping a service started with startForegroundService() before it
+         * called startForeground() crashes the app (Android 12+, eval
+         * 2026-10-16), so a stop that comes that early waits for it.
+         */
         fun stop(context: Context) {
+            synchronized(lock) {
+                if (!running) {
+                    finishPending = true
+                    return
+                }
+            }
             context.stopService(Intent(context, AgentForegroundService::class.java))
         }
     }

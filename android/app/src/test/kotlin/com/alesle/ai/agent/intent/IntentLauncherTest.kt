@@ -162,6 +162,47 @@ class IntentLauncherTest {
     }
 
     @Test
+    fun `finds a contact whose name is saved in the other script`() {
+        starter.granted += Manifest.permission.READ_CONTACTS
+        contacts.phones += listOf(ContactPhone(1, "Eval Tester", "+15550100"), ContactPhone(2, "Дилшод Иш", "+998901112244"))
+        // Heard in Russian, saved in Latin, one vowel off: still that person.
+        assertEquals(ActionResult.OK, launcher.execute(IntentAction.Call(Recipient.ContactName("Эвел Тестер"))))
+        assertEquals(Uri.fromParts("tel", "+15550100", null), started.data)
+        // Heard in Latin, saved in Cyrillic.
+        assertEquals(ActionResult.OK, launcher.execute(IntentAction.Call(Recipient.ContactName("Dilshod Ish"))))
+        assertEquals(Uri.fromParts("tel", "+998901112244", null), started.data)
+        assertEquals(
+            ActionResult.notFound("contact_not_found"),
+            launcher.execute(IntentAction.Call(Recipient.ContactName("Бобур"))),
+        )
+        // The confirmation names who the call reaches.
+        assertEquals("Eval Tester ··0100", launcher.recipientLabel(Recipient.ContactName("Эвел Тестер")))
+        assertEquals("Дилшод Иш ··2244", launcher.recipientLabel(Recipient.ContactRef("contact:2")))
+        assertEquals(null, launcher.recipientLabel(Recipient.ContactName("Бобур")))
+        assertEquals(null, launcher.recipientLabel(Recipient.Phone("+998901112244")))
+    }
+
+    @Test
+    fun `script-blind matching allows a slip, not a different name`() {
+        val phones =
+            listOf(
+                ContactPhone(1, "Azizbek", "+1"),
+                ContactPhone(2, "Ali", "+2"),
+                ContactPhone(3, "Ғайрат Қодиров", "+3"),
+                ContactPhone(4, "Ёрқин", "+4"),
+            )
+        assertEquals(listOf(1L), IntentLauncher.matchAcrossScripts("Азизбек", phones).map { it.id })
+        assertEquals(listOf(3L), IntentLauncher.matchAcrossScripts("G'ayrat Qodirov", phones).map { it.id })
+        assertEquals(listOf(4L), IntentLauncher.matchAcrossScripts("Yorqin", phones).map { it.id })
+        // Short names must match exactly: "Ola" is not "Ali".
+        assertEquals(emptyList<Long>(), IntentLauncher.matchAcrossScripts("Ola", phones).map { it.id })
+        assertEquals(emptyList<Long>(), IntentLauncher.matchAcrossScripts("  ", phones).map { it.id })
+        assertEquals("eval tester", IntentLauncher.latin("Eval  Tester"))
+        assertEquals("sherzod", IntentLauncher.latin("Шерзод"))
+        assertEquals(3, IntentLauncher.editDistance("kitten", "sitting"))
+    }
+
+    @Test
     fun `matches contacts exactly first, then by part of the name, once per number`() {
         val phones =
             listOf(
@@ -238,10 +279,16 @@ class IntentLauncherTest {
     // --- searches / share ---
 
     @Test
-    fun `searches the web, falling back to a browser`() {
+    fun `searches the web in the Google app, then any search app, then a browser`() {
         assertEquals(ActionResult.OK, launcher.execute(IntentAction.WebSearch("ob-havo")))
         assertEquals(Intent.ACTION_WEB_SEARCH, started.action)
+        assertEquals(IntentLauncher.GOOGLE_APP_PACKAGE, started.`package`)
         assertEquals("ob-havo", started.getStringExtra(SearchManager.QUERY))
+
+        starter.refuse = { it.`package` == IntentLauncher.GOOGLE_APP_PACKAGE }
+        assertEquals(ActionResult.OK, launcher.execute(IntentAction.WebSearch("ob-havo")))
+        assertEquals(Intent.ACTION_WEB_SEARCH, started.action)
+        assertNull(started.`package`)
 
         starter.refuse = { it.action == Intent.ACTION_WEB_SEARCH }
         assertEquals(ActionResult.OK, launcher.execute(IntentAction.WebSearch("ob havo")))
@@ -303,6 +350,8 @@ private class FakeContacts : ContactsSource {
     override fun search(query: String) = phones.filter { it.name.contains(query, ignoreCase = true) }
 
     override fun byId(id: Long) = phones.firstOrNull { it.id == id }
+
+    override fun all() = phones
 }
 
 private class FakeApps : AppCatalog {

@@ -105,7 +105,16 @@ class SnapshotBuilder(
         // An empty field shows its placeholder as text; report it as a
         // description so the agent does not mistake it for typed input.
         val text = if (node.isShowingHintText) null else clean(node.text)
-        val desc = clean(node.contentDescription) ?: if (node.isShowingHintText) clean(node.hintText) else null
+        val label = clean(node.contentDescription) ?: if (node.isShowingHintText) clean(node.hintText) else null
+        // State goes with the description: a section header with no words of
+        // its own still says whether tapping it opens or closes it.
+        val state =
+            clean(node.stateDescription) ?: when (node.expanded) {
+                true -> "expanded"
+                false -> "collapsed"
+                null -> null
+            }
+        val desc = clean(listOfNotNull(label, state).joinToString(", ").ifEmpty { null })
         return SnapshotNode(
             id = id,
             role = roleOf(node),
