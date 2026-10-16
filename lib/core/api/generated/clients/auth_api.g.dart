@@ -125,7 +125,9 @@ class _AuthApi implements AuthApi {
   }
 
   @override
-  Future<TokenPairDto> authVerifyMagicLink({required LinkTokenDto body}) async {
+  Future<TokenPairDto> authVerifyMagicLink({
+    required MagicLinkSignInDto body,
+  }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};

@@ -9,8 +9,13 @@ part of 'magic_link_dto.dart';
 _MagicLinkDto _$MagicLinkDtoFromJson(Map<String, dynamic> json) =>
     _MagicLinkDto(
       email: json['email'] as String,
+      nonce: json['nonce'] as String,
       locale: json['locale'] as String?,
     );
 
 Map<String, dynamic> _$MagicLinkDtoToJson(_MagicLinkDto instance) =>
-    <String, dynamic>{'email': instance.email, 'locale': instance.locale};
+    <String, dynamic>{
+      'email': instance.email,
+      'nonce': instance.nonce,
+      'locale': instance.locale,
+    };

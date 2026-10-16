@@ -804,4 +804,12 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get settingsDeleteGuide => 'Akkauntni o‘chirish haqida';
+
+  @override
+  String get linkAlreadySignedIn =>
+      'Siz allaqachon akkauntga kirgansiz. Boshqa akkauntga o‘tish uchun avval chiqing.';
+
+  @override
+  String get linkVerifySignInFirst =>
+      'Emailni tasdiqlash uchun avval shu akkauntga kiring, so‘ng havolani qayta oching.';
 }

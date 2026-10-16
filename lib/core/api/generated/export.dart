@@ -21,6 +21,7 @@ export 'models/error_response_dto.dart';
 export 'models/login_dto.dart';
 export 'models/google_sign_in_dto.dart';
 export 'models/magic_link_dto.dart';
+export 'models/magic_link_sign_in_dto.dart';
 export 'models/link_token_dto.dart';
 export 'models/locale_dto.dart';
 export 'models/refresh_dto.dart';

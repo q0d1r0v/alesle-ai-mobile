@@ -14,6 +14,8 @@ final Provider<AuthRepository> authRepositoryProvider =
       final String? google = config.googleServerClientId;
       return AuthRepositoryImpl(
         api: AuthApi(ref.watch(anonymousDioProvider)),
+        authed: AuthApi(ref.watch(dioProvider)),
+        nonces: ref.watch(linkNonceStoreProvider),
         keep: ref.read(sessionProvider.notifier).signIn,
         locale: () =>
             ref.read(appSettingsProvider).language ??

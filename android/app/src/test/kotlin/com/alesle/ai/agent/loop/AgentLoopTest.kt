@@ -164,6 +164,18 @@ class AgentLoopTest {
     }
 
     @Test
+    fun `asks before a call the server did not mark, and refuses USSD codes`() {
+        accepted()
+        sockets.receive(act("s1", """{"type":"intent","kind":"call","to":{"contact":"Onam"}}"""))
+        assertTrue(device.executed.isEmpty())
+        assertEquals(1, ui.confirmations.size)
+        ui.answerConfirm(false)
+        sockets.receive(act("s2", """{"type":"intent","kind":"call","to":{"phone":"*880*1*50000#"}}"""))
+        assertTrue(device.executed.isEmpty())
+        assertEquals(1, ui.confirmations.size)
+    }
+
+    @Test
     fun `never runs a sensitive step without a yes`() {
         accepted()
         sockets.receive(
@@ -174,7 +186,8 @@ class AgentLoopTest {
             ),
         )
         assertTrue(device.executed.isEmpty())
-        assertEquals(Confirmation("Onamga qo'ng'iroq?", "", false), ui.confirmations.single().first)
+        // The sheet is built on the phone from the action, not from the server's words.
+        assertEquals(Confirmation("Qo‘ng‘iroq qilinsinmi?", "Onam", false), ui.confirmations.single().first)
         assertFalse(ui.confirmations.single().second)
 
         ui.answerConfirm(true)

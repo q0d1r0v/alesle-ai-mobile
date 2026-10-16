@@ -798,4 +798,12 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsDeleteGuide => 'Об удалении аккаунта';
+
+  @override
+  String get linkAlreadySignedIn =>
+      'Вы уже вошли в аккаунт. Чтобы сменить аккаунт, сначала выйдите.';
+
+  @override
+  String get linkVerifySignInFirst =>
+      'Чтобы подтвердить email, сначала войдите в этот аккаунт, затем снова откройте ссылку.';
 }

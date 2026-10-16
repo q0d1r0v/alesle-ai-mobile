@@ -240,5 +240,7 @@
   "settingsSupport": "Поддержка",
   "settingsLinkFailed": "Не удалось открыть страницу.",
   "reasonUpgrade": "Эта версия приложения устарела. Обновите её.",
-  "settingsDeleteGuide": "Об удалении аккаунта"
+  "settingsDeleteGuide": "Об удалении аккаунта",
+  "linkAlreadySignedIn": "Вы уже вошли в аккаунт. Чтобы сменить аккаунт, сначала выйдите.",
+  "linkVerifySignInFirst": "Чтобы подтвердить email, сначала войдите в этот аккаунт, затем снова откройте ссылку."
 }

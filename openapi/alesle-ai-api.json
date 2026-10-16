@@ -177,7 +177,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LinkTokenDto"
+                "$ref": "#/components/schemas/MagicLinkSignInDto"
               }
             }
           }
@@ -238,6 +238,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
           "auth"
         ]
@@ -1391,10 +1396,42 @@
           "locale": {
             "type": "string",
             "example": "uz"
+          },
+          "nonce": {
+            "type": "string",
+            "description": "Random value this phone keeps; the link signs in only with it, so a link sent by someone else cannot."
           }
         },
         "required": [
-          "email"
+          "email",
+          "nonce"
+        ]
+      },
+      "MagicLinkSignInDto": {
+        "type": "object",
+        "properties": {
+          "deviceName": {
+            "type": "string",
+            "description": "Shown in the device list.",
+            "example": "Pixel 7"
+          },
+          "locale": {
+            "type": "string",
+            "description": "App language (BCP-47) for emails.",
+            "example": "uz"
+          },
+          "token": {
+            "type": "string",
+            "description": "The token from the emailed link."
+          },
+          "nonce": {
+            "type": "string",
+            "description": "The nonce sent with the magic-link request."
+          }
+        },
+        "required": [
+          "token",
+          "nonce"
         ]
       },
       "LinkTokenDto": {

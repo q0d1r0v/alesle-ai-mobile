@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth/api_token_refresher.dart';
 import '../../core/auth/auth_session.dart';
+import '../../core/auth/link_nonce_store.dart';
 import '../../core/auth/session_controller.dart';
 import '../../core/auth/session_store.dart';
 import '../../core/config/app_build.dart';
@@ -77,6 +78,10 @@ final Provider<SessionStore> sessionStoreProvider = Provider<SessionStore>(
     'sessionStoreProvider must be overridden (see bootstrap()).',
   ),
 );
+
+/// Magic-link nonces (secure storage); tests replace it.
+final Provider<LinkNonceStore> linkNonceStoreProvider =
+    Provider<LinkNonceStore>((Ref ref) => SecureLinkNonceStore());
 
 /// The session read from the store at startup (bootstrap overrides it).
 final Provider<AuthSession?> initialSessionProvider = Provider<AuthSession?>(

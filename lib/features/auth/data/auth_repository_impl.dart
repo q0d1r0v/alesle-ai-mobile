@@ -5,8 +5,10 @@ import '../../../core/api/generated/models/google_sign_in_dto.dart';
 import '../../../core/api/generated/models/link_token_dto.dart';
 import '../../../core/api/generated/models/login_dto.dart';
 import '../../../core/api/generated/models/magic_link_dto.dart';
+import '../../../core/api/generated/models/magic_link_sign_in_dto.dart';
 import '../../../core/api/generated/models/register_dto.dart';
 import '../../../core/api/generated/models/token_pair_dto.dart';
+import '../../../core/auth/link_nonce_store.dart';
 import '../../../core/errors/failure.dart';
 import '../../../core/network/dio_error_mapper.dart';
 import '../../../core/platform/generated/agent_api.g.dart';
@@ -19,15 +21,21 @@ typedef SessionSink = Future<void> Function(TokenPairDto pair);
 final class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({
     required this._api,
+    required this._authed,
     required this._keep,
     required this._locale,
+    required this._nonces,
     this._google,
     DeviceHostApi? device,
   }) : _device = device ?? DeviceHostApi();
 
   /// Anonymous: sign-in calls carry no token.
   final AuthApi _api;
+
+  /// As the signed-in user: confirming an email needs that account's session.
+  final AuthApi _authed;
   final SessionSink _keep;
+  final LinkNonceStore _nonces;
 
   /// The app language, for the emails the server sends.
   final String Function() _locale;
@@ -98,29 +106,41 @@ final class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> sendMagicLink(String email) async {
     try {
+      final String nonce = await _nonces.create();
       await _api.authMagicLink(
-        body: MagicLinkDto(email: email.trim(), locale: _locale()),
+        body: MagicLinkDto(
+          email: email.trim(),
+          locale: _locale(),
+          nonce: nonce,
+        ),
       );
     } on Object catch (error) {
       throw mapToFailure(error);
     }
   }
 
+  /// Only a link this phone asked for works: without its nonce the server
+  /// answers LINK_INVALID (a throwaway nonce is sent then).
   @override
-  Future<void> signInWithMagicLink(String token) => _signIn(
-    () async => _api.authVerifyMagicLink(
-      body: LinkTokenDto(
-        token: token,
-        deviceName: await _name(),
-        locale: _locale(),
+  Future<void> signInWithMagicLink(String token) async {
+    final String nonce = await _nonces.read() ?? newLinkNonce();
+    await _signIn(
+      () async => _api.authVerifyMagicLink(
+        body: MagicLinkSignInDto(
+          token: token,
+          nonce: nonce,
+          deviceName: await _name(),
+          locale: _locale(),
+        ),
       ),
-    ),
-  );
+    );
+    await _nonces.clear();
+  }
 
   @override
   Future<void> verifyEmail(String token) async {
     try {
-      await _api.authVerifyEmail(body: LinkTokenDto(token: token));
+      await _authed.authVerifyEmail(body: LinkTokenDto(token: token));
     } on Object catch (error) {
       throw mapToFailure(error);
     }

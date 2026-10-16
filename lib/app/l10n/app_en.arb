@@ -240,5 +240,7 @@
   "settingsSupport": "Support",
   "settingsLinkFailed": "Couldn’t open the page.",
   "reasonUpgrade": "This version of the app is out of date. Please update it.",
-  "settingsDeleteGuide": "About deleting your account"
+  "settingsDeleteGuide": "About deleting your account",
+  "linkAlreadySignedIn": "You’re already signed in. To switch accounts, sign out first.",
+  "linkVerifySignInFirst": "To confirm the email, sign in to that account first, then open the link again."
 }

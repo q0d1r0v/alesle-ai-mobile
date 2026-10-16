@@ -268,5 +268,7 @@
   "settingsSupport": "Yordam",
   "settingsLinkFailed": "Sahifani ochib bo‘lmadi.",
   "reasonUpgrade": "Ilovaning bu versiyasi eskirgan. Uni yangilang.",
-  "settingsDeleteGuide": "Akkauntni o‘chirish haqida"
+  "settingsDeleteGuide": "Akkauntni o‘chirish haqida",
+  "linkAlreadySignedIn": "Siz allaqachon akkauntga kirgansiz. Boshqa akkauntga o‘tish uchun avval chiqing.",
+  "linkVerifySignInFirst": "Emailni tasdiqlash uchun avval shu akkauntga kiring, so‘ng havolani qayta oching."
 }

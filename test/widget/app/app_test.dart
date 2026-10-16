@@ -261,29 +261,70 @@ void main() {
       );
     });
 
-    testWidgets('a confirmation link confirms; a bad one explains', (
-      WidgetTester tester,
-    ) async {
-      await pumpSignedOut(tester);
-      links.add(Uri.parse('https://alesle.ai/auth/verify?token=tok-2'));
-      await tester.pumpAndSettle();
-      expect(auth.calls, <String>['verify:tok-2']);
-      expect(find.text('Email confirmed.'), findsOneWidget);
+    testWidgets(
+      'signed out, a confirmation link asks to sign in; a bad link explains',
+      (WidgetTester tester) async {
+        await pumpSignedOut(tester);
+        links.add(Uri.parse('https://alesle.ai/auth/verify?token=tok-2'));
+        await tester.pumpAndSettle();
+        expect(auth.calls, isEmpty);
+        expect(
+          find.text(
+            'To confirm the email, sign in to that account first, then open the link again.',
+          ),
+          findsOneWidget,
+        );
 
-      auth.failure = const ServerFailure(
-        code: ErrorCode.linkInvalid,
-        statusCode: 400,
-      );
-      links
-        ..add(Uri.parse('https://alesle.ai/auth/link?token=old'))
-        ..add(Uri.parse('https://example.com/elsewhere'));
-      await tester.pumpAndSettle();
-      expect(
-        find.text('This link expired or was already used. Ask for a new one.'),
-        findsOneWidget,
-      );
-      expect(auth.calls, <String>['verify:tok-2', 'magic:old']);
-    });
+        auth.failure = const ServerFailure(
+          code: ErrorCode.linkInvalid,
+          statusCode: 400,
+        );
+        links
+          ..add(Uri.parse('https://alesle.ai/auth/link?token=old'))
+          ..add(Uri.parse('https://example.com/elsewhere'));
+        await tester.pumpAndSettle();
+        expect(
+          find.text(
+            'This link expired or was already used. Ask for a new one.',
+          ),
+          findsOneWidget,
+        );
+        expect(auth.calls, <String>['magic:old']);
+      },
+    );
+
+    testWidgets(
+      'signed in, a confirmation link confirms; a sign-in link never switches account',
+      (WidgetTester tester) async {
+        account.current = const Profile(
+          email: 'aziz@example.com',
+          emailVerified: false,
+          displayName: null,
+          language: 'en',
+          confirmSensitiveActions: true,
+          deletionScheduledAt: null,
+        );
+        final ProviderContainer container = await pumpSignedOut(tester);
+        await container.read(sessionProvider.notifier).signIn(testPair());
+        await tester.pumpAndSettle();
+        auth.calls.clear();
+
+        links.add(Uri.parse('https://alesle.ai/auth/verify?token=tok-2'));
+        await tester.pumpAndSettle();
+        expect(auth.calls, <String>['verify:tok-2']);
+        expect(find.text('Email confirmed.'), findsOneWidget);
+
+        links.add(Uri.parse('https://alesle.ai/auth/link?token=attacker'));
+        await tester.pumpAndSettle();
+        expect(auth.calls, <String>['verify:tok-2']);
+        expect(
+          find.text(
+            'You’re already signed in. To switch accounts, sign out first.',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('signing out anywhere returns to the sign-in screen', (
       WidgetTester tester,

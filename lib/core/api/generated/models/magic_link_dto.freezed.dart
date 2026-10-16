@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$MagicLinkDto {
 
- String get email; String? get locale;
+ String get email;/// Random value this phone keeps; the link signs in only with it, so a link sent by someone else cannot.
+ String get nonce; String? get locale;
 /// Create a copy of MagicLinkDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +31,20 @@ $MagicLinkDtoCopyWith<MagicLinkDto> get copyWith => _$MagicLinkDtoCopyWithImpl<M
 @override
 bool operator ==(Object other) {
   final _this = this as MagicLinkDto;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MagicLinkDto&&(identical(other.email, _this.email) || other.email == _this.email)&&(identical(other.locale, _this.locale) || other.locale == _this.locale));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MagicLinkDto&&(identical(other.email, _this.email) || other.email == _this.email)&&(identical(other.nonce, _this.nonce) || other.nonce == _this.nonce)&&(identical(other.locale, _this.locale) || other.locale == _this.locale));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as MagicLinkDto;
-  return Object.hash(runtimeType,_this.email,_this.locale);
+  return Object.hash(runtimeType,_this.email,_this.nonce,_this.locale);
 }
 
 @override
 String toString() {
   final _this = this as MagicLinkDto;
-  return 'MagicLinkDto(email: ${_this.email}, locale: ${_this.locale})';
+  return 'MagicLinkDto(email: ${_this.email}, nonce: ${_this.nonce}, locale: ${_this.locale})';
 }
 
 
@@ -54,7 +55,7 @@ abstract mixin class $MagicLinkDtoCopyWith<$Res>  {
   factory $MagicLinkDtoCopyWith(MagicLinkDto value, $Res Function(MagicLinkDto) _then) = _$MagicLinkDtoCopyWithImpl;
 @useResult
 $Res call({
- String email, String? locale
+ String email, String nonce, String? locale
 });
 
 
@@ -71,9 +72,10 @@ class _$MagicLinkDtoCopyWithImpl<$Res>
 
 /// Create a copy of MagicLinkDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? email = null,Object? locale = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? email = null,Object? nonce = null,Object? locale = freezed,}) {
   return _then(MagicLinkDto(
 email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
+as String,nonce: null == nonce ? _self.nonce : nonce // ignore: cast_nullable_to_non_nullable
 as String,locale: freezed == locale ? _self.locale : locale // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
@@ -160,10 +162,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String email,  String? locale)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String email,  String nonce,  String? locale)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MagicLinkDto() when $default != null:
-return $default(_that.email,_that.locale);case _:
+return $default(_that.email,_that.nonce,_that.locale);case _:
   return orElse();
 
 }
@@ -181,10 +183,10 @@ return $default(_that.email,_that.locale);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String email,  String? locale)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String email,  String nonce,  String? locale)  $default,) {final _that = this;
 switch (_that) {
 case _MagicLinkDto():
-return $default(_that.email,_that.locale);case _:
+return $default(_that.email,_that.nonce,_that.locale);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +203,10 @@ return $default(_that.email,_that.locale);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String email,  String? locale)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String email,  String nonce,  String? locale)?  $default,) {final _that = this;
 switch (_that) {
 case _MagicLinkDto() when $default != null:
-return $default(_that.email,_that.locale);case _:
+return $default(_that.email,_that.nonce,_that.locale);case _:
   return null;
 
 }
@@ -216,10 +218,12 @@ return $default(_that.email,_that.locale);case _:
 @JsonSerializable()
 
 class _MagicLinkDto implements MagicLinkDto {
-  const _MagicLinkDto({required this.email, this.locale});
+  const _MagicLinkDto({required this.email, required this.nonce, this.locale});
   factory _MagicLinkDto.fromJson(Map<String, dynamic> json) => _$MagicLinkDtoFromJson(json);
 
 @override final  String email;
+/// Random value this phone keeps; the link signs in only with it, so a link sent by someone else cannot.
+@override final  String nonce;
 @override final  String? locale;
 
 /// Create a copy of MagicLinkDto
@@ -235,18 +239,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _MagicLinkDto&&(identical(other.email, email) || other.email == email)&&(identical(other.locale, locale) || other.locale == locale));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _MagicLinkDto&&(identical(other.email, email) || other.email == email)&&(identical(other.nonce, nonce) || other.nonce == nonce)&&(identical(other.locale, locale) || other.locale == locale));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,email,locale);
+    return Object.hash(runtimeType,email,nonce,locale);
 }
 
 @override
 String toString() {
-    return 'MagicLinkDto(email: $email, locale: $locale)';
+    return 'MagicLinkDto(email: $email, nonce: $nonce, locale: $locale)';
 }
 
 
@@ -257,7 +261,7 @@ abstract mixin class _$MagicLinkDtoCopyWith<$Res> implements $MagicLinkDtoCopyWi
   factory _$MagicLinkDtoCopyWith(_MagicLinkDto value, $Res Function(_MagicLinkDto) _then) = __$MagicLinkDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String email, String? locale
+ String email, String nonce, String? locale
 });
 
 
@@ -274,9 +278,10 @@ class __$MagicLinkDtoCopyWithImpl<$Res>
 
 /// Create a copy of MagicLinkDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? email = null,Object? locale = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? email = null,Object? nonce = null,Object? locale = freezed,}) {
   return _then(_MagicLinkDto(
 email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
+as String,nonce: null == nonce ? _self.nonce : nonce // ignore: cast_nullable_to_non_nullable
 as String,locale: freezed == locale ? _self.locale : locale // ignore: cast_nullable_to_non_nullable
 as String?,
   ));

@@ -24,7 +24,6 @@ final class VoiceRepositoryImpl implements VoiceRepository {
   final VoiceApi _api;
   final DeviceHostApi _device;
   final Directory _scratch;
-  File? _lastReply;
 
   @override
   Future<bool> ensureMicrophone() => _platform(() async {
@@ -86,15 +85,15 @@ final class VoiceRepositoryImpl implements VoiceRepository {
     } on Object catch (error) {
       throw mapToFailure(error);
     }
-    final File previous = _lastReply ?? File('');
-    if (previous.path.isNotEmpty && previous.existsSync()) {
-      previous.deleteSync();
-    }
     final File reply = File(
       '${_scratch.path}/alesle-reply-${DateTime.now().microsecondsSinceEpoch}.wav',
     )..writeAsBytesSync(wav, flush: true);
-    _lastReply = reply;
-    await _platform(() => _device.playAudio(reply.path));
+    try {
+      await _platform(() => _device.playAudio(reply.path));
+    } finally {
+      // The player has the file open by now; the reply is not kept on disk.
+      if (reply.existsSync()) reply.deleteSync();
+    }
   }
 
   Future<T> _platform<T>(Future<T> Function() call) async {

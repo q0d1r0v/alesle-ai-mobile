@@ -9,6 +9,7 @@ import android.provider.CalendarContract
 import androidx.core.net.toUri
 import com.alesle.ai.agent.action.ActionResult
 import com.alesle.ai.agent.action.Choice
+import com.alesle.ai.agent.loop.SafetyPolicy
 import java.text.Normalizer
 import java.util.Locale
 
@@ -149,7 +150,8 @@ class IntentLauncher(
 
     private fun resolve(recipient: Recipient): Resolved {
         if (recipient is Recipient.Phone) {
-            return if (recipient.number.any(Char::isDigit)) {
+            // Never a USSD code (*…#) or anything but a plain number.
+            return if (SafetyPolicy.isDialable(recipient.number)) {
                 Resolved.Number(recipient.number)
             } else {
                 Resolved.Failed(ActionResult.error("invalid_phone"))

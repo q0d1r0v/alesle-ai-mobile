@@ -9,8 +9,13 @@ part 'magic_link_dto.g.dart';
 
 @Freezed()
 abstract class MagicLinkDto with _$MagicLinkDto {
-  const factory MagicLinkDto({required String email, String? locale}) =
-      _MagicLinkDto;
+  const factory MagicLinkDto({
+    required String email,
+
+    /// Random value this phone keeps; the link signs in only with it, so a link sent by someone else cannot.
+    required String nonce,
+    String? locale,
+  }) = _MagicLinkDto;
 
   factory MagicLinkDto.fromJson(Map<String, Object?> json) =>
       _$MagicLinkDtoFromJson(json);

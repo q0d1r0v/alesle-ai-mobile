@@ -797,4 +797,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsDeleteGuide => 'About deleting your account';
+
+  @override
+  String get linkAlreadySignedIn =>
+      'You’re already signed in. To switch accounts, sign out first.';
+
+  @override
+  String get linkVerifySignInFirst =>
+      'To confirm the email, sign in to that account first, then open the link again.';
 }

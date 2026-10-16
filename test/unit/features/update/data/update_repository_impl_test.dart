@@ -85,6 +85,37 @@ void main() {
     expect(release.notesIn('ru'), 'r');
   });
 
+  test('a manifest with a non-HTTPS link is ignored', () async {
+    when(releases.releasesLatest).thenAnswer(
+      (_) async => ReleaseDto(
+        versionCode: 5,
+        versionName: '0.5.0',
+        apkUrl: 'http://cdn.alesle.ai/a.apk',
+        sha256: 'a' * 64,
+        certSha256: 'b' * 64,
+        sizeBytes: 42,
+        minSupportedVersionCode: 3,
+        notes: const ReleaseNotesDto(en: 'e', uz: 'u', ru: 'r'),
+        publishedAt: DateTime.utc(2026, 10, 16),
+      ),
+    );
+    expect(await repository.latest(), isNull);
+    final Release plain = Release(
+      versionCode: 5,
+      versionName: '0.5.0',
+      apkUrl: Uri.parse('http://cdn.alesle.ai/a.apk'),
+      sha256: 'a' * 64,
+      certSha256: 'b' * 64,
+      sizeBytes: 1,
+      minSupportedVersionCode: 1,
+      notes: const <String, String>{},
+    );
+    await expectLater(
+      repository.download(plain),
+      throwsA(isA<UnexpectedFailure>()),
+    );
+  });
+
   test('nothing published is null; other errors are failures', () async {
     when(releases.releasesLatest).thenThrow(_status(404));
     expect(await repository.latest(), isNull);
@@ -109,6 +140,8 @@ void main() {
       progress(4, 4);
       return Response<Object?>(requestOptions: RequestOptions());
     });
+    final File stale = File('${directory.path}/alesle-4.apk')
+      ..writeAsBytesSync(<int>[9]);
     final List<double> seen = <double>[];
     final String path = await repository.download(
       _release(),
@@ -116,6 +149,8 @@ void main() {
     );
     expect(path, '${directory.path}/alesle-5.apk');
     expect(seen, <double>[0.5, 1]);
+    // Earlier downloads do not pile up in the cache.
+    expect(stale.existsSync(), isFalse);
   });
 
   test('a failed download is a failure', () async {

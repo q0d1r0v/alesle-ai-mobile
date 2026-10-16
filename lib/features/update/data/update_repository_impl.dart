@@ -31,6 +31,9 @@ final class UpdateRepositoryImpl implements UpdateRepository {
   Future<Release?> latest() async {
     try {
       final ReleaseDto dto = await _releases.releasesLatest();
+      // Only an HTTPS download is ever offered (dart:io ignores Android's
+      // cleartext rules).
+      if (Uri.tryParse(dto.apkUrl)?.scheme != 'https') return null;
       return Release(
         versionCode: dto.versionCode.toInt(),
         versionName: dto.versionName,
@@ -57,7 +60,11 @@ final class UpdateRepositoryImpl implements UpdateRepository {
     Release release, {
     void Function(double)? progress,
   }) async {
+    if (release.apkUrl.scheme != 'https') {
+      throw const UnexpectedFailure('apk url is not https');
+    }
     final Directory directory = await _directory();
+    await _deleteOldDownloads(directory);
     final String path = '${directory.path}/alesle-${release.versionCode}.apk';
     try {
       await _dio.downloadUri(
@@ -88,6 +95,8 @@ final class UpdateRepositoryImpl implements UpdateRepository {
         path,
         release.certSha256,
       );
+      // The installer copied it into its session: the cache keeps no APK.
+      if (file.existsSync()) await file.delete();
       return switch (outcome) {
         InstallOutcome.started => InstallResult.started,
         InstallOutcome.permissionNeeded => InstallResult.permissionNeeded,
@@ -96,6 +105,18 @@ final class UpdateRepositoryImpl implements UpdateRepository {
       };
     } on Object {
       return InstallResult.failed;
+    }
+  }
+
+  static Future<void> _deleteOldDownloads(Directory directory) async {
+    if (!directory.existsSync()) return;
+    await for (final FileSystemEntity entry in directory.list()) {
+      final String name = entry.uri.pathSegments.last;
+      if (entry is File &&
+          name.startsWith('alesle-') &&
+          name.endsWith('.apk')) {
+        await entry.delete();
+      }
     }
   }
 }

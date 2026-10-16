@@ -1545,6 +1545,18 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Akkauntni o‘chirish haqida'**
   String get settingsDeleteGuide;
+
+  /// No description provided for @linkAlreadySignedIn.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz allaqachon akkauntga kirgansiz. Boshqa akkauntga o‘tish uchun avval chiqing.'**
+  String get linkAlreadySignedIn;
+
+  /// No description provided for @linkVerifySignInFirst.
+  ///
+  /// In uz, this message translates to:
+  /// **'Emailni tasdiqlash uchun avval shu akkauntga kiring, so‘ng havolani qayta oching.'**
+  String get linkVerifySignInFirst;
 }
 
 class _AppLocalizationsDelegate

@@ -165,20 +165,36 @@ void main() {
   });
 
   group('speak', () {
-    test('plays the reply and keeps only the latest file', () async {
+    test('plays the reply and keeps no file afterwards', () async {
       // Raw WAV bytes; the mock adapter would JSON-encode a list.
       dio.httpClientAdapter = _BytesAdapter(<int>[82, 73, 70, 70]);
+      final List<List<int>> heard = <List<int>>[];
       final List<String> played = <String>[];
       when(() => device.playAudio(any())).thenAnswer((Invocation call) async {
-        played.add(call.positionalArguments.single as String);
+        final String path = call.positionalArguments.single as String;
+        played.add(path);
+        heard.add(File(path).readAsBytesSync());
       });
 
       await repository.speak('Tayyor');
       await repository.speak('Tayyor');
 
-      expect(played, hasLength(2));
-      expect(File(played.first).existsSync(), isFalse);
-      expect(File(played.last).readAsBytesSync(), <int>[82, 73, 70, 70]);
+      expect(heard, <List<int>>[
+        <int>[82, 73, 70, 70],
+        <int>[82, 73, 70, 70],
+      ]);
+      expect(played.where((String p) => File(p).existsSync()), isEmpty);
+    });
+
+    test('a playback failure still deletes the reply', () async {
+      dio.httpClientAdapter = _BytesAdapter(<int>[82, 73, 70, 70]);
+      String? path;
+      when(() => device.playAudio(any())).thenAnswer((Invocation call) async {
+        path = call.positionalArguments.single as String;
+        throw PlatformException(code: 'player');
+      });
+      await expectLater(repository.speak('x'), throwsA(isA<Failure>()));
+      expect(File(path!).existsSync(), isFalse);
     });
 
     test('a server error is a Failure', () async {

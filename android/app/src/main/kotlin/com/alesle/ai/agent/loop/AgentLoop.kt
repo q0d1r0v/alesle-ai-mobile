@@ -237,7 +237,21 @@ class AgentLoop(
             waitForUser(frame.stepId, decoded.timeoutMs)
             return
         }
-        val confirm = frame.confirm
+        // The phone's own rules come first: the server's view can be steered
+        // by text on the screen (prompt injection); these cannot.
+        val confirm =
+            when (val verdict = SafetyPolicy.check(decoded, lastScreen, request.locale)) {
+                is SafetyVerdict.Block -> {
+                    finishStep(frame.stepId, ActionResult.blocked(verdict.reason))
+                    return
+                }
+                is SafetyVerdict.Confirm -> {
+                    val server = frame.confirm
+                    // The sheet shows the real action; the stricter "always" of the two wins.
+                    verdict.confirmation.copy(always = verdict.confirmation.always || server?.always == true)
+                }
+                SafetyVerdict.Allow -> frame.confirm
+            }
         if (confirm == null) {
             run(frame.stepId, decoded)
             return

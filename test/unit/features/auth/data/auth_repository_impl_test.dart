@@ -4,8 +4,10 @@ import 'package:alesle_ai/core/api/generated/models/google_sign_in_dto.dart';
 import 'package:alesle_ai/core/api/generated/models/link_token_dto.dart';
 import 'package:alesle_ai/core/api/generated/models/login_dto.dart';
 import 'package:alesle_ai/core/api/generated/models/magic_link_dto.dart';
+import 'package:alesle_ai/core/api/generated/models/magic_link_sign_in_dto.dart';
 import 'package:alesle_ai/core/api/generated/models/register_dto.dart';
 import 'package:alesle_ai/core/api/generated/models/token_pair_dto.dart';
+import 'package:alesle_ai/core/auth/link_nonce_store.dart';
 import 'package:alesle_ai/core/errors/failure.dart';
 import 'package:alesle_ai/core/platform/generated/agent_api.g.dart';
 import 'package:alesle_ai/features/auth/data/auth_repository_impl.dart';
@@ -55,17 +57,22 @@ void main() {
   late _FakeGoogle google;
   late List<TokenPairDto> kept;
   late AuthRepositoryImpl repository;
+  late _MockAuthApi authed;
+  late MemoryLinkNonceStore nonces;
 
   setUpAll(() {
     registerFallbackValue(const LoginDto(email: '', password: ''));
     registerFallbackValue(const RegisterDto(email: '', password: ''));
     registerFallbackValue(const GoogleSignInDto(idToken: ''));
-    registerFallbackValue(const MagicLinkDto(email: ''));
+    registerFallbackValue(const MagicLinkDto(email: '', nonce: ''));
+    registerFallbackValue(const MagicLinkSignInDto(token: '', nonce: ''));
     registerFallbackValue(const LinkTokenDto(token: ''));
   });
 
   setUp(() {
     api = _MockAuthApi();
+    authed = _MockAuthApi();
+    nonces = MemoryLinkNonceStore();
     device = _MockDeviceHostApi();
     google = _FakeGoogle();
     kept = <TokenPairDto>[];
@@ -79,6 +86,8 @@ void main() {
     );
     repository = AuthRepositoryImpl(
       api: api,
+      authed: authed,
+      nonces: nonces,
       keep: (TokenPairDto pair) async => kept.add(pair),
       locale: () => 'ru',
       google: google,
@@ -168,6 +177,8 @@ void main() {
 
       final AuthRepositoryImpl noGoogle = AuthRepositoryImpl(
         api: api,
+        authed: authed,
+        nonces: nonces,
         keep: (_) async {},
         locale: () => 'uz',
         device: device,
@@ -182,7 +193,7 @@ void main() {
         .thenAnswer((_) async {});
     when(() => api.authVerifyMagicLink(body: any(named: 'body')))
         .thenAnswer((_) async => testPair());
-    when(() => api.authVerifyEmail(body: any(named: 'body')))
+    when(() => authed.authVerifyEmail(body: any(named: 'body')))
         .thenAnswer((_) async {});
 
     await repository.sendMagicLink(' a@b.uz ');
@@ -193,16 +204,39 @@ void main() {
             as MagicLinkDto;
     expect(link.email, 'a@b.uz');
     expect(link.locale, 'ru');
+    // The nonce stays on this phone until the link comes back.
+    expect(link.nonce, matches(RegExp(r'^[A-Za-z0-9_-]{43}$')));
+    expect(nonces.nonce, link.nonce);
 
     await repository.signInWithMagicLink('tok');
+    final MagicLinkSignInDto signIn =
+        verify(() => api.authVerifyMagicLink(body: captureAny(named: 'body')))
+                .captured
+                .single
+            as MagicLinkSignInDto;
+    expect(signIn.nonce, link.nonce);
     expect(kept, hasLength(1));
+    expect(nonces.nonce, isNull);
+
+    // No link asked for here: a throwaway nonce, which the server refuses.
+    await repository.signInWithMagicLink('foreign');
+    final MagicLinkSignInDto foreign =
+        verify(() => api.authVerifyMagicLink(body: captureAny(named: 'body')))
+                .captured
+                .single
+            as MagicLinkSignInDto;
+    expect(foreign.nonce, isNot(link.nonce));
+    expect(foreign.nonce, hasLength(43));
+
+    // Confirming goes as the signed-in user.
     await repository.verifyEmail('v');
-    verify(() => api.authVerifyEmail(body: const LinkTokenDto(token: 'v')))
+    verify(() => authed.authVerifyEmail(body: const LinkTokenDto(token: 'v')))
         .called(1);
+    verifyNever(() => api.authVerifyEmail(body: any(named: 'body')));
 
     when(() => api.authMagicLink(body: any(named: 'body')))
         .thenThrow(_refused('RATE_LIMITED', 429));
-    when(() => api.authVerifyEmail(body: any(named: 'body')))
+    when(() => authed.authVerifyEmail(body: any(named: 'body')))
         .thenThrow(_refused('LINK_INVALID', 400));
     await expectLater(
       repository.sendMagicLink('a@b.uz'),

@@ -66,8 +66,15 @@ class _AccountLinksState extends ConsumerState<AccountLinks> {
     final EmailLink? link = EmailLink.parse(uri);
     if (link == null) return;
     final AuthRepository auth = ref.read(authRepositoryProvider);
+    final bool signedIn = ref.read(sessionProvider) != null;
     try {
       switch (link) {
+        // Never switch accounts behind the user's back.
+        case SignInLink() when signedIn:
+          _say((AppLocalizations l10n) => l10n.linkAlreadySignedIn);
+        // Confirming needs that account's session.
+        case VerifyLink() when !signedIn:
+          _say((AppLocalizations l10n) => l10n.linkVerifySignInFirst);
         case SignInLink(:final String token):
           await auth.signInWithMagicLink(token);
         case VerifyLink(:final String token):

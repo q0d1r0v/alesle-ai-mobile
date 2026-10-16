@@ -10,6 +10,7 @@ import '../models/link_token_dto.dart';
 import '../models/locale_dto.dart';
 import '../models/login_dto.dart';
 import '../models/magic_link_dto.dart';
+import '../models/magic_link_sign_in_dto.dart';
 import '../models/refresh_dto.dart';
 import '../models/register_dto.dart';
 import '../models/token_pair_dto.dart';
@@ -34,7 +35,7 @@ abstract class AuthApi {
 
   @POST('/v1/auth/magic-link/verify')
   Future<TokenPairDto> authVerifyMagicLink({
-    @Body() required LinkTokenDto body,
+    @Body() required MagicLinkSignInDto body,
   });
 
   @POST('/v1/auth/email/verify')
