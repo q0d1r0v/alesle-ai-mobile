@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Alesle orb (alesle-ai-pages design): a white disc, the dark ring open
+     to the right, the violet core. Inside the 66 dp safe zone of a 108 dp icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,22.32a31.68,31.68 0,1 1,0 63.36a31.68,31.68 0,1 1,0 -63.36z" />
+    <path
+        android:pathData="M69.18,40.8A19.8,19.8 0,1 0,69.18 67.2"
+        android:strokeWidth="6.6"
+        android:strokeColor="#15151D" />
+    <path android:pathData="M54,45.42a8.58,8.58 0,1 1,0 17.16a8.58,8.58 0,1 1,0 -17.16z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:centerX="51"
+                android:centerY="50"
+                android:gradientRadius="12"
+                android:type="radial">
+                <item android:color="#A089F0" android:offset="0" />
+                <item android:color="#6B4ED0" android:offset="1" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

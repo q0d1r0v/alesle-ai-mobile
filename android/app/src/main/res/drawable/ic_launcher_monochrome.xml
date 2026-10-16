@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed icon (Android 13+): the ring and core in one tone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M69.18,40.8A19.8,19.8 0,1 0,69.18 67.2"
+        android:strokeWidth="6.6"
+        android:strokeColor="#FFFFFF" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,45.42a8.58,8.58 0,1 1,0 17.16a8.58,8.58 0,1 1,0 -17.16z" />
+</vector>
