@@ -17,6 +17,15 @@ val releaseKey =
 
 android {
     namespace = "com.alesle.ai"
+
+    // The agent overlay shows its strings in the task's language, not the
+    // phone's, so every language must ship in the one package (APK only,
+    // ADR 0005; this also keeps a future bundle from splitting them away).
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
