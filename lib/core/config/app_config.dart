@@ -21,6 +21,7 @@ final class AppConfig {
     required this.environment,
     required this.apiBaseUrl,
     this.googleServerClientId,
+    this.sentryDsn,
   });
 
   /// Validates raw build values. [apiBaseUrl] must be an origin only
@@ -33,6 +34,7 @@ final class AppConfig {
     required String environment,
     required String apiBaseUrl,
     String googleServerClientId = '',
+    String sentryDsn = '',
   }) {
     final AppEnvironment env = AppEnvironment.values.firstWhere(
       (AppEnvironment value) => value.name == environment,
@@ -75,6 +77,7 @@ final class AppConfig {
       environment: env,
       apiBaseUrl: uri.replace(path: '').toString(),
       googleServerClientId: google.isEmpty ? null : google,
+      sentryDsn: _sentryDsn(sentryDsn.trim()),
     );
   }
 
@@ -85,4 +88,16 @@ final class AppConfig {
 
   /// Google sign-in's server client ID, or null when Google sign-in is off.
   final String? googleServerClientId;
+
+  /// Crash reports (Sentry), or null when they are off.
+  final String? sentryDsn;
+
+  static String? _sentryDsn(String raw) {
+    if (raw.isEmpty) return null;
+    final Uri? uri = Uri.tryParse(raw);
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+      throw AppConfigError('SENTRY_DSN must be an https Sentry DSN.');
+    }
+    return raw;
+  }
 }

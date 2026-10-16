@@ -64,9 +64,12 @@ jobs:
           } > android/key.properties
 
       - name: Build the release APK
+        env:
+          SENTRY_DSN: ${{ vars.SENTRY_DSN }}
         run: |
           # Obfuscated Dart; the symbols to read crash stacks stay with the release.
           flutter build apk --release --dart-define-from-file=env/prod.json \
+            --dart-define=SENTRY_DSN="${SENTRY_DSN}" \
             --obfuscate --split-debug-info=build/symbols
           cp build/app/outputs/flutter-apk/app-release.apk "alesle-${VERSION_NAME}.apk"
           tar -czf "alesle-${VERSION_NAME}-symbols.tar.gz" -C build symbols

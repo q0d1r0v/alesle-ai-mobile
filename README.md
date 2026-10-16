@@ -86,6 +86,7 @@ values.
 | `RELEASE_API_URL`                      | variable | to publish the manifest   |
 | `RELEASE_PUBLISH_TOKEN`                | secret   | with `RELEASE_API_URL`    |
 | `RELEASE_CDN_BASE_URL`                 | variable | to serve from the CDN     |
+| `SENTRY_DSN`                           | variable | crash reports (scrubbed)  |
 | `RELEASE_S3_BUCKET`, `_REGION`, `_ENDPOINT` | variable | with the CDN         |
 | `RELEASE_S3_ACCESS_KEY_ID`, `_SECRET_ACCESS_KEY` | secret | with the CDN     |
 

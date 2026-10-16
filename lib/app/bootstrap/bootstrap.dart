@@ -4,11 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../../core/auth/auth_session.dart';
 import '../../core/auth/session_store.dart';
 import '../../core/config/app_build.dart';
 import '../../core/config/app_config.dart';
+import '../../core/monitoring/crash_reports.dart';
 import '../../core/platform/app_build_reader.dart';
 import '../../core/storage/app_settings.dart';
 import '../app.dart';
@@ -19,6 +21,7 @@ AppConfig configFromEnvironment() => AppConfig.parse(
   environment: const String.fromEnvironment('APP_ENV'),
   apiBaseUrl: const String.fromEnvironment('API_BASE_URL'),
   googleServerClientId: const String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID'),
+  sentryDsn: const String.fromEnvironment('SENTRY_DSN'),
 );
 
 /// App entry: validate configuration, then start. A misconfigured build
@@ -36,7 +39,7 @@ Future<void> bootstrap({List<Override> overrides = const <Override>[]}) async {
   final SessionStore sessions = SecureSessionStore();
   final AuthSession? session = await sessions.read();
   final AppBuild build = await readAppBuild();
-  runApp(
+  void start() => runApp(
     ProviderScope(
       overrides: <Override>[
         appConfigProvider.overrideWithValue(config),
@@ -49,4 +52,14 @@ Future<void> bootstrap({List<Override> overrides = const <Override>[]}) async {
       child: const AlesleApp(),
     ),
   );
+
+  if (config.sentryDsn == null) {
+    start();
+  } else {
+    await SentryFlutter.init(
+      (SentryFlutterOptions options) =>
+          configureCrashReports(options, config, build),
+      appRunner: start,
+    );
+  }
 }

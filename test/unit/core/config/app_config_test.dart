@@ -6,10 +6,12 @@ void main() {
     String environment = 'dev',
     String apiBaseUrl = 'http://10.0.2.2:3000',
     String googleServerClientId = '',
+    String sentryDsn = '',
   }) => AppConfig.parse(
     environment: environment,
     apiBaseUrl: apiBaseUrl,
     googleServerClientId: googleServerClientId,
+    sentryDsn: sentryDsn,
   );
 
   group('AppConfig.parse', () {
@@ -29,6 +31,18 @@ void main() {
       );
       expect(
         () => parse(googleServerClientId: 'not-a-client-id'),
+        throwsA(isA<AppConfigError>()),
+      );
+    });
+
+    test('takes an https Sentry DSN, or none', () {
+      expect(parse().sentryDsn, isNull);
+      expect(
+        parse(sentryDsn: ' https://key@o1.ingest.sentry.io/1 ').sentryDsn,
+        'https://key@o1.ingest.sentry.io/1',
+      );
+      expect(
+        () => parse(sentryDsn: 'http://key@sentry.local/1'),
         throwsA(isA<AppConfigError>()),
       );
     });
