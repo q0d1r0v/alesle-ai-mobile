@@ -74,6 +74,10 @@ void main() {
 
       await store.write(settings.copyWith(clearLanguage: true));
       expect(store.read().language, isNull);
+
+      // Never chosen is null (on by default), and writing null forgets a choice.
+      await store.write(const AppSettings());
+      expect(store.read().handsFree, isNull);
     });
 
     test('an unknown stored language follows the phone', () async {

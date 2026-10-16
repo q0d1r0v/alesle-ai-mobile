@@ -71,6 +71,10 @@ class LoopFramesTest {
             """{"type":"task.start","command":"salom","locale":"uz","policy":"countdown"}""",
             LoopFrames.start("salom", "uz", ConfirmPolicy.COUNTDOWN),
         )
+        assertEquals(
+            """{"type":"task.start","command":"salom","locale":"uz","policy":"confirm","handsFree":true}""",
+            LoopFrames.start("salom", "uz", ConfirmPolicy.CONFIRM, handsFree = true),
+        )
         assertEquals("""{"type":"task.resume","taskId":"t1"}""", LoopFrames.resume("t1"))
         assertEquals("""{"type":"task.stop"}""", LoopFrames.stop())
         assertEquals("""{"type":"reply","askId":"a1","choice":null}""", LoopFrames.reply("a1", null))

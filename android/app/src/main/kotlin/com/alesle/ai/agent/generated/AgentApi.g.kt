@@ -308,7 +308,12 @@ data class TaskRequest (
   /** BCP-47 tag the agent answers in. */
   val locale: String,
   /** The user's setting: false = a cancellable countdown instead of a question. */
-  val confirmEverySensitiveAction: Boolean
+  val confirmEverySensitiveAction: Boolean,
+  /**
+   * Heard by hands-free listening: words not meant for Alesle are let go
+   * silently (the server ends them as `not_addressed`). Null = false.
+   */
+  val handsFree: Boolean? = null
 )
  {
   companion object {
@@ -318,7 +323,8 @@ data class TaskRequest (
       val accessToken = pigeonVar_list[2] as String
       val locale = pigeonVar_list[3] as String
       val confirmEverySensitiveAction = pigeonVar_list[4] as Boolean
-      return TaskRequest(command, apiBaseUrl, accessToken, locale, confirmEverySensitiveAction)
+      val handsFree = pigeonVar_list[5] as Boolean?
+      return TaskRequest(command, apiBaseUrl, accessToken, locale, confirmEverySensitiveAction, handsFree)
     }
   }
   fun toList(): List<Any?> {
@@ -328,6 +334,7 @@ data class TaskRequest (
       accessToken,
       locale,
       confirmEverySensitiveAction,
+      handsFree,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -338,7 +345,7 @@ data class TaskRequest (
       return true
     }
     val other = other as TaskRequest
-    return AgentApiPigeonUtils.deepEquals(this.command, other.command) && AgentApiPigeonUtils.deepEquals(this.apiBaseUrl, other.apiBaseUrl) && AgentApiPigeonUtils.deepEquals(this.accessToken, other.accessToken) && AgentApiPigeonUtils.deepEquals(this.locale, other.locale) && AgentApiPigeonUtils.deepEquals(this.confirmEverySensitiveAction, other.confirmEverySensitiveAction)
+    return AgentApiPigeonUtils.deepEquals(this.command, other.command) && AgentApiPigeonUtils.deepEquals(this.apiBaseUrl, other.apiBaseUrl) && AgentApiPigeonUtils.deepEquals(this.accessToken, other.accessToken) && AgentApiPigeonUtils.deepEquals(this.locale, other.locale) && AgentApiPigeonUtils.deepEquals(this.confirmEverySensitiveAction, other.confirmEverySensitiveAction) && AgentApiPigeonUtils.deepEquals(this.handsFree, other.handsFree)
   }
 
   override fun hashCode(): Int {
@@ -348,10 +355,11 @@ data class TaskRequest (
     result = 31 * result + AgentApiPigeonUtils.deepHash(this.accessToken)
     result = 31 * result + AgentApiPigeonUtils.deepHash(this.locale)
     result = 31 * result + AgentApiPigeonUtils.deepHash(this.confirmEverySensitiveAction)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.handsFree)
     return result
   }
   override fun toString(): String {
-    return "TaskRequest(command=$command, apiBaseUrl=$apiBaseUrl, accessToken=$accessToken, locale=$locale, confirmEverySensitiveAction=$confirmEverySensitiveAction)"
+    return "TaskRequest(command=$command, apiBaseUrl=$apiBaseUrl, accessToken=$accessToken, locale=$locale, confirmEverySensitiveAction=$confirmEverySensitiveAction, handsFree=$handsFree)"
   }
 }
 

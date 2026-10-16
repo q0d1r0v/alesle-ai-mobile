@@ -31,6 +31,7 @@ class TaskRequest {
     required this.accessToken,
     required this.locale,
     required this.confirmEverySensitiveAction,
+    this.handsFree,
   });
 
   final String command;
@@ -44,6 +45,10 @@ class TaskRequest {
 
   /// The user's setting: false = a cancellable countdown instead of a question.
   final bool confirmEverySensitiveAction;
+
+  /// Heard by hands-free listening: words not meant for Alesle are let go
+  /// silently (the server ends them as `not_addressed`). Null = false.
+  final bool? handsFree;
 }
 
 class StartTaskResult {

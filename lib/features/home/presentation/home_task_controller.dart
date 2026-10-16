@@ -64,13 +64,25 @@ class HomeTaskController extends Notifier<HomeTask> {
     return const TaskIdle();
   }
 
+  /// A hands-free command waiting for its first step or answer. Nothing shows
+  /// until then, so words that were not meant for Alesle leave no trace.
+  String? _quiet;
+
+  /// A command is running, shown or not yet.
+  bool get busy => state is TaskRunning || _quiet != null;
+
   Future<void> start(TaskCommand command) async {
     final String text = command.text.trim();
-    if (text.isEmpty || state is TaskRunning) return;
-    state = TaskRunning(command: text);
+    if (text.isEmpty || busy) return;
+    if (command.handsFree) {
+      _quiet = text;
+    } else {
+      state = TaskRunning(command: text);
+    }
     try {
       final TaskStart start = await _repository.start(command);
       if (!start.started) {
+        _quiet = null;
         state = TaskResult(
           command: text,
           outcome: TaskOutcome.failed,
@@ -78,6 +90,7 @@ class HomeTaskController extends Notifier<HomeTask> {
         );
       }
     } on Failure {
+      _quiet = null;
       state = TaskResult(command: text, outcome: TaskOutcome.failed);
     }
   }
@@ -90,27 +103,39 @@ class HomeTaskController extends Notifier<HomeTask> {
     }
   }
 
-  void dismiss() => state = const TaskIdle();
+  void dismiss() {
+    _quiet = null;
+    state = const TaskIdle();
+  }
 
   void _on(TaskUpdate update) {
     final HomeTask current = state;
     switch (update.kind) {
       case TaskUpdateKind.started:
-        if (current is! TaskRunning) {
+        if (_quiet == null && current is! TaskRunning) {
           state = TaskRunning(command: update.text ?? '');
         }
       case TaskUpdateKind.step:
+        final String? quiet = _quiet;
+        _quiet = null;
         final TaskRunning running = current is TaskRunning
             ? current
-            : const TaskRunning(command: '');
+            : TaskRunning(command: quiet ?? '');
         state = TaskRunning(
           command: running.command,
           step: update.text,
           steps: running.steps + 1,
         );
       case TaskUpdateKind.finished:
+        final String? quiet = _quiet;
+        _quiet = null;
+        if (update.reason == notAddressed) {
+          // Not meant for Alesle: the screen stays as it was.
+          if (current is TaskRunning) state = const TaskIdle();
+          return;
+        }
         state = TaskResult(
-          command: current is TaskRunning ? current.command : '',
+          command: current is TaskRunning ? current.command : (quiet ?? ''),
           outcome: update.outcome ?? TaskOutcome.failed,
           reply: update.text,
           reason: update.reason,

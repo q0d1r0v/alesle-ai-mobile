@@ -75,6 +75,16 @@ void main() {
       verify(device.openAppDetails).called(1);
     });
 
+    test('tells whether the microphone is allowed without asking', () async {
+      when(() => device.permissionState(PermissionKind.microphone))
+          .thenAnswer((_) async => PermissionState.granted);
+      expect(await repository.microphoneGranted(), isTrue);
+      when(() => device.permissionState(PermissionKind.microphone))
+          .thenAnswer((_) async => PermissionState.permanentlyDenied);
+      expect(await repository.microphoneGranted(), isFalse);
+      verifyNever(() => device.requestPermission(any()));
+    });
+
     test('a platform error is an UnexpectedFailure', () async {
       when(() => device.permissionState(any()))
           .thenThrow(PlatformException(code: 'x'));

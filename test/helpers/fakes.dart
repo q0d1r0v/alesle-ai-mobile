@@ -130,6 +130,15 @@ final class FakeVoiceRepository implements VoiceRepository {
     return microphone;
   }
 
+  /// Asked without a dialog (hands-free coming back on by itself).
+  int grantedChecks = 0;
+
+  @override
+  Future<bool> microphoneGranted() async {
+    grantedChecks++;
+    return microphone;
+  }
+
   @override
   Future<void> startListening() async => starts++;
 
@@ -224,12 +233,15 @@ Future<AppSettingsStore> testSettingsStore({
   String? language,
   bool voiceReplies = true,
   bool confirmSensitiveActions = true,
+  // Off in tests unless one is about hands-free coming on by itself (null).
+  bool? handsFree = false,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{
     'onboarding_done': onboardingDone,
     'language': ?language,
     'voice_replies': voiceReplies,
     'confirm_sensitive_actions': confirmSensitiveActions,
+    'hands_free': ?handsFree,
   });
   return AppSettingsStore.load();
 }

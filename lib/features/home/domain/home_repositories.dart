@@ -52,6 +52,9 @@ abstract interface class VoiceRepository {
   /// when the user has said "don't ask again".
   Future<bool> ensureMicrophone();
 
+  /// Whether the microphone is already allowed; never asks.
+  Future<bool> microphoneGranted();
+
   Future<void> startListening();
 
   /// Stops and transcribes; null when the recording was too short.

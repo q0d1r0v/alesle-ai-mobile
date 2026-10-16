@@ -73,6 +73,20 @@ void main() {
     expect(tokens.margins.single, const Duration(minutes: 5));
     expect(sent.locale, 'ru');
     expect(sent.confirmEverySensitiveAction, isTrue);
+    expect(sent.handsFree, isFalse);
+
+    await repository.start(
+      const TaskCommand(
+        text: 'Soat',
+        locale: 'uz',
+        confirmSensitiveActions: true,
+        handsFree: true,
+      ),
+    );
+    final TaskRequest heard =
+        verify(() => api.startTask(captureAny())).captured.single
+            as TaskRequest;
+    expect(heard.handsFree, isTrue);
   });
 
   test('refuses without a token', () async {

@@ -114,6 +114,8 @@ data class LoopRequest(
     val command: String,
     val locale: String,
     val policy: ConfirmPolicy,
+    /** Heard by hands-free listening; the server may let it go as not meant for Alesle. */
+    val handsFree: Boolean = false,
 )
 
 /**
@@ -228,7 +230,15 @@ class AgentLoop(
         if (ended.get()) return
         reconnects = 0
         val id = taskId
-        send(if (id == null) LoopFrames.start(request.command, request.locale, request.policy) else LoopFrames.resume(id))
+        send(
+            if (id ==
+                null
+            ) {
+                LoopFrames.start(request.command, request.locale, request.policy, request.handsFree)
+            } else {
+                LoopFrames.resume(id)
+            },
+        )
     }
 
     private fun gone() {

@@ -43,6 +43,13 @@ final class VoiceRepositoryImpl implements VoiceRepository {
   });
 
   @override
+  Future<bool> microphoneGranted() => _platform(
+    () async =>
+        await _device.permissionState(PermissionKind.microphone) ==
+        PermissionState.granted,
+  );
+
+  @override
   Future<void> startListening() => _platform(_device.startRecording);
 
   @override

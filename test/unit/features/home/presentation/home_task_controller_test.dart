@@ -30,6 +30,75 @@ void main() {
 
   Future<void> flush() => Future<void>.delayed(Duration.zero);
 
+  test(
+    'a hands-free command shows nothing until its first step or answer',
+    () async {
+      const TaskCommand heard = TaskCommand(
+        text: 'Soatni och',
+        locale: 'uz',
+        confirmSensitiveActions: true,
+        handsFree: true,
+      );
+      await controller().start(heard);
+      expect(state(), isA<TaskIdle>());
+      expect(controller().busy, isTrue);
+      await controller().start(heard);
+      expect(assistant.commands, hasLength(1));
+
+      assistant.push(
+        const TaskUpdate(TaskUpdateKind.started, text: 'Soatni och'),
+      );
+      await flush();
+      expect(state(), isA<TaskIdle>());
+      assistant.push(const TaskUpdate(TaskUpdateKind.step, text: 'Ochyapman'));
+      await flush();
+      expect((state() as TaskRunning).command, 'Soatni och');
+      expect(controller().busy, isTrue);
+    },
+  );
+
+  test('words not meant for Alesle leave the screen as it was', () async {
+    const TaskCommand heard = TaskCommand(
+      text: 'choy ichamizmi',
+      locale: 'uz',
+      confirmSensitiveActions: true,
+      handsFree: true,
+    );
+    await controller().start(heard);
+    assistant.push(
+      const TaskUpdate(
+        TaskUpdateKind.finished,
+        status: 'cannot',
+        reason: notAddressed,
+      ),
+    );
+    await flush();
+    expect(state(), isA<TaskIdle>());
+    expect(controller().busy, isFalse);
+
+    // A quick answer to a hands-free question still shows, with the words heard.
+    await controller().start(
+      const TaskCommand(
+        text: 'Soat nechi?',
+        locale: 'uz',
+        confirmSensitiveActions: true,
+        handsFree: true,
+      ),
+    );
+    assistant.push(
+      const TaskUpdate(TaskUpdateKind.finished, status: 'done', text: '10:30'),
+    );
+    await flush();
+    final TaskResult result = state() as TaskResult;
+    expect(result.command, 'Soat nechi?');
+    expect(result.reply, '10:30');
+
+    // Dismissing clears a quiet start too.
+    await controller().start(heard);
+    controller().dismiss();
+    expect(controller().busy, isFalse);
+  });
+
   test('starts idle and runs a trimmed command once', () async {
     expect(state(), isA<TaskIdle>());
     await controller().start(command);

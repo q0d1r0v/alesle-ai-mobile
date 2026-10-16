@@ -108,13 +108,17 @@ object LoopFrames {
         command: String,
         locale: String,
         policy: ConfirmPolicy,
-    ): String =
-        JSONObject()
-            .put("type", "task.start")
-            .put("command", command)
-            .put("locale", locale)
-            .put("policy", policy.wire)
-            .toString()
+        handsFree: Boolean = false,
+    ): String {
+        val json =
+            JSONObject()
+                .put("type", "task.start")
+                .put("command", command)
+                .put("locale", locale)
+                .put("policy", policy.wire)
+        if (handsFree) json.put("handsFree", true)
+        return json.toString()
+    }
 
     fun resume(taskId: String): String = JSONObject().put("type", "task.resume").put("taskId", taskId).toString()
 

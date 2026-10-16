@@ -108,8 +108,16 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       expect(assistant.commands.single.text, 'Soat ilovasini och');
-      expect(find.byKey(const Key('hands-free-running-hint')), findsOneWidget);
+      expect(assistant.commands.single.handsFree, isTrue);
       expect(find.text('«Soat ilovasini och»'), findsOneWidget);
+      // Nothing shows until the agent takes a step: background talk leaves no trace.
+      expect(find.byKey(const Key('hands-free-running-hint')), findsNothing);
+      assistant.push(
+        const TaskUpdate(TaskUpdateKind.step, text: 'Soatni ochyapman'),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byKey(const Key('hands-free-running-hint')), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('hands-free-switch')));
       await tester.pump();
@@ -118,20 +126,25 @@ void main() {
       expect(settings.read().handsFree, isFalse);
     });
 
+    testWidgets('on by itself after sign-in when the microphone is allowed', (
+      WidgetTester tester,
+    ) async {
+      settings = await testSettingsStore(handsFree: null);
+      await pumpHome(tester);
+      expect(listen.starts, 1);
+      expect(find.text('Tinglayapman — shunchaki gapiring'), findsWidgets);
+    });
+
     testWidgets(
-      'left on, it listens again when home opens; a refusal is said',
+      'without the microphone allowed it stays off and asks nothing',
       (WidgetTester tester) async {
-        settings = await testSettingsStore();
-        await settings.write(settings.read().copyWith(handsFree: true));
+        settings = await testSettingsStore(handsFree: null);
+        voice.microphone = false;
         listen.startWorks = false;
         await pumpHome(tester);
-        expect(listen.starts, 1);
-        expect(
-          find.text(
-            'Mikrofonni yoqib bo‘lmadi. Ilovani ochiq holda qayta urining.',
-          ),
-          findsOneWidget,
-        );
+        expect(listen.starts, 0);
+        expect(find.text('Doim tinglash'), findsOneWidget);
+        expect(find.byType(SnackBar), findsNothing);
       },
     );
   });

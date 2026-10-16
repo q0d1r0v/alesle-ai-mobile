@@ -96,16 +96,21 @@ class HandsFreeController extends Notifier<HandsFreeState> {
         state = state.copyWith(problem: HandsFreeProblem.microphoneDenied);
         return;
       }
-      final ListenStatus status = await _listen.start();
-      if (!status.active) {
+      if (!await _startListening()) {
         state = state.copyWith(problem: HandsFreeProblem.startFailed);
         return;
       }
-      _onStatus(status);
       await _remember(on: true);
     } on Failure {
       state = state.copyWith(problem: HandsFreeProblem.startFailed);
     }
+  }
+
+  Future<bool> _startListening() async {
+    final ListenStatus status = await _listen.start();
+    if (!status.active) return false;
+    _onStatus(status);
+    return true;
   }
 
   Future<void> turnOff() async {
@@ -118,20 +123,23 @@ class HandsFreeController extends Notifier<HandsFreeState> {
     await _remember(on: false);
   }
 
-  /// Back in the app with hands-free remembered as on: listen again.
+  /// Back in the app: hands-free is on unless the user turned it off. It
+  /// listens again only with the microphone already allowed: opening the app
+  /// never pops a permission dialog (the switch asks).
   Future<void> resume({required String appLocale}) async {
     _appLocale = appLocale;
-    if (!ref.read(appSettingsProvider).handsFree) return;
+    if (ref.read(appSettingsProvider).handsFree == false) return;
     try {
       final ListenStatus status = await _listen.status();
       if (status.active) {
         _onStatus(status);
         return;
       }
+      if (!await _voice.microphoneGranted()) return;
+      await _startListening();
     } on Failure {
-      // Ask the service to start below.
+      // Quietly off; the switch still works.
     }
-    await turnOn(appLocale: appLocale);
   }
 
   Future<void> toggleMute() async {
@@ -185,7 +193,7 @@ class HandsFreeController extends Notifier<HandsFreeState> {
 
   Future<void> _act(String text, String language) async {
     final HomeTaskController tasks = ref.read(homeTaskProvider.notifier);
-    if (ref.read(homeTaskProvider) is TaskRunning) {
+    if (tasks.busy) {
       if (isStopCommand(text)) {
         await tasks.stop();
         return;
@@ -203,6 +211,7 @@ class HandsFreeController extends Notifier<HandsFreeState> {
         confirmSensitiveActions:
             ref.read(executionPolicyProvider) ==
             ExecutionPolicy.confirmSensitiveActions,
+        handsFree: true,
       ),
     );
   }

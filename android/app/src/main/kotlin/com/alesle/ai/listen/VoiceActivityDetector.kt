@@ -24,8 +24,8 @@ class VoiceActivityDetector(
         val minSpeechRms: Double = 350.0,
         /** Speech frames in a row before an utterance starts (~100 ms). */
         val onsetFrames: Int = 5,
-        /** Quiet frames in a row that end an utterance (~800 ms). */
-        val hangoverFrames: Int = 40,
+        /** Quiet frames in a row that end an utterance (~600 ms): quick to answer, long enough for a breath. */
+        val hangoverFrames: Int = 30,
         /** Audio kept from before the start (~300 ms). */
         val prerollFrames: Int = 15,
         /** Shorter speech is a click, not words (~200 ms): "Ha", "Стоп" are ~300 ms. */

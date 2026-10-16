@@ -10,7 +10,7 @@ final class AppSettings {
     this.confirmSensitiveActions = true,
     this.usageNoticeKey,
     this.offeredUpdate,
-    this.handsFree = false,
+    this.handsFree,
   });
 
   final bool onboardingDone;
@@ -33,8 +33,9 @@ final class AppSettings {
   final int? offeredUpdate;
 
   /// Hands-free: listen all the time (mute in the app or the notification),
-  /// no button to press (SOW 04 §4.3). Off until the user turns it on.
-  final bool handsFree;
+  /// no button to press (SOW 04 §4.3). Null = never chosen, which is on;
+  /// false once the user turns it off.
+  final bool? handsFree;
 
   AppSettings copyWith({
     bool? onboardingDone,
@@ -107,7 +108,7 @@ final class AppSettingsStore {
       confirmSensitiveActions: _prefs.getBool(_confirm) ?? true,
       usageNoticeKey: _prefs.getString(_usageNotice),
       offeredUpdate: _prefs.getInt(_offeredUpdate),
-      handsFree: _prefs.getBool(_handsFree) ?? false,
+      handsFree: _prefs.getBool(_handsFree),
     );
   }
 
@@ -127,7 +128,12 @@ final class AppSettingsStore {
     } else {
       await _prefs.setString(_usageNotice, notice);
     }
-    await _prefs.setBool(_handsFree, settings.handsFree);
+    final bool? handsFree = settings.handsFree;
+    if (handsFree == null) {
+      await _prefs.remove(_handsFree);
+    } else {
+      await _prefs.setBool(_handsFree, handsFree);
+    }
     final int? offered = settings.offeredUpdate;
     if (offered == null) {
       await _prefs.remove(_offeredUpdate);

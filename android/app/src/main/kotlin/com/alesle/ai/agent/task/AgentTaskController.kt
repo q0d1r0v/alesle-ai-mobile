@@ -164,6 +164,7 @@ class AgentTaskController(
                             command = request.command,
                             locale = request.locale,
                             policy = if (request.confirmEverySensitiveAction) ConfirmPolicy.CONFIRM else ConfirmPolicy.COUNTDOWN,
+                            handsFree = request.handsFree == true,
                         ),
                     sockets =
                         OkHttpLoopSocketFactory(

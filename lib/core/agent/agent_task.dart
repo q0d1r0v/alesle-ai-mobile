@@ -7,6 +7,7 @@ final class TaskCommand {
     required this.text,
     required this.locale,
     required this.confirmSensitiveActions,
+    this.handsFree = false,
   });
 
   final String text;
@@ -14,7 +15,14 @@ final class TaskCommand {
   /// BCP-47 tag the agent answers in.
   final String locale;
   final bool confirmSensitiveActions;
+
+  /// Heard by hands-free listening: words not meant for Alesle end quietly
+  /// as [notAddressed].
+  final bool handsFree;
 }
+
+/// How a hands-free task ends when the words were not meant for Alesle.
+const String notAddressed = 'not_addressed';
 
 /// Whether a task started; [reason] is a snake_case code when it did not.
 final class TaskStart {

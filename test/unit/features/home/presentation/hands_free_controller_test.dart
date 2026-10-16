@@ -110,7 +110,7 @@ void main() {
     await controller().turnOn(appLocale: 'uz');
     hear('Soat ilovasini och');
     await flush();
-    expect(container.read(homeTaskProvider), isA<TaskRunning>());
+    expect(container.read(homeTaskProvider.notifier).busy, isTrue);
 
     hear('buni ham qilib ket: sekundomerni yoq');
     await flush();
@@ -177,24 +177,39 @@ void main() {
     expect(state().on, isFalse);
   });
 
-  test('resume listens again only when the user left it on', () async {
-    await controller().resume(appLocale: 'uz');
-    expect(listen.starts, 0);
+  test(
+    'resume: on unless turned off, never asking for the microphone',
+    () async {
+      // Turned off by the user: stays off.
+      await controller().resume(appLocale: 'uz');
+      expect(listen.starts, 0);
 
-    await settings.write(settings.read().copyWith(handsFree: true));
-    container.invalidate(appSettingsProvider);
-    listen.current = const ListenStatus(active: true, muted: true);
-    await controller().resume(appLocale: 'uz');
-    expect(listen.starts, 0);
-    expect(state().phase, HandsFreePhase.muted);
+      // Never chosen: on by itself, with the microphone already allowed.
+      await settings.write(const AppSettings(onboardingDone: true));
+      container.invalidate(appSettingsProvider);
+      expect(container.read(appSettingsProvider).handsFree, isNull);
+      await controller().resume(appLocale: 'uz');
+      expect(listen.starts, 1);
+      expect(state().phase, HandsFreePhase.listening);
 
-    listen.current = ListenStatus.off;
-    await controller().resume(appLocale: 'uz');
-    expect(listen.starts, 1);
-    expect(state().phase, HandsFreePhase.listening);
+      // Already listening (muted from the notification): just shows it.
+      listen.current = const ListenStatus(active: true, muted: true);
+      await controller().resume(appLocale: 'uz');
+      expect(listen.starts, 1);
+      expect(state().phase, HandsFreePhase.muted);
 
-    listen.failure = const UnexpectedFailure('x');
-    await controller().resume(appLocale: 'uz');
-    expect(state().problem, HandsFreeProblem.startFailed);
-  });
+      // No microphone permission yet: stays off and asks nothing.
+      listen.current = ListenStatus.off;
+      voice.microphone = false;
+      await controller().resume(appLocale: 'uz');
+      expect(listen.starts, 1);
+      expect(voice.grantedChecks, greaterThan(0));
+
+      // A failing service: quietly off, no message.
+      voice.microphone = true;
+      listen.failure = const UnexpectedFailure('x');
+      await controller().resume(appLocale: 'uz');
+      expect(state().problem, isNull);
+    },
+  );
 }

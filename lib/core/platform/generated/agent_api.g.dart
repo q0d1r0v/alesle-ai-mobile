@@ -193,6 +193,7 @@ class TaskRequest {
     required this.accessToken,
     required this.locale,
     required this.confirmEverySensitiveAction,
+    this.handsFree,
   });
 
   String command;
@@ -208,6 +209,10 @@ class TaskRequest {
   /// The user's setting: false = a cancellable countdown instead of a question.
   bool confirmEverySensitiveAction;
 
+  /// Heard by hands-free listening: words not meant for Alesle are let go
+  /// silently (the server ends them as `not_addressed`). Null = false.
+  bool? handsFree;
+
   List<Object?> _toList() {
     return <Object?>[
       command,
@@ -215,6 +220,7 @@ class TaskRequest {
       accessToken,
       locale,
       confirmEverySensitiveAction,
+      handsFree,
     ];
   }
 
@@ -230,6 +236,7 @@ class TaskRequest {
       accessToken: result[2]! as String,
       locale: result[3]! as String,
       confirmEverySensitiveAction: result[4]! as bool,
+      handsFree: result[5] as bool?,
     );
   }
 
@@ -249,7 +256,8 @@ class TaskRequest {
         _deepEquals(
           confirmEverySensitiveAction,
           other.confirmEverySensitiveAction,
-        );
+        ) &&
+        _deepEquals(handsFree, other.handsFree);
   }
 
   @override
@@ -258,7 +266,7 @@ class TaskRequest {
 
   @override
   String toString() {
-    return 'TaskRequest(command: $command, apiBaseUrl: $apiBaseUrl, accessToken: $accessToken, locale: $locale, confirmEverySensitiveAction: $confirmEverySensitiveAction)';
+    return 'TaskRequest(command: $command, apiBaseUrl: $apiBaseUrl, accessToken: $accessToken, locale: $locale, confirmEverySensitiveAction: $confirmEverySensitiveAction, handsFree: $handsFree)';
   }
 }
 
