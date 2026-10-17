@@ -32,6 +32,7 @@ class IntentLauncher(
             is IntentAction.Call -> call(action)
             is IntentAction.Sms -> sms(action)
             is IntentAction.Alarm -> alarm(action)
+            is IntentAction.Timer -> timer(action)
             is IntentAction.CalendarEvent -> calendarEvent(action)
             is IntentAction.WebSearch -> webSearch(action.query)
             is IntentAction.MapsSearch -> mapsSearch(action.query)
@@ -90,6 +91,20 @@ class IntentLauncher(
                 .putExtra(AlarmClock.EXTRA_SKIP_UI, true)
         action.label?.let { intent.putExtra(AlarmClock.EXTRA_MESSAGE, it) }
         if (action.days.isNotEmpty()) intent.putIntegerArrayListExtra(AlarmClock.EXTRA_DAYS, ArrayList(action.days))
+        return start(intent)
+    }
+
+    /**
+     * The clock app's own timer, started at once: tapping through a timer screen
+     * fails on clock apps with wheel pickers (Xiaomi, device test 2026-10-17).
+     */
+    private fun timer(action: IntentAction.Timer): ActionResult {
+        if (action.seconds !in 1..MAX_TIMER_SECONDS) return ActionResult.error("invalid_time")
+        val intent =
+            Intent(AlarmClock.ACTION_SET_TIMER)
+                .putExtra(AlarmClock.EXTRA_LENGTH, action.seconds)
+                .putExtra(AlarmClock.EXTRA_SKIP_UI, true)
+        action.label?.let { intent.putExtra(AlarmClock.EXTRA_MESSAGE, it) }
         return start(intent)
     }
 
@@ -211,6 +226,7 @@ class IntentLauncher(
 
     companion object {
         const val MAX_CHOICES = 5
+        const val MAX_TIMER_SECONDS = 86_400
         const val YOUTUBE_PACKAGE = "com.google.android.youtube"
         const val MAPS_PACKAGE = "com.google.android.apps.maps"
         const val GOOGLE_APP_PACKAGE = "com.google.android.googlequicksearchbox"

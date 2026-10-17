@@ -109,6 +109,8 @@ class ActionJsonTest {
             intent("""{"type":"intent","kind":"alarm","hour":7,"minute":30,"label":"Ish","days":[2,3]}"""),
         )
         assertEquals(IntentAction.Alarm(6, 0), intent("""{"type":"intent","kind":"alarm","hour":6,"minute":0}"""))
+        assertEquals(IntentAction.Timer(300, "Choy"), intent("""{"type":"intent","kind":"timer","seconds":300,"label":"Choy"}"""))
+        assertEquals(IntentAction.Timer(60), intent("""{"type":"intent","kind":"timer","seconds":60}"""))
         assertEquals(
             IntentAction.CalendarEvent("Uchrashuv", 1_760_000_000_000, 1_760_003_600_000, "Chorsu"),
             intent(
@@ -140,6 +142,7 @@ class ActionJsonTest {
         assertEquals("missing_field:text", failure("""{"type":"type_text","nodeId":1}"""))
         assertEquals("invalid_direction", failure("""{"type":"scroll","direction":"sideways"}"""))
         assertEquals("missing_field:hour", failure("""{"type":"intent","kind":"alarm","minute":0}"""))
+        assertEquals("missing_field:seconds", failure("""{"type":"intent","kind":"timer"}"""))
     }
 
     @Test

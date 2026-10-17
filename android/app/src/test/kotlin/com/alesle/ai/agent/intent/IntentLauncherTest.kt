@@ -248,6 +248,21 @@ class IntentLauncherTest {
     }
 
     @Test
+    fun `starts a timer in the clock app without its timer screen`() {
+        assertEquals(ActionResult.OK, launcher.execute(IntentAction.Timer(300, label = "Choy")))
+        assertEquals(AlarmClock.ACTION_SET_TIMER, started.action)
+        assertEquals(300, started.getIntExtra(AlarmClock.EXTRA_LENGTH, -1))
+        assertTrue(started.getBooleanExtra(AlarmClock.EXTRA_SKIP_UI, false))
+        assertEquals("Choy", started.getStringExtra(AlarmClock.EXTRA_MESSAGE))
+        launcher.execute(IntentAction.Timer(60))
+        assertFalse(started.hasExtra(AlarmClock.EXTRA_MESSAGE))
+        val before = starter.started.size
+        assertEquals(ActionResult.error("invalid_time"), launcher.execute(IntentAction.Timer(0)))
+        assertEquals(ActionResult.error("invalid_time"), launcher.execute(IntentAction.Timer(86_401)))
+        assertEquals(before, starter.started.size)
+    }
+
+    @Test
     fun `a one-off alarm carries no label or days`() {
         launcher.execute(IntentAction.Alarm(0, 0))
         assertFalse(started.hasExtra(AlarmClock.EXTRA_MESSAGE))

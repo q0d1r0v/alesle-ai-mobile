@@ -55,6 +55,7 @@ class ActionDecodeException(
  * {"type":"intent","kind":"call","to":{"contact":"Aziz"}}    // or {"phone":"+998…"} / {"ref":"contact:12"}
  * {"type":"intent","kind":"sms","to":{…},"text":"…"}
  * {"type":"intent","kind":"alarm","hour":7,"minute":30,"label":"…","days":[2,3]}
+ * {"type":"intent","kind":"timer","seconds":300,"label":"…"}
  * {"type":"intent","kind":"calendar_event","title":"…","begin":1760000000000,"end":…,"location":"…"}
  * {"type":"intent","kind":"web_search"|"maps_search"|"youtube_search","query":"…"}
  * {"type":"intent","kind":"share_text","text":"…","package":"…"}
@@ -139,6 +140,7 @@ object ActionJson {
                 val days = json.optJSONArray("days")?.let { array -> List(array.length()) { array.getInt(it) } }.orEmpty()
                 IntentAction.Alarm(json.requiredInt("hour"), json.requiredInt("minute"), json.optionalString("label"), days)
             }
+            "timer" -> IntentAction.Timer(json.requiredInt("seconds"), json.optionalString("label"))
             "calendar_event" ->
                 IntentAction.CalendarEvent(
                     json.requiredString("title"),

@@ -29,6 +29,12 @@ sealed interface IntentAction {
         val days: List<Int> = emptyList(),
     ) : IntentAction
 
+    /** Starts a countdown of [seconds] in the clock app, whatever its timer screen looks like. */
+    data class Timer(
+        val seconds: Int,
+        val label: String? = null,
+    ) : IntentAction
+
     /** Opens the calendar's new-event screen pre-filled; times are epoch millis. */
     data class CalendarEvent(
         val title: String,
