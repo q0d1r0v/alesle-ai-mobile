@@ -107,17 +107,20 @@ class LivePlayer(
                 if (chunk == null) {
                     val playingTrack = current ?: continue
                     val head = playingTrack.playbackHeadPosition.toLong()
-                    if (head >= written) {
-                        drop(playingTrack)
-                        current = null
-                        written = 0
-                        finished(now)
-                        continue
-                    }
-                    // A short tail can sit below the start threshold: stop() plays it out.
                     stalled = if (head == lastHead) stalled + 1 else 0
                     lastHead = head
-                    if (stalled == STALL_POLLS) runCatching { playingTrack.stop() }
+                    when (PlaybackTail.onIdle(head, written, stalled)) {
+                        TailAction.WAIT -> Unit
+                        TailAction.PAD -> written += pad(playingTrack)
+                        TailAction.FINISH -> {
+                            drop(playingTrack)
+                            current = null
+                            written = 0
+                            lastHead = -1
+                            stalled = 0
+                            finished(now)
+                        }
+                    }
                     continue
                 }
                 if (chunk.generation != now) continue
@@ -126,8 +129,9 @@ class LivePlayer(
                         current = it
                         currentGeneration = now
                         written = 0
-                        it.play()
+                        lastHead = -1
                     } ?: continue
+                if (target.playState != AudioTrack.PLAYSTATE_PLAYING) target.play()
                 target.write(chunk.pcm, 0, chunk.pcm.size)
                 written += chunk.pcm.size / BYTES_PER_FRAME
                 stalled = 0
@@ -137,6 +141,18 @@ class LivePlayer(
         } finally {
             current?.let(::drop)
         }
+    }
+
+    /**
+     * A track starts only once its buffer is full, so a short tail (or the
+     * first words, when the next chunk is late) would wait forever. Silence
+     * fills the buffer and the tail plays; stopping the track instead left
+     * later chunks unplayed on some phones (HyperOS) and Alesle stuck speaking.
+     */
+    private fun pad(track: AudioTrack): Long {
+        val silence = ByteArray(track.bufferSizeInFrames.coerceAtLeast(1) * BYTES_PER_FRAME)
+        val bytes = track.write(silence, 0, silence.size, AudioTrack.WRITE_NON_BLOCKING)
+        return if (bytes > 0) bytes / BYTES_PER_FRAME.toLong() else 0
     }
 
     private fun finished(at: Int) {
@@ -197,6 +213,27 @@ class LivePlayer(
         const val SAMPLE_RATE = 24_000
         private const val BYTES_PER_FRAME = 2
         private const val POLL_MS = 40L
-        private const val STALL_POLLS = 3
     }
+}
+
+enum class TailAction { WAIT, PAD, FINISH }
+
+/** What the player does when no chunk came in a poll; pure, so it is tested without a speaker. */
+object PlaybackTail {
+    /** 120 ms without progress: the tail sits below the start threshold. */
+    const val STALL_POLLS = 3
+
+    /** 2 s without progress even after the silence: give the turn up, never stay "speaking". */
+    const val GIVE_UP_POLLS = 50
+
+    fun onIdle(
+        head: Long,
+        written: Long,
+        stalledPolls: Int,
+    ): TailAction =
+        when {
+            head >= written || stalledPolls >= GIVE_UP_POLLS -> TailAction.FINISH
+            stalledPolls == STALL_POLLS -> TailAction.PAD
+            else -> TailAction.WAIT
+        }
 }
