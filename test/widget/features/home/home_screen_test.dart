@@ -181,7 +181,7 @@ void main() {
         );
       await settle(tester);
       expect(find.text('Gapiryapman'), findsOneWidget);
-      expect(find.text('Salom'), findsOneWidget);
+      expect(find.text('Salom'), findsNothing);
       expect(find.text('Salom! Yordam beraymi?'), findsOneWidget);
 
       // Phone work: a chip, never the result screen.

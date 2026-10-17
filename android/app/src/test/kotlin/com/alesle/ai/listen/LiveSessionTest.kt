@@ -240,6 +240,23 @@ class LiveSessionTest {
     }
 
     @Test
+    fun `with no answer it listens again, but an answer in time is waited for`() {
+        val s = ready()
+        session.onSpeechStart(listOf(frame(1)))
+        session.onSpeechEnd(cancelled = false)
+        assertEquals(LivePhase.THINKING, phases().last())
+        val (delay, watchdog) = scheduled.removeAt(0)
+        assertEquals(LiveSession.ANSWER_TIMEOUT_MS, delay)
+        watchdog()
+        assertEquals(LivePhase.LISTENING, phases().last())
+
+        session.sendText("Salom")
+        s.server("""{"type":"audio","data":"AAEC"}""")
+        scheduled.removeAt(0).second()
+        assertEquals(LivePhase.SPEAKING, phases().last())
+    }
+
+    @Test
     fun `junk from the server is ignored`() {
         val s = ready()
         val before = events.size

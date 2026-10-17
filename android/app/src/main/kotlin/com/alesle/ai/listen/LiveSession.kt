@@ -50,6 +50,9 @@ class LiveSession(
     private var phase: LivePhase? = null
     private val batch = ArrayList<ShortArray>()
 
+    /** Counts turns, so a watchdog for an old one does nothing. */
+    private var turn = 0
+
     init {
         sink.onDrained = ::onDrained
     }
@@ -95,7 +98,7 @@ class LiveSession(
         if (!ready || trimmed.isEmpty()) return
         sink.stop()
         send(JSONObject().put("type", "text").put("text", trimmed))
-        setPhase(LivePhase.THINKING)
+        awaitAnswer()
     }
 
     @Synchronized
@@ -136,7 +139,17 @@ class LiveSession(
         hearing = false
         flush()
         send(JSONObject().put("type", "speech.end"))
+        awaitAnswer()
+    }
+
+    /** Thinking, but not forever: with no answer the user is listened to again. */
+    private fun awaitAnswer() {
         setPhase(LivePhase.THINKING)
+        val id = ++turn
+        val at = connection
+        schedule(ANSWER_TIMEOUT_MS) {
+            whenCurrent(at) { if (id == turn && phase == LivePhase.THINKING) setPhase(LivePhase.LISTENING) }
+        }
     }
 
     private fun add(frame: ShortArray) {
@@ -308,6 +321,7 @@ class LiveSession(
         const val MAX_ATTEMPTS = 3
         const val RETRY_MS = 1_000L
         const val RETRY_AFTER_FALLBACK_MS = 120_000L
+        const val ANSWER_TIMEOUT_MS = 12_000L
         private const val MAX_REPLY = 2_000
     }
 }

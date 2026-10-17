@@ -47,7 +47,8 @@ final class HandsFreeState {
   /// Where the live conversation is; null when there is none.
   final LiveStage? live;
 
-  /// The user's words in the live conversation, this turn.
+  /// What the user typed into the live conversation, this turn. Spoken
+  /// words are not shown: the model's transcript of Uzbek is unreliable.
   final String? said;
 
   /// Alesle's words in the live conversation, this turn.
@@ -67,12 +68,13 @@ final class HandsFreeState {
     String? said,
     String? reply,
     bool clearReply = false,
+    bool clearSaid = false,
   }) => HandsFreeState(
     phase: phase ?? this.phase,
     heard: heard ?? this.heard,
     problem: clearProblem ? null : (problem ?? this.problem),
     live: live ?? this.live,
-    said: said ?? this.said,
+    said: clearSaid ? null : (said ?? this.said),
     reply: clearReply ? null : (reply ?? this.reply),
   );
 }
@@ -215,10 +217,11 @@ class HandsFreeController extends Notifier<HandsFreeState> {
         );
       case LiveStageChanged(:final LiveStage stage):
         state = state.copyWith(live: stage);
-      case LiveCaption(fromUser: true, :final String text):
-        final bool fresh = _replyDone;
+      case LiveCaption(fromUser: true):
+        // A new turn starts clean.
+        if (!_replyDone) return;
         _replyDone = false;
-        state = state.copyWith(said: text, clearReply: fresh);
+        state = state.copyWith(clearReply: true, clearSaid: true);
       case LiveCaption(
         fromUser: false,
         :final String text,

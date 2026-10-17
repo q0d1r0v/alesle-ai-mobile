@@ -239,13 +239,15 @@ void main() {
           const LiveCaption(fromUser: false, text: 'Salom!', isFinal: true),
         );
       await flush();
-      expect(state().said, 'Salom');
+      // Spoken words are not shown: the model's Uzbek transcript is unreliable.
+      expect(state().said, isNull);
       expect(state().reply, 'Salom!');
+      await controller().sendText('Rahmat');
       listen.live(
         const LiveCaption(fromUser: true, text: 'Qalaysan', isFinal: false),
       );
       await flush();
-      expect(state().said, 'Qalaysan');
+      expect(state().said, isNull);
       expect(state().reply, isNull);
     });
 
