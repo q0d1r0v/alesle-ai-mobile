@@ -286,6 +286,28 @@ void main() {
       expect(container.read(homeTaskProvider), isA<TaskIdle>());
     });
 
+    test('a change heard with no task running starts one', () async {
+      await talking();
+      assistant.amendAccepted = false;
+      listen.live(const LiveTaskAmend('Sekundomerni och'));
+      await flush();
+      expect(assistant.amendments, <String>['Sekundomerni och']);
+      expect(assistant.commands.single.text, 'Sekundomerni och');
+      expect(assistant.commands.single.direct, isTrue);
+      assistant.push(
+        const TaskUpdate(TaskUpdateKind.finished, status: 'done', text: 'OK'),
+      );
+      await flush();
+      expect(listen.taskResults, <(String, String, String?)>[
+        ('amend-1', 'done', 'OK'),
+      ]);
+
+      assistant.failure = const UnexpectedFailure('x');
+      listen.live(const LiveTaskAmend('yana'));
+      await flush();
+      expect(assistant.commands, hasLength(1));
+    });
+
     test('a task that could not start is told to the conversation', () async {
       await talking();
       assistant.nextStart = const TaskStart(

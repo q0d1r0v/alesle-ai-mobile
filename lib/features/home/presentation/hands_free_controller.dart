@@ -101,6 +101,9 @@ class HandsFreeController extends Notifier<HandsFreeState> {
   /// The live conversation's request the running task answers.
   String? _liveCall;
 
+  /// Changes heard with no task running, started as tasks of their own.
+  int _amendCalls = 0;
+
   /// Alesle's last words closed their turn: the next words start a new one.
   bool _replyDone = false;
 
@@ -232,15 +235,23 @@ class HandsFreeController extends Notifier<HandsFreeState> {
       case LiveTaskRun(:final String callId, :final String command):
         unawaited(_runForLive(callId, command));
       case LiveTaskAmend(:final String text):
-        unawaited(
-          ref
-              .read(assistantRepositoryProvider)
-              .amend(text)
-              .then((_) {}, onError: (Object _) {}),
-        );
+        unawaited(_amendForLive(text));
       case LiveTaskStop():
         unawaited(ref.read(homeTaskProvider.notifier).stop());
     }
+  }
+
+  /// The model heard a change to the task; with none running it is a new one
+  /// (its end is told to the model under an id it does not know, in words).
+  Future<void> _amendForLive(String text) async {
+    bool amended;
+    try {
+      amended = await ref.read(assistantRepositoryProvider).amend(text);
+    } on Failure {
+      return;
+    }
+    if (amended) return;
+    await _runForLive('amend-${++_amendCalls}', text);
   }
 
   Future<void> _runForLive(String callId, String command) async {
