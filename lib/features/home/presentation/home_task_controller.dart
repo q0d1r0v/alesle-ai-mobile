@@ -68,31 +68,44 @@ class HomeTaskController extends Notifier<HomeTask> {
   /// until then, so words that were not meant for Alesle leave no trace.
   String? _quiet;
 
+  /// The running task came from the live conversation: Alesle says how it
+  /// ended, so the screen goes back to the conversation, not to a result.
+  bool _direct = false;
+
   /// A command is running, shown or not yet.
   bool get busy => state is TaskRunning || _quiet != null;
 
-  Future<void> start(TaskCommand command) async {
+  /// Whether it started; a refused or failed start shows as a result unless
+  /// the live conversation asked for it (then the refusal goes back to it).
+  Future<TaskStart> start(TaskCommand command) async {
     final String text = command.text.trim();
-    if (text.isEmpty || busy) return;
+    if (text.isEmpty) {
+      return const TaskStart(started: false, reason: 'empty_command');
+    }
+    if (busy) return const TaskStart(started: false, reason: 'already_running');
+    _direct = command.direct;
     if (command.handsFree) {
       _quiet = text;
     } else {
       state = TaskRunning(command: text);
     }
+    TaskStart start;
     try {
-      final TaskStart start = await _repository.start(command);
-      if (!start.started) {
-        _quiet = null;
-        state = TaskResult(
-          command: text,
-          outcome: TaskOutcome.failed,
-          reason: start.reason,
-        );
-      }
+      start = await _repository.start(command);
     } on Failure {
-      _quiet = null;
-      state = TaskResult(command: text, outcome: TaskOutcome.failed);
+      start = const TaskStart(started: false);
     }
+    if (!start.started) {
+      _quiet = null;
+      state = command.direct
+          ? const TaskIdle()
+          : TaskResult(
+              command: text,
+              outcome: TaskOutcome.failed,
+              reason: start.reason,
+            );
+    }
+    return start;
   }
 
   Future<void> stop() async {
@@ -129,8 +142,9 @@ class HomeTaskController extends Notifier<HomeTask> {
       case TaskUpdateKind.finished:
         final String? quiet = _quiet;
         _quiet = null;
-        if (update.reason == notAddressed) {
-          // Not meant for Alesle: the screen stays as it was.
+        if (update.reason == notAddressed || _direct) {
+          // Not meant for Alesle, or the live conversation tells the user.
+          _direct = false;
           if (current is TaskRunning) state = const TaskIdle();
           return;
         }

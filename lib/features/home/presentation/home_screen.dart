@@ -14,6 +14,7 @@ import '../../../app/widgets/capsule_button.dart';
 import '../../../core/agent/agent_task.dart';
 import '../../../core/errors/failure.dart';
 import '../domain/agent_status.dart';
+import '../domain/live.dart';
 import '../domain/server_health.dart';
 import 'failure_message.dart';
 import 'hands_free_controller.dart';
@@ -66,6 +67,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _showHandsFreeProblem(HandsFreeState? previous, HandsFreeState next) {
     final HandsFreeProblem? problem = next.problem;
     if (problem == null || problem == previous?.problem) return;
+    if (problem == HandsFreeProblem.limitReached) {
+      ref.read(handsFreeProvider.notifier).clearProblem();
+      unawaited(context.push(AppRoutes.limitFor('limit_reached')));
+      return;
+    }
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -73,6 +79,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           content: Text(switch (problem) {
             HandsFreeProblem.microphoneDenied => context.l10n.voiceMicDenied,
             HandsFreeProblem.startFailed => context.l10n.handsFreeStartFailed,
+            HandsFreeProblem.limitReached => '',
           }),
         ),
       );
@@ -131,6 +138,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ..listen<VoiceState>(voiceProvider, _showVoiceProblem)
       ..listen<HandsFreeState>(handsFreeProvider, _showHandsFreeProblem);
     final HomeTask task = ref.watch(homeTaskProvider);
+    final bool live = ref.watch(
+      handsFreeProvider.select((HandsFreeState s) => s.inConversation),
+    );
     return Scaffold(
       body: DecoratedBox(
         decoration: const BoxDecoration(
@@ -143,20 +153,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                const _HandsFreeBar(),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: switch (task) {
-                    TaskIdle() => _IdleView(now: widget.now),
-                    final TaskRunning running => _RunningView(task: running),
-                    final TaskResult result => _ResultView(result: result),
-                  },
-                ),
-              ],
-            ),
+            child: live
+                ? const _LiveView()
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      const _HandsFreeBar(),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: switch (task) {
+                          TaskIdle() => _IdleView(now: widget.now),
+                          final TaskRunning running => _RunningView(
+                            task: running,
+                          ),
+                          final TaskResult result => _ResultView(
+                            result: result,
+                          ),
+                        },
+                      ),
+                    ],
+                  ),
           ),
         ),
       ),
@@ -519,6 +535,267 @@ class _CommandSheetState extends State<_CommandSheet> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Live conversation ────────────────────────────────────────────────────────
+
+/// The live conversation (SOW 04 §4.2), like a call: the orb shows who is
+/// talking, the words of this turn are on screen, and phone work shows as a
+/// small chip — no result screen, nothing to confirm. Mute, type, or end it.
+class _LiveView extends ConsumerWidget {
+  const _LiveView();
+
+  Future<void> _type(BuildContext context, WidgetRef ref) async {
+    final String? text = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AlesleRadii.sheet),
+        ),
+      ),
+      builder: (BuildContext context) => const _CommandSheet(),
+    );
+    if (text == null || text.trim().isEmpty) return;
+    await ref.read(handsFreeProvider.notifier).sendText(text);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final TextTheme text = Theme.of(context).textTheme;
+    final HandsFreeState state = ref.watch(handsFreeProvider);
+    final HandsFreeController controller = ref.read(handsFreeProvider.notifier);
+    final HomeTask task = ref.watch(homeTaskProvider);
+    final bool muted = state.phase == HandsFreePhase.muted;
+    final LiveStage stage = state.live ?? LiveStage.connecting;
+    final String? said = state.said;
+    final String? reply = state.reply;
+    return Column(
+      key: const Key('live-view'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: const Color(0x1F7C5CE0),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const Icon(
+                      Icons.graphic_eq_rounded,
+                      size: 18,
+                      color: AlesleColors.violet,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      context.l10n.liveTitle,
+                      style: text.labelLarge?.copyWith(
+                        color: AlesleColors.violet,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const Spacer(),
+            IconButton(
+              key: const Key('home-settings'),
+              onPressed: () => unawaited(context.push(AppRoutes.settings)),
+              icon: const Icon(Icons.tune_rounded),
+              tooltip: context.l10n.settingsTitle,
+            ),
+          ],
+        ),
+        Expanded(
+          child: _Centered(
+            orbFraction: 0.34,
+            builder: (double orb) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                AlesleOrb(
+                  size: orb,
+                  state: muted
+                      ? OrbState.idle
+                      : switch (stage) {
+                          LiveStage.connecting ||
+                          LiveStage.thinking => OrbState.working,
+                          _ => OrbState.listening,
+                        },
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  muted
+                      ? context.l10n.liveMuted
+                      : switch (stage) {
+                          LiveStage.connecting ||
+                          LiveStage.unauthorized ||
+                          LiveStage.fallback ||
+                          LiveStage.limitReached => context.l10n.liveConnecting,
+                          LiveStage.listening => context.l10n.liveListening,
+                          LiveStage.hearing => context.l10n.liveHearing,
+                          LiveStage.thinking => context.l10n.liveThinking,
+                          LiveStage.speaking => context.l10n.liveSpeaking,
+                        },
+                  key: const Key('live-stage'),
+                  style: text.titleMedium?.copyWith(
+                    color: stage == LiveStage.hearing && !muted
+                        ? AlesleColors.violet
+                        : AlesleColors.text2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                if (said != null)
+                  Text(
+                    said,
+                    key: const Key('live-said'),
+                    style: text.bodyLarge?.copyWith(color: AlesleColors.text2),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                if (reply != null) ...<Widget>[
+                  const SizedBox(height: 10),
+                  Text(
+                    reply,
+                    key: const Key('live-reply'),
+                    style: text.titleLarge,
+                    textAlign: TextAlign.center,
+                    maxLines: 5,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                if (said == null && reply == null)
+                  Text(
+                    context.l10n.liveHint,
+                    style: text.bodyLarge?.copyWith(color: AlesleColors.text2),
+                    textAlign: TextAlign.center,
+                  ),
+              ],
+            ),
+          ),
+        ),
+        if (task is TaskRunning) ...<Widget>[
+          Center(
+            child: InputChip(
+              key: const Key('live-task'),
+              avatar: const SizedBox.square(
+                dimension: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              label: Text(
+                context.l10n.liveTaskRunning(task.step ?? task.command),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              deleteIcon: const Icon(Icons.close_rounded, size: 18),
+              deleteButtonTooltipMessage: context.l10n.liveTaskStop,
+              onDeleted: () =>
+                  unawaited(ref.read(homeTaskProvider.notifier).stop()),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: _LiveButton(
+                key: const Key('live-mute'),
+                icon: muted ? Icons.mic_off_rounded : Icons.mic_rounded,
+                label: muted
+                    ? context.l10n.handsFreeUnmute
+                    : context.l10n.handsFreeMute,
+                selected: muted,
+                onPressed: () => unawaited(controller.toggleMute()),
+              ),
+            ),
+            Expanded(
+              child: _LiveButton(
+                key: const Key('live-keyboard'),
+                icon: Icons.keyboard_outlined,
+                label: context.l10n.liveKeyboard,
+                onPressed: () => unawaited(_type(context, ref)),
+              ),
+            ),
+            Expanded(
+              child: _LiveButton(
+                key: const Key('live-close'),
+                icon: Icons.close_rounded,
+                label: context.l10n.liveClose,
+                danger: true,
+                onPressed: () => unawaited(controller.turnOff()),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _LiveButton extends StatelessWidget {
+  const _LiveButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.selected = false,
+    this.danger = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+  final bool selected;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color background = danger
+        ? AlesleColors.danger
+        : selected
+        ? AlesleColors.ink
+        : Colors.white;
+    final Color foreground = danger || selected
+        ? Colors.white
+        : AlesleColors.ink;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Semantics(
+          button: true,
+          label: label,
+          child: Material(
+            color: background,
+            shape: const CircleBorder(),
+            elevation: 1,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onPressed,
+              child: SizedBox.square(
+                dimension: 64,
+                child: Icon(icon, color: foreground, size: 28),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall
+              ?.copyWith(color: AlesleColors.text2),
+        ),
+      ],
     );
   }
 }

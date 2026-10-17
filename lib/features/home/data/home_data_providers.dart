@@ -37,7 +37,10 @@ final Provider<VoiceRepository> voiceRepositoryProvider =
 
 final Provider<HandsFreeRepository> handsFreeRepositoryProvider =
     Provider<HandsFreeRepository>((Ref ref) {
-      final HandsFreeRepositoryImpl repository = HandsFreeRepositoryImpl();
+      final HandsFreeRepositoryImpl repository = HandsFreeRepositoryImpl(
+        config: ref.watch(appConfigProvider),
+        tokens: ref.read(sessionProvider.notifier),
+      );
       ref.onDispose(() => unawaited(repository.dispose()));
       return repository;
     });

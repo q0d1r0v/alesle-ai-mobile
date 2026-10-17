@@ -315,6 +315,44 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t turn the microphone on. Try again with the app open.';
 
   @override
+  String get liveTitle => 'Live';
+
+  @override
+  String get liveConnecting => 'Connecting…';
+
+  @override
+  String get liveListening => 'Listening';
+
+  @override
+  String get liveHearing => 'Hearing you…';
+
+  @override
+  String get liveThinking => 'Thinking…';
+
+  @override
+  String get liveSpeaking => 'Speaking';
+
+  @override
+  String get liveMuted => 'Microphone off';
+
+  @override
+  String get liveHint => 'Just talk — I\'m here';
+
+  @override
+  String get liveKeyboard => 'Type';
+
+  @override
+  String get liveClose => 'End';
+
+  @override
+  String liveTaskRunning(String task) {
+    return 'Working on: $task';
+  }
+
+  @override
+  String get liveTaskStop => 'Stop the task';
+
+  @override
   String get signInTitle => 'Sign in to Alesle';
 
   @override

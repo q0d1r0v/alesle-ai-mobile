@@ -109,6 +109,7 @@ object LoopFrames {
         locale: String,
         policy: ConfirmPolicy,
         handsFree: Boolean = false,
+        direct: Boolean = false,
     ): String {
         val json =
             JSONObject()
@@ -117,6 +118,7 @@ object LoopFrames {
                 .put("locale", locale)
                 .put("policy", policy.wire)
         if (handsFree) json.put("handsFree", true)
+        if (direct) json.put("direct", true)
         return json.toString()
     }
 

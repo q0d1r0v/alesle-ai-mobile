@@ -57,6 +57,9 @@ void main() {
               FakeBillingRepository()
                 ..current = testBillingStatus(usedPercent: 64),
             ),
+            handsFreeRepositoryProvider.overrideWithValue(
+              FakeHandsFreeRepository(),
+            ),
           ],
         );
         await tester.pumpAndSettle();

@@ -42,6 +42,7 @@ final class AssistantRepositoryImpl implements AssistantRepository {
           locale: command.locale,
           confirmEverySensitiveAction: command.confirmSensitiveActions,
           handsFree: command.handsFree,
+          direct: command.direct,
         ),
       );
       return TaskStart(started: result.started, reason: result.reason);

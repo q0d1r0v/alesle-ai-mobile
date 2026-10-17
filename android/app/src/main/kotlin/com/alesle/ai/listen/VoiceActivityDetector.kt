@@ -16,6 +16,10 @@ import kotlin.math.sqrt
 class VoiceActivityDetector(
     private val onUtterance: (ShortArray) -> Unit,
     private val tuning: Tuning = Tuning(),
+    /** Live voice: speech as it comes, once it is clearly words; null for whole utterances only. */
+    private val stream: SpeechStream? = null,
+    /** True while Alesle speaks: only louder, closer speech counts (barge-in, not its own echo). */
+    private val strict: () -> Boolean = { false },
 ) {
     data class Tuning(
         /** Speech must stand this many times above the noise floor. */
@@ -34,6 +38,8 @@ class VoiceActivityDetector(
         val maxFrames: Int = 750,
         /** How fast the floor follows the room while nobody speaks. */
         val floorAdapt: Double = 0.05,
+        /** While Alesle speaks, speech must be this much louder to count. */
+        val bargeInFactor: Double = 2.5,
     )
 
     private var floor = tuning.minSpeechRms / tuning.speechFactor
@@ -44,12 +50,16 @@ class VoiceActivityDetector(
     private var quiet = 0
     private var speechFrames = 0
 
+    /** The stream was told this utterance started. */
+    private var announced = false
+
     /** True while an utterance is being collected. */
     val inSpeech: Boolean get() = speaking
 
     fun accept(frame: ShortArray) {
         val rms = rms(frame)
-        val loud = rms >= max(tuning.minSpeechRms, floor * tuning.speechFactor)
+        val scale = if (strict()) tuning.bargeInFactor else 1.0
+        val loud = rms >= max(tuning.minSpeechRms, floor * tuning.speechFactor) * scale
         if (!speaking) {
             preroll.addLast(frame)
             if (preroll.size > tuning.prerollFrames + tuning.onsetFrames) preroll.removeFirst()
@@ -71,11 +81,26 @@ class VoiceActivityDetector(
         } else {
             quiet++
         }
+        announce(frame)
         if (quiet >= tuning.hangoverFrames || utterance.size >= tuning.maxFrames) end()
+    }
+
+    /** Clicks never reach the stream: it hears an utterance only once it has enough speech in it. */
+    private fun announce(frame: ShortArray) {
+        val stream = stream ?: return
+        if (announced) {
+            stream.onSpeechFrame(frame)
+            return
+        }
+        if (speechFrames < tuning.minSpeechFrames) return
+        announced = true
+        stream.onSpeechStart(utterance.toList())
     }
 
     /** Drops whatever was being collected (muted, or our own voice playing). */
     fun reset() {
+        if (announced) stream?.onSpeechEnd(cancelled = true)
+        announced = false
         preroll.clear()
         utterance.clear()
         speaking = false
@@ -87,6 +112,8 @@ class VoiceActivityDetector(
     private fun end() {
         val frames = utterance.toList()
         val words = speechFrames >= tuning.minSpeechFrames
+        if (announced) stream?.onSpeechEnd(cancelled = false)
+        announced = false
         reset()
         if (!words) return
         val pcm = ShortArray(frames.sumOf { it.size })
@@ -96,6 +123,16 @@ class VoiceActivityDetector(
             at += frame.size
         }
         onUtterance(pcm)
+    }
+
+    /** Speech as it is heard: start (with what came just before), each frame, end. */
+    interface SpeechStream {
+        fun onSpeechStart(frames: List<ShortArray>)
+
+        fun onSpeechFrame(frame: ShortArray)
+
+        /** [cancelled]: cut off by mute, not ended by a pause. */
+        fun onSpeechEnd(cancelled: Boolean)
     }
 
     companion object {

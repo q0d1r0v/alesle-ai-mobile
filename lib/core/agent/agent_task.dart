@@ -8,6 +8,7 @@ final class TaskCommand {
     required this.locale,
     required this.confirmSensitiveActions,
     this.handsFree = false,
+    this.direct = false,
   });
 
   final String text;
@@ -19,6 +20,10 @@ final class TaskCommand {
   /// Heard by hands-free listening: words not meant for Alesle end quietly
   /// as [notAddressed].
   final bool handsFree;
+
+  /// Asked for by the live voice model, which already understood it: run as
+  /// it is, and the model (not the screen) tells the user how it went.
+  final bool direct;
 }
 
 /// How a hands-free task ends when the words were not meant for Alesle.

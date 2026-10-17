@@ -317,6 +317,44 @@ class AppLocalizationsUz extends AppLocalizations {
       'Mikrofonni yoqib bo‘lmadi. Ilovani ochiq holda qayta urining.';
 
   @override
+  String get liveTitle => 'Live';
+
+  @override
+  String get liveConnecting => 'Ulanyapman…';
+
+  @override
+  String get liveListening => 'Tinglayapman';
+
+  @override
+  String get liveHearing => 'Eshityapman…';
+
+  @override
+  String get liveThinking => 'O‘ylayapman…';
+
+  @override
+  String get liveSpeaking => 'Gapiryapman';
+
+  @override
+  String get liveMuted => 'Mikrofon o‘chiq';
+
+  @override
+  String get liveHint => 'Gapiring — men shu yerdaman';
+
+  @override
+  String get liveKeyboard => 'Yozish';
+
+  @override
+  String get liveClose => 'Tugatish';
+
+  @override
+  String liveTaskRunning(String task) {
+    return 'Bajaryapman: $task';
+  }
+
+  @override
+  String get liveTaskStop => 'Vazifani to‘xtatish';
+
+  @override
   String get signInTitle => 'Alesle’ga kiring';
 
   @override

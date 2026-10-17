@@ -132,6 +132,51 @@ enum PermissionState {
   permanentlyDenied,
 }
 
+enum LivePhase {
+  /// Opening the connection.
+  connecting,
+
+  /// Ready: just speak.
+  listening,
+
+  /// The user is speaking (their voice is going to the model).
+  hearing,
+
+  /// The user stopped; the answer is on its way.
+  thinking,
+
+  /// Alesle is speaking.
+  speaking,
+
+  /// Live is not available now: hands-free went back to one command at a time.
+  fallback,
+
+  /// The plan's credits are used up.
+  limitReached,
+
+  /// The connection was refused for the token: send a fresh one (updateLiveToken).
+  unauthorized,
+}
+
+enum LiveEventKind {
+  /// [LiveEvent.phase] changed.
+  phase,
+
+  /// A caption: [LiveEvent.role] `user` or `assistant`, [LiveEvent.text],
+  /// [LiveEvent.isFinal] once the turn is over.
+  caption,
+
+  /// The model wants this done on the phone: start [LiveEvent.text] as a
+  /// direct task and report its end with liveTaskResult([LiveEvent.callId]).
+  taskRun,
+
+  /// Change the running task with [LiveEvent.text].
+  taskAmend,
+
+  /// Stop the running task.
+  taskStop,
+}
+
 enum InstallOutcome {
   /// The system's install confirmation is showing.
   started,
@@ -194,6 +239,7 @@ class TaskRequest {
     required this.locale,
     required this.confirmEverySensitiveAction,
     this.handsFree,
+    this.direct,
   });
 
   String command;
@@ -213,6 +259,10 @@ class TaskRequest {
   /// silently (the server ends them as `not_addressed`). Null = false.
   bool? handsFree;
 
+  /// Asked for by the live voice model, which already understood it: the
+  /// server runs it as a task without classifying it again. Null = false.
+  bool? direct;
+
   List<Object?> _toList() {
     return <Object?>[
       command,
@@ -221,6 +271,7 @@ class TaskRequest {
       locale,
       confirmEverySensitiveAction,
       handsFree,
+      direct,
     ];
   }
 
@@ -237,6 +288,7 @@ class TaskRequest {
       locale: result[3]! as String,
       confirmEverySensitiveAction: result[4]! as bool,
       handsFree: result[5] as bool?,
+      direct: result[6] as bool?,
     );
   }
 
@@ -257,7 +309,8 @@ class TaskRequest {
           confirmEverySensitiveAction,
           other.confirmEverySensitiveAction,
         ) &&
-        _deepEquals(handsFree, other.handsFree);
+        _deepEquals(handsFree, other.handsFree) &&
+        _deepEquals(direct, other.direct);
   }
 
   @override
@@ -266,7 +319,7 @@ class TaskRequest {
 
   @override
   String toString() {
-    return 'TaskRequest(command: $command, apiBaseUrl: $apiBaseUrl, accessToken: $accessToken, locale: $locale, confirmEverySensitiveAction: $confirmEverySensitiveAction, handsFree: $handsFree)';
+    return 'TaskRequest(command: $command, apiBaseUrl: $apiBaseUrl, accessToken: $accessToken, locale: $locale, confirmEverySensitiveAction: $confirmEverySensitiveAction, handsFree: $handsFree, direct: $direct)';
   }
 }
 
@@ -492,6 +545,131 @@ class ListenStateMessage {
   }
 }
 
+/// What the live connection needs; the socket is `/v1/voice/live` on [apiBaseUrl].
+class LiveConfig {
+  LiveConfig({
+    required this.apiBaseUrl,
+    required this.accessToken,
+    required this.locale,
+  });
+
+  String apiBaseUrl;
+
+  String accessToken;
+
+  /// The app's language: the model answers in the language the user speaks.
+  String locale;
+
+  List<Object?> _toList() {
+    return <Object?>[apiBaseUrl, accessToken, locale];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static LiveConfig decode(Object result) {
+    result as List<Object?>;
+    return LiveConfig(
+      apiBaseUrl: result[0]! as String,
+      accessToken: result[1]! as String,
+      locale: result[2]! as String,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! LiveConfig || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(apiBaseUrl, other.apiBaseUrl) &&
+        _deepEquals(accessToken, other.accessToken) &&
+        _deepEquals(locale, other.locale);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'LiveConfig(apiBaseUrl: $apiBaseUrl, accessToken: $accessToken, locale: $locale)';
+  }
+}
+
+class LiveEvent {
+  LiveEvent({
+    required this.kind,
+    this.phase,
+    this.role,
+    this.text,
+    this.isFinal,
+    this.callId,
+  });
+
+  LiveEventKind kind;
+
+  LivePhase? phase;
+
+  String? role;
+
+  String? text;
+
+  bool? isFinal;
+
+  String? callId;
+
+  List<Object?> _toList() {
+    return <Object?>[kind, phase, role, text, isFinal, callId];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static LiveEvent decode(Object result) {
+    result as List<Object?>;
+    return LiveEvent(
+      kind: result[0]! as LiveEventKind,
+      phase: result[1] as LivePhase?,
+      role: result[2] as String?,
+      text: result[3] as String?,
+      isFinal: result[4] as bool?,
+      callId: result[5] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! LiveEvent || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(kind, other.kind) &&
+        _deepEquals(phase, other.phase) &&
+        _deepEquals(role, other.role) &&
+        _deepEquals(text, other.text) &&
+        _deepEquals(isFinal, other.isFinal) &&
+        _deepEquals(callId, other.callId);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'LiveEvent(kind: $kind, phase: $phase, role: $role, text: $text, isFinal: $isFinal, callId: $callId)';
+  }
+}
+
 class AppVersionMessage {
   AppVersionMessage({
     required this.versionCode,
@@ -563,29 +741,41 @@ class _PigeonCodec extends StandardMessageCodec {
     } else if (value is PermissionState) {
       buffer.putUint8(131);
       writeValue(buffer, value.index);
-    } else if (value is InstallOutcome) {
+    } else if (value is LivePhase) {
       buffer.putUint8(132);
       writeValue(buffer, value.index);
-    } else if (value is AgentStatusMessage) {
+    } else if (value is LiveEventKind) {
       buffer.putUint8(133);
-      writeValue(buffer, value.encode());
-    } else if (value is TaskRequest) {
+      writeValue(buffer, value.index);
+    } else if (value is InstallOutcome) {
       buffer.putUint8(134);
-      writeValue(buffer, value.encode());
-    } else if (value is StartTaskResult) {
+      writeValue(buffer, value.index);
+    } else if (value is AgentStatusMessage) {
       buffer.putUint8(135);
       writeValue(buffer, value.encode());
-    } else if (value is StepEvent) {
+    } else if (value is TaskRequest) {
       buffer.putUint8(136);
       writeValue(buffer, value.encode());
-    } else if (value is DeviceSetupMessage) {
+    } else if (value is StartTaskResult) {
       buffer.putUint8(137);
       writeValue(buffer, value.encode());
-    } else if (value is ListenStateMessage) {
+    } else if (value is StepEvent) {
       buffer.putUint8(138);
       writeValue(buffer, value.encode());
-    } else if (value is AppVersionMessage) {
+    } else if (value is DeviceSetupMessage) {
       buffer.putUint8(139);
+      writeValue(buffer, value.encode());
+    } else if (value is ListenStateMessage) {
+      buffer.putUint8(140);
+      writeValue(buffer, value.encode());
+    } else if (value is LiveConfig) {
+      buffer.putUint8(141);
+      writeValue(buffer, value.encode());
+    } else if (value is LiveEvent) {
+      buffer.putUint8(142);
+      writeValue(buffer, value.encode());
+    } else if (value is AppVersionMessage) {
+      buffer.putUint8(143);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -606,20 +796,30 @@ class _PigeonCodec extends StandardMessageCodec {
         return value == null ? null : PermissionState.values[value];
       case 132:
         final value = readValue(buffer) as int?;
-        return value == null ? null : InstallOutcome.values[value];
+        return value == null ? null : LivePhase.values[value];
       case 133:
-        return AgentStatusMessage.decode(readValue(buffer)!);
+        final value = readValue(buffer) as int?;
+        return value == null ? null : LiveEventKind.values[value];
       case 134:
-        return TaskRequest.decode(readValue(buffer)!);
+        final value = readValue(buffer) as int?;
+        return value == null ? null : InstallOutcome.values[value];
       case 135:
-        return StartTaskResult.decode(readValue(buffer)!);
+        return AgentStatusMessage.decode(readValue(buffer)!);
       case 136:
-        return StepEvent.decode(readValue(buffer)!);
+        return TaskRequest.decode(readValue(buffer)!);
       case 137:
-        return DeviceSetupMessage.decode(readValue(buffer)!);
+        return StartTaskResult.decode(readValue(buffer)!);
       case 138:
-        return ListenStateMessage.decode(readValue(buffer)!);
+        return StepEvent.decode(readValue(buffer)!);
       case 139:
+        return DeviceSetupMessage.decode(readValue(buffer)!);
+      case 140:
+        return ListenStateMessage.decode(readValue(buffer)!);
+      case 141:
+        return LiveConfig.decode(readValue(buffer)!);
+      case 142:
+        return LiveEvent.decode(readValue(buffer)!);
+      case 143:
         return AppVersionMessage.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
@@ -1161,6 +1361,97 @@ class ListenHostApi {
     );
     return pigeonVar_replyValue! as ListenStateMessage;
   }
+
+  /// Hands-free as a live conversation: speech streams to the model and its
+  /// voice plays as it comes. Falls back to [startListening]'s way by itself
+  /// when Live is not available (a `fallback` phase event says so).
+  Future<ListenStateMessage> startLive(LiveConfig config) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.ListenHostApi.startLive$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[config],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as ListenStateMessage;
+  }
+
+  /// A fresh access token after an `unauthorized` phase: reconnects with it.
+  Future<void> updateLiveToken(String accessToken) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.ListenHostApi.updateLiveToken$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[accessToken],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  /// Typed instead of spoken.
+  Future<void> sendLiveText(String text) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.ListenHostApi.sendLiveText$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[text],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  /// How the task a `taskRun` event asked for ended (status as in StepEvent).
+  Future<void> liveTaskResult(
+    String callId,
+    String status,
+    String? reply,
+  ) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.alesle_ai.ListenHostApi.liveTaskResult$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[callId, status, reply],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
 }
 
 abstract class ListenEventsApi {
@@ -1170,6 +1461,8 @@ abstract class ListenEventsApi {
   void onUtterance(String path);
 
   void onListenState(ListenStateMessage state);
+
+  void onLiveEvent(LiveEvent event);
 
   static void setUp(
     ListenEventsApi? api, {
@@ -1218,6 +1511,31 @@ abstract class ListenEventsApi {
           final ListenStateMessage arg_state = args[0]! as ListenStateMessage;
           try {
             api.onListenState(arg_state);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          } catch (e) {
+            return wrapResponse(
+              error: PlatformException(code: 'error', message: e.toString()),
+            );
+          }
+        });
+      }
+    }
+    {
+      final pigeonVar_channel = BasicMessageChannel<Object?>(
+        'dev.flutter.pigeon.alesle_ai.ListenEventsApi.onLiveEvent$messageChannelSuffix',
+        pigeonChannelCodec,
+        binaryMessenger: binaryMessenger,
+      );
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          final List<Object?> args = message! as List<Object?>;
+          final LiveEvent arg_event = args[0]! as LiveEvent;
+          try {
+            api.onLiveEvent(arg_event);
             return wrapResponse(empty: true);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);

@@ -241,6 +241,56 @@ enum class PermissionState(val raw: Int) {
   }
 }
 
+enum class LivePhase(val raw: Int) {
+  /** Opening the connection. */
+  CONNECTING(0),
+  /** Ready: just speak. */
+  LISTENING(1),
+  /** The user is speaking (their voice is going to the model). */
+  HEARING(2),
+  /** The user stopped; the answer is on its way. */
+  THINKING(3),
+  /** Alesle is speaking. */
+  SPEAKING(4),
+  /** Live is not available now: hands-free went back to one command at a time. */
+  FALLBACK(5),
+  /** The plan's credits are used up. */
+  LIMIT_REACHED(6),
+  /** The connection was refused for the token: send a fresh one (updateLiveToken). */
+  UNAUTHORIZED(7);
+
+  companion object {
+    fun ofRaw(raw: Int): LivePhase? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
+enum class LiveEventKind(val raw: Int) {
+  /** [LiveEvent.phase] changed. */
+  PHASE(0),
+  /**
+   * A caption: [LiveEvent.role] `user` or `assistant`, [LiveEvent.text],
+   * [LiveEvent.isFinal] once the turn is over.
+   */
+  CAPTION(1),
+  /**
+   * The model wants this done on the phone: start [LiveEvent.text] as a
+   * direct task and report its end with liveTaskResult([LiveEvent.callId]).
+   */
+  TASK_RUN(2),
+  /** Change the running task with [LiveEvent.text]. */
+  TASK_AMEND(3),
+  /** Stop the running task. */
+  TASK_STOP(4);
+
+  companion object {
+    fun ofRaw(raw: Int): LiveEventKind? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
 enum class InstallOutcome(val raw: Int) {
   /** The system's install confirmation is showing. */
   STARTED(0),
@@ -313,7 +363,12 @@ data class TaskRequest (
    * Heard by hands-free listening: words not meant for Alesle are let go
    * silently (the server ends them as `not_addressed`). Null = false.
    */
-  val handsFree: Boolean? = null
+  val handsFree: Boolean? = null,
+  /**
+   * Asked for by the live voice model, which already understood it: the
+   * server runs it as a task without classifying it again. Null = false.
+   */
+  val direct: Boolean? = null
 )
  {
   companion object {
@@ -324,7 +379,8 @@ data class TaskRequest (
       val locale = pigeonVar_list[3] as String
       val confirmEverySensitiveAction = pigeonVar_list[4] as Boolean
       val handsFree = pigeonVar_list[5] as Boolean?
-      return TaskRequest(command, apiBaseUrl, accessToken, locale, confirmEverySensitiveAction, handsFree)
+      val direct = pigeonVar_list[6] as Boolean?
+      return TaskRequest(command, apiBaseUrl, accessToken, locale, confirmEverySensitiveAction, handsFree, direct)
     }
   }
   fun toList(): List<Any?> {
@@ -335,6 +391,7 @@ data class TaskRequest (
       locale,
       confirmEverySensitiveAction,
       handsFree,
+      direct,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -345,7 +402,7 @@ data class TaskRequest (
       return true
     }
     val other = other as TaskRequest
-    return AgentApiPigeonUtils.deepEquals(this.command, other.command) && AgentApiPigeonUtils.deepEquals(this.apiBaseUrl, other.apiBaseUrl) && AgentApiPigeonUtils.deepEquals(this.accessToken, other.accessToken) && AgentApiPigeonUtils.deepEquals(this.locale, other.locale) && AgentApiPigeonUtils.deepEquals(this.confirmEverySensitiveAction, other.confirmEverySensitiveAction) && AgentApiPigeonUtils.deepEquals(this.handsFree, other.handsFree)
+    return AgentApiPigeonUtils.deepEquals(this.command, other.command) && AgentApiPigeonUtils.deepEquals(this.apiBaseUrl, other.apiBaseUrl) && AgentApiPigeonUtils.deepEquals(this.accessToken, other.accessToken) && AgentApiPigeonUtils.deepEquals(this.locale, other.locale) && AgentApiPigeonUtils.deepEquals(this.confirmEverySensitiveAction, other.confirmEverySensitiveAction) && AgentApiPigeonUtils.deepEquals(this.handsFree, other.handsFree) && AgentApiPigeonUtils.deepEquals(this.direct, other.direct)
   }
 
   override fun hashCode(): Int {
@@ -356,10 +413,11 @@ data class TaskRequest (
     result = 31 * result + AgentApiPigeonUtils.deepHash(this.locale)
     result = 31 * result + AgentApiPigeonUtils.deepHash(this.confirmEverySensitiveAction)
     result = 31 * result + AgentApiPigeonUtils.deepHash(this.handsFree)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.direct)
     return result
   }
   override fun toString(): String {
-    return "TaskRequest(command=$command, apiBaseUrl=$apiBaseUrl, accessToken=$accessToken, locale=$locale, confirmEverySensitiveAction=$confirmEverySensitiveAction, handsFree=$handsFree)"
+    return "TaskRequest(command=$command, apiBaseUrl=$apiBaseUrl, accessToken=$accessToken, locale=$locale, confirmEverySensitiveAction=$confirmEverySensitiveAction, handsFree=$handsFree, direct=$direct)"
   }
 }
 
@@ -555,6 +613,113 @@ data class ListenStateMessage (
   }
 }
 
+/**
+ * What the live connection needs; the socket is `/v1/voice/live` on [apiBaseUrl].
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class LiveConfig (
+  val apiBaseUrl: String,
+  val accessToken: String,
+  /** The app's language: the model answers in the language the user speaks. */
+  val locale: String
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): LiveConfig {
+      val apiBaseUrl = pigeonVar_list[0] as String
+      val accessToken = pigeonVar_list[1] as String
+      val locale = pigeonVar_list[2] as String
+      return LiveConfig(apiBaseUrl, accessToken, locale)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      apiBaseUrl,
+      accessToken,
+      locale,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as LiveConfig
+    return AgentApiPigeonUtils.deepEquals(this.apiBaseUrl, other.apiBaseUrl) && AgentApiPigeonUtils.deepEquals(this.accessToken, other.accessToken) && AgentApiPigeonUtils.deepEquals(this.locale, other.locale)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.apiBaseUrl)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.accessToken)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.locale)
+    return result
+  }
+  override fun toString(): String {
+    return "LiveConfig(apiBaseUrl=$apiBaseUrl, accessToken=$accessToken, locale=$locale)"
+  }
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class LiveEvent (
+  val kind: LiveEventKind,
+  val phase: LivePhase? = null,
+  val role: String? = null,
+  val text: String? = null,
+  val isFinal: Boolean? = null,
+  val callId: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): LiveEvent {
+      val kind = pigeonVar_list[0] as LiveEventKind
+      val phase = pigeonVar_list[1] as LivePhase?
+      val role = pigeonVar_list[2] as String?
+      val text = pigeonVar_list[3] as String?
+      val isFinal = pigeonVar_list[4] as Boolean?
+      val callId = pigeonVar_list[5] as String?
+      return LiveEvent(kind, phase, role, text, isFinal, callId)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      kind,
+      phase,
+      role,
+      text,
+      isFinal,
+      callId,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as LiveEvent
+    return AgentApiPigeonUtils.deepEquals(this.kind, other.kind) && AgentApiPigeonUtils.deepEquals(this.phase, other.phase) && AgentApiPigeonUtils.deepEquals(this.role, other.role) && AgentApiPigeonUtils.deepEquals(this.text, other.text) && AgentApiPigeonUtils.deepEquals(this.isFinal, other.isFinal) && AgentApiPigeonUtils.deepEquals(this.callId, other.callId)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.kind)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.phase)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.role)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.text)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.isFinal)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.callId)
+    return result
+  }
+  override fun toString(): String {
+    return "LiveEvent(kind=$kind, phase=$phase, role=$role, text=$text, isFinal=$isFinal, callId=$callId)"
+  }
+}
+
 /** Generated class from Pigeon that represents data sent in messages. */
 data class AppVersionMessage (
   val versionCode: Long,
@@ -620,40 +785,60 @@ private open class AgentApiPigeonCodec : StandardMessageCodec() {
       }
       132.toByte() -> {
         return (readValue(buffer) as Long?)?.let {
-          InstallOutcome.ofRaw(it.toInt())
+          LivePhase.ofRaw(it.toInt())
         }
       }
       133.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let {
-          AgentStatusMessage.fromList(it)
+        return (readValue(buffer) as Long?)?.let {
+          LiveEventKind.ofRaw(it.toInt())
         }
       }
       134.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let {
-          TaskRequest.fromList(it)
+        return (readValue(buffer) as Long?)?.let {
+          InstallOutcome.ofRaw(it.toInt())
         }
       }
       135.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StartTaskResult.fromList(it)
+          AgentStatusMessage.fromList(it)
         }
       }
       136.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StepEvent.fromList(it)
+          TaskRequest.fromList(it)
         }
       }
       137.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          DeviceSetupMessage.fromList(it)
+          StartTaskResult.fromList(it)
         }
       }
       138.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ListenStateMessage.fromList(it)
+          StepEvent.fromList(it)
         }
       }
       139.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          DeviceSetupMessage.fromList(it)
+        }
+      }
+      140.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ListenStateMessage.fromList(it)
+        }
+      }
+      141.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          LiveConfig.fromList(it)
+        }
+      }
+      142.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          LiveEvent.fromList(it)
+        }
+      }
+      143.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
           AppVersionMessage.fromList(it)
         }
@@ -675,36 +860,52 @@ private open class AgentApiPigeonCodec : StandardMessageCodec() {
         stream.write(131)
         writeValue(stream, value.raw.toLong())
       }
-      is InstallOutcome -> {
+      is LivePhase -> {
         stream.write(132)
         writeValue(stream, value.raw.toLong())
       }
-      is AgentStatusMessage -> {
+      is LiveEventKind -> {
         stream.write(133)
-        writeValue(stream, value.toList())
+        writeValue(stream, value.raw.toLong())
       }
-      is TaskRequest -> {
+      is InstallOutcome -> {
         stream.write(134)
-        writeValue(stream, value.toList())
+        writeValue(stream, value.raw.toLong())
       }
-      is StartTaskResult -> {
+      is AgentStatusMessage -> {
         stream.write(135)
         writeValue(stream, value.toList())
       }
-      is StepEvent -> {
+      is TaskRequest -> {
         stream.write(136)
         writeValue(stream, value.toList())
       }
-      is DeviceSetupMessage -> {
+      is StartTaskResult -> {
         stream.write(137)
         writeValue(stream, value.toList())
       }
-      is ListenStateMessage -> {
+      is StepEvent -> {
         stream.write(138)
         writeValue(stream, value.toList())
       }
-      is AppVersionMessage -> {
+      is DeviceSetupMessage -> {
         stream.write(139)
+        writeValue(stream, value.toList())
+      }
+      is ListenStateMessage -> {
+        stream.write(140)
+        writeValue(stream, value.toList())
+      }
+      is LiveConfig -> {
+        stream.write(141)
+        writeValue(stream, value.toList())
+      }
+      is LiveEvent -> {
+        stream.write(142)
+        writeValue(stream, value.toList())
+      }
+      is AppVersionMessage -> {
+        stream.write(143)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -1117,6 +1318,18 @@ interface ListenHostApi {
   fun stopListening()
   fun setMuted(muted: Boolean)
   fun listenState(): ListenStateMessage
+  /**
+   * Hands-free as a live conversation: speech streams to the model and its
+   * voice plays as it comes. Falls back to [startListening]'s way by itself
+   * when Live is not available (a `fallback` phase event says so).
+   */
+  fun startLive(config: LiveConfig): ListenStateMessage
+  /** A fresh access token after an `unauthorized` phase: reconnects with it. */
+  fun updateLiveToken(accessToken: String)
+  /** Typed instead of spoken. */
+  fun sendLiveText(text: String)
+  /** How the task a `taskRun` event asked for ended (status as in StepEvent). */
+  fun liveTaskResult(callId: String, status: String, reply: String?)
 
   companion object {
     /** The codec used by ListenHostApi. */
@@ -1191,6 +1404,79 @@ interface ListenHostApi {
           channel.setMessageHandler(null)
         }
       }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.ListenHostApi.startLive$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val configArg = args[0] as LiveConfig
+            val wrapped: List<Any?> = try {
+              listOf(api.startLive(configArg))
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.ListenHostApi.updateLiveToken$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val accessTokenArg = args[0] as String
+            val wrapped: List<Any?> = try {
+              api.updateLiveToken(accessTokenArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.ListenHostApi.sendLiveText$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val textArg = args[0] as String
+            val wrapped: List<Any?> = try {
+              api.sendLiveText(textArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.alesle_ai.ListenHostApi.liveTaskResult$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val callIdArg = args[0] as String
+            val statusArg = args[1] as String
+            val replyArg = args[2] as String?
+            val wrapped: List<Any?> = try {
+              api.liveTaskResult(callIdArg, statusArg, replyArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              AgentApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
     }
   }
 }
@@ -1229,6 +1515,25 @@ class ListenEventsApi(private val binaryMessenger: BinaryMessenger, private val 
       val channelName = "dev.flutter.pigeon.alesle_ai.ListenEventsApi.onListenState$separatedMessageChannelSuffix"
       val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
       channel.send(listOf(stateArg)) {
+        if (it is List<*>) {
+          if (it.size > 1) {
+            continuation.resumeWithException(FlutterError(it[0] as String, it[1] as String, it[2] as String?))
+          } else {
+            continuation.resume(Unit)
+          }
+        } else {
+          continuation.resumeWithException(AgentApiPigeonUtils.createConnectionError(channelName))
+        } 
+      }
+    }
+  }
+  suspend fun onLiveEvent(eventArg: LiveEvent)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    return suspendCancellableCoroutine { continuation ->
+      val channelName = "dev.flutter.pigeon.alesle_ai.ListenEventsApi.onLiveEvent$separatedMessageChannelSuffix"
+      val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+      channel.send(listOf(eventArg)) {
         if (it is List<*>) {
           if (it.size > 1) {
             continuation.resumeWithException(FlutterError(it[0] as String, it[1] as String, it[2] as String?))

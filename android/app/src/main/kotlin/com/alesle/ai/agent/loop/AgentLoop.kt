@@ -30,6 +30,9 @@ interface LoopSocketListener {
 
     /** The server refused this app version (426, EC-15): reconnecting cannot help. */
     fun onUpgradeRequired() = onGone()
+
+    /** The server refused the token (401): only a fresh one helps. */
+    fun onUnauthorized() = onGone()
 }
 
 fun interface LoopSocketFactory {
@@ -116,6 +119,8 @@ data class LoopRequest(
     val policy: ConfirmPolicy,
     /** Heard by hands-free listening; the server may let it go as not meant for Alesle. */
     val handsFree: Boolean = false,
+    /** Already understood by the live voice model: the server runs it as it is. */
+    val direct: Boolean = false,
 )
 
 /**
@@ -234,7 +239,7 @@ class AgentLoop(
             if (id ==
                 null
             ) {
-                LoopFrames.start(request.command, request.locale, request.policy, request.handsFree)
+                LoopFrames.start(request.command, request.locale, request.policy, request.handsFree, request.direct)
             } else {
                 LoopFrames.resume(id)
             },

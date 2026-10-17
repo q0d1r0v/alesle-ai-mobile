@@ -67,9 +67,12 @@ class ListeningService : Service() {
             val created =
                 HandsFreeEngine(
                     openSource = { MicrophoneSource.open(this) },
-                    quiet = { HandsFree.isQuiet() },
-                    onUtterance = ::save,
+                    // Live hears the user over Alesle's voice (barge-in); otherwise it must not hear itself.
+                    quiet = { if (LiveVoice.handlesSpeech) HandsFree.state.muted else HandsFree.isQuiet() },
+                    onUtterance = { pcm -> if (!LiveVoice.handlesSpeech) save(pcm) },
                     onSourceLost = { shutDown() },
+                    stream = LiveVoice,
+                    strict = { LiveVoice.strict },
                 )
             if (!created.start()) {
                 shutDown()
@@ -85,6 +88,7 @@ class ListeningService : Service() {
     override fun onDestroy() {
         engine?.stop()
         engine = null
+        LiveVoice.stop()
         if (instance === this) instance = null
         HandsFree.update(ListenState(active = false, muted = HandsFree.state.muted))
         super.onDestroy()
@@ -103,6 +107,7 @@ class ListeningService : Service() {
     private fun shutDown() {
         engine?.stop()
         engine = null
+        LiveVoice.stop()
         HandsFree.update(ListenState(active = false, muted = HandsFree.state.muted))
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()

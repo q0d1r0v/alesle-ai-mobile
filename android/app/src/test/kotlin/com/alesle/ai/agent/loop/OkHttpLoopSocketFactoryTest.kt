@@ -38,6 +38,10 @@ class OkHttpLoopSocketFactoryTest {
             override fun onUpgradeRequired() {
                 events += "upgrade"
             }
+
+            override fun onUnauthorized() {
+                events += "unauthorized"
+            }
         }
 
     private fun next(): String = events.poll(5, TimeUnit.SECONDS) ?: error("no event")
@@ -82,10 +86,13 @@ class OkHttpLoopSocketFactoryTest {
     }
 
     @Test
-    fun `reports a refused upgrade as gone`() {
+    fun `reports a refused token as such, and any other refusal as gone`() {
         server.enqueue(MockResponse().setResponseCode(401))
+        server.enqueue(MockResponse().setResponseCode(503))
         server.start()
         OkHttpLoopSocketFactory(server.url("/v1/agent/ws").toString(), "bad", appVersion = 7).connect(listener)
+        assertEquals("unauthorized", next())
+        OkHttpLoopSocketFactory(server.url("/v1/voice/live").toString(), "ok", appVersion = 7).connect(listener)
         assertEquals("gone", next())
     }
 
@@ -101,6 +108,7 @@ class OkHttpLoopSocketFactoryTest {
     fun `derives the socket url from the API origin`() {
         assertEquals("ws://127.0.0.1:3000/v1/agent/ws", OkHttpLoopSocketFactory.socketUrl("http://127.0.0.1:3000"))
         assertEquals("wss://api.alesle.ai/v1/agent/ws", OkHttpLoopSocketFactory.socketUrl("https://api.alesle.ai/"))
+        assertEquals("ws://127.0.0.1:3000/v1/voice/live", OkHttpLoopSocketFactory.socketUrl("http://127.0.0.1:3000", "/v1/voice/live"))
         assertThrows(IllegalArgumentException::class.java) { OkHttpLoopSocketFactory.socketUrl("ftp://x") }
     }
 }

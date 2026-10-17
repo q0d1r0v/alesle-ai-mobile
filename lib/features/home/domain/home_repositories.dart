@@ -1,5 +1,6 @@
 import '../../../core/agent/agent_task.dart';
 import 'agent_status.dart';
+import 'live.dart';
 import 'server_health.dart';
 
 /// Backend reachability. Throws a `Failure` from core/errors on error.
@@ -103,4 +104,25 @@ abstract interface class HandsFreeRepository {
 
   /// Audio files of what was said; whoever takes one transcribes it and it is deleted.
   Stream<String> get utterances;
+
+  /// Hands-free as a live conversation (SOW 04 §4.2): speech streams to the
+  /// model and its voice plays as it comes. Signed out, it starts plain
+  /// hands-free. While Live is not available (a `fallback` stage) utterances
+  /// arrive on [utterances] as before.
+  Future<ListenStatus> startLive({required String locale});
+
+  /// After an `unauthorized` stage: reconnects with a fresh token.
+  Future<void> refreshLiveToken();
+
+  /// Typed instead of spoken.
+  Future<void> sendLiveText(String text);
+
+  /// How the task a [LiveTaskRun] asked for ended.
+  Future<void> liveTaskResult(
+    String callId, {
+    required String status,
+    String? reply,
+  });
+
+  Stream<LiveUpdate> get liveUpdates;
 }

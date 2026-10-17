@@ -32,6 +32,7 @@ class TaskRequest {
     required this.locale,
     required this.confirmEverySensitiveAction,
     this.handsFree,
+    this.direct,
   });
 
   final String command;
@@ -49,6 +50,10 @@ class TaskRequest {
   /// Heard by hands-free listening: words not meant for Alesle are let go
   /// silently (the server ends them as `not_addressed`). Null = false.
   final bool? handsFree;
+
+  /// Asked for by the live voice model, which already understood it: the
+  /// server runs it as a task without classifying it again. Null = false.
+  final bool? direct;
 }
 
 class StartTaskResult {
@@ -207,6 +212,20 @@ abstract class ListenHostApi {
   void setMuted(bool muted);
 
   ListenStateMessage listenState();
+
+  /// Hands-free as a live conversation: speech streams to the model and its
+  /// voice plays as it comes. Falls back to [startListening]'s way by itself
+  /// when Live is not available (a `fallback` phase event says so).
+  ListenStateMessage startLive(LiveConfig config);
+
+  /// A fresh access token after an `unauthorized` phase: reconnects with it.
+  void updateLiveToken(String accessToken);
+
+  /// Typed instead of spoken.
+  void sendLiveText(String text);
+
+  /// How the task a `taskRun` event asked for ended (status as in StepEvent).
+  void liveTaskResult(String callId, String status, String? reply);
 }
 
 @FlutterApi()
@@ -215,6 +234,88 @@ abstract class ListenEventsApi {
   void onUtterance(String path);
 
   void onListenState(ListenStateMessage state);
+
+  void onLiveEvent(LiveEvent event);
+}
+
+// ── Live voice (real-time conversation, SOW 04 §4.2) ────────────────────────
+
+/// What the live connection needs; the socket is `/v1/voice/live` on [apiBaseUrl].
+class LiveConfig {
+  LiveConfig({
+    required this.apiBaseUrl,
+    required this.accessToken,
+    required this.locale,
+  });
+
+  final String apiBaseUrl;
+  final String accessToken;
+
+  /// The app's language: the model answers in the language the user speaks.
+  final String locale;
+}
+
+enum LivePhase {
+  /// Opening the connection.
+  connecting,
+
+  /// Ready: just speak.
+  listening,
+
+  /// The user is speaking (their voice is going to the model).
+  hearing,
+
+  /// The user stopped; the answer is on its way.
+  thinking,
+
+  /// Alesle is speaking.
+  speaking,
+
+  /// Live is not available now: hands-free went back to one command at a time.
+  fallback,
+
+  /// The plan's credits are used up.
+  limitReached,
+
+  /// The connection was refused for the token: send a fresh one (updateLiveToken).
+  unauthorized,
+}
+
+enum LiveEventKind {
+  /// [LiveEvent.phase] changed.
+  phase,
+
+  /// A caption: [LiveEvent.role] `user` or `assistant`, [LiveEvent.text],
+  /// [LiveEvent.isFinal] once the turn is over.
+  caption,
+
+  /// The model wants this done on the phone: start [LiveEvent.text] as a
+  /// direct task and report its end with liveTaskResult([LiveEvent.callId]).
+  taskRun,
+
+  /// Change the running task with [LiveEvent.text].
+  taskAmend,
+
+  /// Stop the running task.
+  taskStop,
+}
+
+class LiveEvent {
+  LiveEvent({
+    required this.kind,
+    this.phase,
+    this.role,
+    this.text,
+    this.isFinal,
+    this.callId,
+  });
+
+  final LiveEventKind kind;
+  final LivePhase? phase;
+  final String? role;
+  final String? text;
+  final bool? isFinal;
+  final String? callId;
 }
 
 // ── App updates (Sprint 8, SOW 02 §3) ───────────────────────────────────────

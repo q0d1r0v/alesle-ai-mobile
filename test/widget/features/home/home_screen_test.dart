@@ -6,6 +6,7 @@ import 'package:alesle_ai/core/errors/failure.dart';
 import 'package:alesle_ai/core/storage/app_settings.dart';
 import 'package:alesle_ai/features/home/domain/agent_status.dart';
 import 'package:alesle_ai/features/home/domain/home_repositories.dart';
+import 'package:alesle_ai/features/home/domain/live.dart';
 import 'package:alesle_ai/features/home/domain/server_health.dart';
 import 'package:alesle_ai/features/home/presentation/home_providers.dart';
 import 'package:alesle_ai/features/home/presentation/home_screen.dart';
@@ -147,6 +148,93 @@ void main() {
         expect(find.byType(SnackBar), findsNothing);
       },
     );
+  });
+
+  group('live conversation', () {
+    Future<void> settle(WidgetTester tester) async {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+
+    testWidgets('like a call: who talks, the words of the turn, phone work as '
+        'a chip, and mute, type or end', (WidgetTester tester) async {
+      settings = await testSettingsStore(handsFree: true);
+      await pumpHome(tester);
+      expect(listen.liveLocales, hasLength(1));
+      expect(find.byKey(const Key('live-view')), findsNothing);
+
+      listen.live(const LiveStageChanged(LiveStage.listening));
+      await settle(tester);
+      expect(find.byKey(const Key('live-view')), findsOneWidget);
+      expect(find.text('Tinglayapman'), findsOneWidget);
+      expect(find.text('Gapiring — men shu yerdaman'), findsOneWidget);
+
+      listen
+        ..live(const LiveStageChanged(LiveStage.speaking))
+        ..live(const LiveCaption(fromUser: true, text: 'Salom', isFinal: true))
+        ..live(
+          const LiveCaption(
+            fromUser: false,
+            text: 'Salom! Yordam beraymi?',
+            isFinal: false,
+          ),
+        );
+      await settle(tester);
+      expect(find.text('Gapiryapman'), findsOneWidget);
+      expect(find.text('Salom'), findsOneWidget);
+      expect(find.text('Salom! Yordam beraymi?'), findsOneWidget);
+
+      // Phone work: a chip, never the result screen.
+      listen.live(const LiveTaskRun(callId: 'c1', command: 'Soatni och'));
+      await settle(tester);
+      assistant.push(
+        const TaskUpdate(TaskUpdateKind.step, text: 'Soatni ochyapman'),
+      );
+      await settle(tester);
+      expect(find.text('Bajaryapman: Soatni ochyapman'), findsOneWidget);
+      assistant.push(
+        const TaskUpdate(
+          TaskUpdateKind.finished,
+          status: 'done',
+          text: 'Soat ochildi',
+        ),
+      );
+      await settle(tester);
+      expect(find.byKey(const Key('live-task')), findsNothing);
+      expect(find.byKey(const Key('done-button')), findsNothing);
+      expect(voice.spoken, isEmpty);
+      expect(listen.taskResults.single, ('c1', 'done', 'Soat ochildi'));
+
+      await tester.tap(find.byKey(const Key('live-mute')));
+      await settle(tester);
+      expect(listen.mutes, <bool>[true]);
+      expect(find.text('Mikrofon o‘chiq'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('live-keyboard')));
+      await settle(tester);
+      await tester.enterText(find.byKey(const Key('command-field')), 'Rahmat');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('send-button')));
+      await settle(tester);
+      expect(listen.typed, <String>['Rahmat']);
+
+      await tester.tap(find.byKey(const Key('live-close')));
+      await settle(tester);
+      expect(listen.stops, 1);
+      expect(find.byKey(const Key('live-view')), findsNothing);
+      expect(find.byKey(const Key('hands-free-switch')), findsOneWidget);
+    });
+
+    testWidgets('when Live is not available, home is as before', (
+      WidgetTester tester,
+    ) async {
+      settings = await testSettingsStore(handsFree: true);
+      await pumpHome(tester);
+      listen.live(const LiveStageChanged(LiveStage.fallback));
+      await settle(tester);
+      expect(find.byKey(const Key('live-view')), findsNothing);
+      expect(find.byKey(const Key('hands-free-bar')), findsOneWidget);
+    });
   });
 
   group('idle', () {

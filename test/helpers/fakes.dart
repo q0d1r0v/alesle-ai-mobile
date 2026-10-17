@@ -11,6 +11,7 @@ import 'package:alesle_ai/features/auth/domain/auth_repository.dart';
 import 'package:alesle_ai/features/billing/domain/billing.dart';
 import 'package:alesle_ai/features/home/domain/agent_status.dart';
 import 'package:alesle_ai/features/home/domain/home_repositories.dart';
+import 'package:alesle_ai/features/home/domain/live.dart';
 import 'package:alesle_ai/features/home/domain/server_health.dart';
 import 'package:alesle_ai/features/memory/domain/memory.dart';
 import 'package:alesle_ai/features/onboarding/domain/device_setup.dart';
@@ -176,7 +177,18 @@ final class FakeHandsFreeRepository implements HandsFreeRepository {
       StreamController<ListenStatus>.broadcast();
   final StreamController<String> utteranceController =
       StreamController<String>.broadcast();
+  final StreamController<LiveUpdate> liveController =
+      StreamController<LiveUpdate>.broadcast();
   ListenStatus current = ListenStatus.off;
+
+  /// Locales live conversations were started in.
+  final List<String> liveLocales = <String>[];
+  int tokenRefreshes = 0;
+  final List<String> typed = <String>[];
+
+  /// Task results reported to the live conversation: (callId, status, reply).
+  final List<(String, String, String?)> taskResults =
+      <(String, String, String?)>[];
 
   /// What start() reports; inactive when the microphone would not open.
   bool startWorks = true;
@@ -218,6 +230,36 @@ final class FakeHandsFreeRepository implements HandsFreeRepository {
     if (failure case final Failure value) throw value;
     return current;
   }
+
+  @override
+  Stream<LiveUpdate> get liveUpdates => liveController.stream;
+
+  @override
+  Future<ListenStatus> startLive({required String locale}) {
+    liveLocales.add(locale);
+    return start();
+  }
+
+  @override
+  Future<void> refreshLiveToken() async => tokenRefreshes++;
+
+  @override
+  Future<void> sendLiveText(String text) async {
+    if (failure case final Failure value) throw value;
+    typed.add(text);
+  }
+
+  @override
+  Future<void> liveTaskResult(
+    String callId, {
+    required String status,
+    String? reply,
+  }) async {
+    if (failure case final Failure value) throw value;
+    taskResults.add((callId, status, reply));
+  }
+
+  void live(LiveUpdate update) => liveController.add(update);
 
   void say(String path) => utteranceController.add(path);
 

@@ -16,6 +16,7 @@ import com.alesle.ai.device.VoiceRecorder
 import com.alesle.ai.listen.HandsFree
 import com.alesle.ai.listen.ListenHostApiImpl
 import com.alesle.ai.listen.ListeningService
+import com.alesle.ai.listen.LiveVoice
 import com.alesle.ai.listen.toMessage
 import com.alesle.ai.update.UpdateHostApiImpl
 import io.flutter.embedding.android.FlutterActivity
@@ -57,6 +58,7 @@ class MainActivity : FlutterActivity() {
         handsFree =
             listOf(
                 HandsFree.onState { state -> scope.launch { runCatching { listen.onListenState(state.toMessage()) } } },
+                LiveVoice.onEvent { event -> scope.launch { runCatching { listen.onLiveEvent(event) } } },
                 HandsFree.onUtterance { path ->
                     scope.launch {
                         // No Dart to take it: the audio is not kept.

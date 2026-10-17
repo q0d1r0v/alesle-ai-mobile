@@ -110,4 +110,62 @@ class VoiceActivityDetectorTest {
         assertEquals(0.0, VoiceActivityDetector.rms(ShortArray(320)), 0.0)
         assertEquals(1_000.0, VoiceActivityDetector.rms(ShortArray(4) { 1_000 }), 0.001)
     }
+
+    /** What a live stream was told, in order. */
+    private class Recorder : VoiceActivityDetector.SpeechStream {
+        val log = mutableListOf<String>()
+        var frames = 0
+
+        override fun onSpeechStart(frames: List<ShortArray>) {
+            log += "start"
+            this.frames += frames.size
+        }
+
+        override fun onSpeechFrame(frame: ShortArray) {
+            frames++
+        }
+
+        override fun onSpeechEnd(cancelled: Boolean) {
+            log += if (cancelled) "cancelled" else "end"
+        }
+    }
+
+    @Test
+    fun `a live stream hears speech as it comes, with the audio before it, and clicks not at all`() {
+        val stream = Recorder()
+        val live = VoiceActivityDetector({ heard += it }, stream = stream)
+        noise(1_000).forEach(live::accept)
+        tone(120).forEach(live::accept)
+        noise(1_000).forEach(live::accept)
+        assertTrue(stream.log.isEmpty())
+
+        tone(400).forEach(live::accept)
+        assertEquals(listOf("start"), stream.log)
+        tone(800).forEach(live::accept)
+        noise(1_000).forEach(live::accept)
+        assertEquals(listOf("start", "end"), stream.log)
+        // Everything the whole utterance had, the stream had too.
+        assertEquals(heard.single().size / VoiceActivityDetector.FRAME_SAMPLES, stream.frames)
+
+        tone(600).forEach(live::accept)
+        live.reset()
+        assertEquals(listOf("start", "end", "start", "cancelled"), stream.log)
+    }
+
+    @Test
+    fun `while Alesle speaks only louder speech counts`() {
+        var speaking = true
+        val strict = VoiceActivityDetector({ heard += it }, strict = { speaking })
+        noise(500).forEach(strict::accept)
+        tone(1_000, amplitude = 900.0).forEach(strict::accept)
+        noise(1_000).forEach(strict::accept)
+        assertTrue(heard.isEmpty())
+        tone(1_000, amplitude = 8_000.0).forEach(strict::accept)
+        noise(1_000).forEach(strict::accept)
+        assertEquals(1, heard.size)
+        speaking = false
+        tone(1_000, amplitude = 900.0).forEach(strict::accept)
+        noise(1_000).forEach(strict::accept)
+        assertEquals(2, heard.size)
+    }
 }

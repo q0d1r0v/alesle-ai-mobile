@@ -22,6 +22,9 @@ class HandsFreeEngine(
     private val onUtterance: (ShortArray) -> Unit,
     private val onSourceLost: () -> Unit = {},
     private val tuning: VoiceActivityDetector.Tuning = VoiceActivityDetector.Tuning(),
+    /** Live voice: speech as it is heard (see [VoiceActivityDetector.SpeechStream]). */
+    private val stream: VoiceActivityDetector.SpeechStream? = null,
+    private val strict: () -> Boolean = { false },
 ) {
     private val injected = ConcurrentLinkedQueue<ShortArray>()
 
@@ -67,7 +70,7 @@ class HandsFreeEngine(
     }
 
     private fun loop(source: PcmSource) {
-        val detector = VoiceActivityDetector(onUtterance, tuning)
+        val detector = VoiceActivityDetector(onUtterance, tuning, stream, strict)
         val frame = ShortArray(VoiceActivityDetector.FRAME_SAMPLES)
         try {
             while (running) {

@@ -315,6 +315,44 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось включить микрофон. Попробуйте снова, когда приложение открыто.';
 
   @override
+  String get liveTitle => 'Live';
+
+  @override
+  String get liveConnecting => 'Подключаюсь…';
+
+  @override
+  String get liveListening => 'Слушаю';
+
+  @override
+  String get liveHearing => 'Слышу…';
+
+  @override
+  String get liveThinking => 'Думаю…';
+
+  @override
+  String get liveSpeaking => 'Говорю';
+
+  @override
+  String get liveMuted => 'Микрофон выключен';
+
+  @override
+  String get liveHint => 'Говорите — я здесь';
+
+  @override
+  String get liveKeyboard => 'Написать';
+
+  @override
+  String get liveClose => 'Завершить';
+
+  @override
+  String liveTaskRunning(String task) {
+    return 'Выполняю: $task';
+  }
+
+  @override
+  String get liveTaskStop => 'Остановить задачу';
+
+  @override
   String get signInTitle => 'Войдите в Alesle';
 
   @override

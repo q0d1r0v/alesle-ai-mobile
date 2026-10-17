@@ -55,7 +55,11 @@ class OkHttpLoopSocketFactory(
                         webSocket: WebSocket,
                         t: Throwable,
                         response: Response?,
-                    ) = if (response?.code == UPGRADE_REQUIRED) listener.onUpgradeRequired() else listener.onGone()
+                    ) = when (response?.code) {
+                        UPGRADE_REQUIRED -> listener.onUpgradeRequired()
+                        UNAUTHORIZED -> listener.onUnauthorized()
+                        else -> listener.onGone()
+                    }
                 },
             )
         return object : LoopSocket {
@@ -70,6 +74,7 @@ class OkHttpLoopSocketFactory(
     companion object {
         const val NORMAL_CLOSURE = 1000
         const val UPGRADE_REQUIRED = 426
+        const val UNAUTHORIZED = 401
         const val APP_VERSION_HEADER = "X-App-Version"
         const val PATH = "/v1/agent/ws"
 
@@ -82,7 +87,10 @@ class OkHttpLoopSocketFactory(
                 .build()
 
         /** `http://host:3000` → `ws://host:3000/v1/agent/ws` (https → wss). */
-        fun socketUrl(apiBaseUrl: String): String {
+        fun socketUrl(
+            apiBaseUrl: String,
+            path: String = PATH,
+        ): String {
             val base = apiBaseUrl.trimEnd('/')
             val scheme =
                 when {
@@ -90,7 +98,7 @@ class OkHttpLoopSocketFactory(
                     base.startsWith("http://") -> "ws://" to "http://"
                     else -> throw IllegalArgumentException("API base URL must be http(s)")
                 }
-            return scheme.first + base.removePrefix(scheme.second) + PATH
+            return scheme.first + base.removePrefix(scheme.second) + path
         }
     }
 }

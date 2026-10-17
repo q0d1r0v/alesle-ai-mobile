@@ -3,6 +3,7 @@ import 'package:alesle_ai/core/agent/agent_task.dart';
 import 'package:alesle_ai/core/errors/failure.dart';
 import 'package:alesle_ai/core/storage/app_settings.dart';
 import 'package:alesle_ai/features/home/domain/home_repositories.dart';
+import 'package:alesle_ai/features/home/domain/live.dart';
 import 'package:alesle_ai/features/home/presentation/hands_free_controller.dart';
 import 'package:alesle_ai/features/home/presentation/home_providers.dart';
 import 'package:alesle_ai/features/home/presentation/home_task_controller.dart';
@@ -212,4 +213,117 @@ void main() {
       expect(state().problem, isNull);
     },
   );
+  group('live conversation', () {
+    Future<void> talking() async {
+      await controller().turnOn(appLocale: 'uz');
+      listen.live(const LiveStageChanged(LiveStage.listening));
+      await flush();
+    }
+
+    test('turning on starts a live conversation in the app language', () async {
+      await talking();
+      expect(listen.liveLocales, <String>['uz']);
+      expect(state().live, LiveStage.listening);
+      expect(state().inConversation, isTrue);
+      listen.live(const LiveStageChanged(LiveStage.fallback));
+      await flush();
+      expect(state().inConversation, isFalse);
+      expect(state().on, isTrue);
+    });
+
+    test('captions of a turn, and the next turn starts clean', () async {
+      await talking();
+      listen
+        ..live(const LiveCaption(fromUser: true, text: 'Salom', isFinal: false))
+        ..live(
+          const LiveCaption(fromUser: false, text: 'Salom!', isFinal: true),
+        );
+      await flush();
+      expect(state().said, 'Salom');
+      expect(state().reply, 'Salom!');
+      listen.live(
+        const LiveCaption(fromUser: true, text: 'Qalaysan', isFinal: false),
+      );
+      await flush();
+      expect(state().said, 'Qalaysan');
+      expect(state().reply, isNull);
+    });
+
+    test('phone work runs as a direct task and its end goes back, with no result screen', () async {
+      await talking();
+      listen.live(
+        const LiveTaskRun(callId: 'c1', command: 'Soat ilovasini och'),
+      );
+      await flush();
+      final TaskCommand command = assistant.commands.single;
+      expect(command.direct, isTrue);
+      expect(command.handsFree, isTrue);
+      expect(command.text, 'Soat ilovasini och');
+      assistant.push(const TaskUpdate(TaskUpdateKind.step, text: 'Soat'));
+      await flush();
+      expect(container.read(homeTaskProvider), isA<TaskRunning>());
+
+      listen
+        ..live(const LiveTaskAmend('sekundomerni ham'))
+        ..live(const LiveTaskStop());
+      await flush();
+      expect(assistant.amendments, <String>['sekundomerni ham']);
+      expect(assistant.stops, 1);
+
+      assistant.push(
+        const TaskUpdate(
+          TaskUpdateKind.finished,
+          status: 'done',
+          text: 'Soat ochildi',
+        ),
+      );
+      await flush();
+      expect(listen.taskResults, <(String, String, String?)>[
+        ('c1', 'done', 'Soat ochildi'),
+      ]);
+      expect(container.read(homeTaskProvider), isA<TaskIdle>());
+    });
+
+    test('a task that could not start is told to the conversation', () async {
+      await talking();
+      assistant.nextStart = const TaskStart(
+        started: false,
+        reason: 'accessibility_off',
+      );
+      listen.live(const LiveTaskRun(callId: 'c2', command: 'Telegramni och'));
+      await flush();
+      expect(listen.taskResults, <(String, String, String?)>[
+        ('c2', 'failed', 'accessibility_off'),
+      ]);
+      expect(container.read(homeTaskProvider), isA<TaskIdle>());
+    });
+
+    test('a refused token is refreshed; a used-up plan is a problem', () async {
+      await talking();
+      listen.live(const LiveStageChanged(LiveStage.unauthorized));
+      await flush();
+      expect(listen.tokenRefreshes, 1);
+      listen.live(const LiveStageChanged(LiveStage.limitReached));
+      await flush();
+      expect(state().problem, HandsFreeProblem.limitReached);
+      expect(state().inConversation, isFalse);
+    });
+
+    test('typing goes to the conversation; nothing is sent when off', () async {
+      await talking();
+      await controller().sendText('  Salom  ');
+      await controller().sendText(' ');
+      expect(listen.typed, <String>['Salom']);
+      expect(state().said, 'Salom');
+      listen.failure = const UnexpectedFailure('x');
+      await controller().sendText('Yana');
+      expect(listen.typed, <String>['Salom']);
+
+      listen.failure = null;
+      await controller().turnOff();
+      listen.live(const LiveStageChanged(LiveStage.listening));
+      await flush();
+      expect(state().live, isNull);
+    });
+  });
 }

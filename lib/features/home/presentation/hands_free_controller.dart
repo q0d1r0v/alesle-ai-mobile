@@ -8,6 +8,7 @@ import '../../../core/errors/failure.dart';
 import '../domain/agent_status.dart';
 import '../domain/hands_free.dart';
 import '../domain/home_repositories.dart';
+import '../domain/live.dart';
 import 'home_providers.dart';
 import 'home_task_controller.dart';
 
@@ -24,14 +25,17 @@ enum HandsFreePhase {
   understanding,
 }
 
-/// Why hands-free could not start, for a one-line message.
-enum HandsFreeProblem { microphoneDenied, startFailed }
+/// Why hands-free could not start or go on, for a one-line message.
+enum HandsFreeProblem { microphoneDenied, startFailed, limitReached }
 
 final class HandsFreeState {
   const HandsFreeState({
     this.phase = HandsFreePhase.off,
     this.heard,
     this.problem,
+    this.live,
+    this.said,
+    this.reply,
   });
 
   final HandsFreePhase phase;
@@ -40,23 +44,45 @@ final class HandsFreeState {
   final String? heard;
   final HandsFreeProblem? problem;
 
+  /// Where the live conversation is; null when there is none.
+  final LiveStage? live;
+
+  /// The user's words in the live conversation, this turn.
+  final String? said;
+
+  /// Alesle's words in the live conversation, this turn.
+  final String? reply;
+
   bool get on => phase != HandsFreePhase.off;
+
+  /// The screen shows the conversation, not the one-command-at-a-time home.
+  bool get inConversation => on && live != null && live != LiveStage.fallback;
 
   HandsFreeState copyWith({
     HandsFreePhase? phase,
     String? heard,
     HandsFreeProblem? problem,
     bool clearProblem = false,
+    LiveStage? live,
+    String? said,
+    String? reply,
+    bool clearReply = false,
   }) => HandsFreeState(
     phase: phase ?? this.phase,
     heard: heard ?? this.heard,
     problem: clearProblem ? null : (problem ?? this.problem),
+    live: live ?? this.live,
+    said: said ?? this.said,
+    reply: clearReply ? null : (reply ?? this.reply),
   );
 }
 
-/// Hands-free (SOW 04 §4.3): the phone listens all the time, and what the
-/// user says starts a command, or — while one runs — changes it, answers its
-/// question or stops it. Nothing to press; mute when others are talking.
+/// Hands-free (SOW 04 §4.3): the phone listens all the time. Normally it is a
+/// live conversation (§4.2): Alesle hears speech as it comes, answers by
+/// voice, can be talked over, and asks the agent for phone work itself.
+/// When Live is not available, what the user says starts a command, or —
+/// while one runs — changes it, answers its question or stops it. Nothing to
+/// press; mute when others are talking.
 class HandsFreeController extends Notifier<HandsFreeState> {
   HandsFreeRepository get _listen => ref.read(handsFreeRepositoryProvider);
   VoiceRepository get _voice => ref.read(voiceRepositoryProvider);
@@ -70,6 +96,12 @@ class HandsFreeController extends Notifier<HandsFreeState> {
   /// Below this the speech service is guessing at noise.
   static const double minConfidence = 0.3;
 
+  /// The live conversation's request the running task answers.
+  String? _liveCall;
+
+  /// Alesle's last words closed their turn: the next words start a new one.
+  bool _replyDone = false;
+
   @override
   HandsFreeState build() {
     final HandsFreeRepository listen = ref.watch(handsFreeRepositoryProvider);
@@ -79,6 +111,8 @@ class HandsFreeController extends Notifier<HandsFreeState> {
           listen.utterances.listen(
             (String path) => _queue = _queue.then((_) => _onUtterance(path)),
           ),
+          listen.liveUpdates.listen(_onLive),
+          ref.watch(assistantRepositoryProvider).updates.listen(_onTask),
         ];
     ref.onDispose(() {
       for (final StreamSubscription<Object> subscription in subscriptions) {
@@ -107,7 +141,7 @@ class HandsFreeController extends Notifier<HandsFreeState> {
   }
 
   Future<bool> _startListening() async {
-    final ListenStatus status = await _listen.start();
+    final ListenStatus status = await _listen.startLive(locale: _appLocale);
     if (!status.active) return false;
     _onStatus(status);
     return true;
@@ -157,8 +191,96 @@ class HandsFreeController extends Notifier<HandsFreeState> {
 
   void clearProblem() => state = state.copyWith(clearProblem: true);
 
+  /// Typed into the live conversation.
+  Future<void> sendText(String text) async {
+    if (text.trim().isEmpty) return;
+    try {
+      await _listen.sendLiveText(text.trim());
+      state = state.copyWith(said: text.trim(), clearReply: true);
+    } on Failure {
+      // Gone with the connection; the stage says so.
+    }
+  }
+
+  void _onLive(LiveUpdate update) {
+    if (!state.on) return;
+    switch (update) {
+      case LiveStageChanged(stage: LiveStage.unauthorized):
+        unawaited(_listen.refreshLiveToken().catchError((Object _) {}));
+      case LiveStageChanged(stage: LiveStage.limitReached):
+        state = HandsFreeState(
+          phase: state.phase,
+          heard: state.heard,
+          problem: HandsFreeProblem.limitReached,
+        );
+      case LiveStageChanged(:final LiveStage stage):
+        state = state.copyWith(live: stage);
+      case LiveCaption(fromUser: true, :final String text):
+        final bool fresh = _replyDone;
+        _replyDone = false;
+        state = state.copyWith(said: text, clearReply: fresh);
+      case LiveCaption(
+        fromUser: false,
+        :final String text,
+        :final bool isFinal,
+      ):
+        _replyDone = isFinal;
+        state = state.copyWith(reply: text);
+      case LiveTaskRun(:final String callId, :final String command):
+        unawaited(_runForLive(callId, command));
+      case LiveTaskAmend(:final String text):
+        unawaited(
+          ref
+              .read(assistantRepositoryProvider)
+              .amend(text)
+              .then((_) {}, onError: (Object _) {}),
+        );
+      case LiveTaskStop():
+        unawaited(ref.read(homeTaskProvider.notifier).stop());
+    }
+  }
+
+  Future<void> _runForLive(String callId, String command) async {
+    final TaskStart start = await ref
+        .read(homeTaskProvider.notifier)
+        .start(
+          TaskCommand(
+            text: command,
+            locale: _appLocale,
+            confirmSensitiveActions:
+                ref.read(executionPolicyProvider) ==
+                ExecutionPolicy.confirmSensitiveActions,
+            handsFree: true,
+            direct: true,
+          ),
+        );
+    if (start.started) {
+      _liveCall = callId;
+      return;
+    }
+    await _report(callId, 'failed', start.reason);
+  }
+
+  void _onTask(TaskUpdate update) {
+    final String? callId = _liveCall;
+    if (callId == null || update.kind != TaskUpdateKind.finished) return;
+    _liveCall = null;
+    unawaited(
+      _report(callId, update.status ?? 'failed', update.text ?? update.reason),
+    );
+  }
+
+  Future<void> _report(String callId, String status, String? reply) async {
+    try {
+      await _listen.liveTaskResult(callId, status: status, reply: reply);
+    } on Failure {
+      // The conversation is gone; nobody is waiting for it.
+    }
+  }
+
   void _onStatus(ListenStatus status) {
     if (!status.active) {
+      _liveCall = null;
       state = HandsFreeState(problem: state.problem);
       return;
     }

@@ -676,6 +676,78 @@ abstract class AppLocalizations {
   /// **'Mikrofonni yoqib bo‘lmadi. Ilovani ochiq holda qayta urining.'**
   String get handsFreeStartFailed;
 
+  /// No description provided for @liveTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Live'**
+  String get liveTitle;
+
+  /// No description provided for @liveConnecting.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ulanyapman…'**
+  String get liveConnecting;
+
+  /// No description provided for @liveListening.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tinglayapman'**
+  String get liveListening;
+
+  /// No description provided for @liveHearing.
+  ///
+  /// In uz, this message translates to:
+  /// **'Eshityapman…'**
+  String get liveHearing;
+
+  /// No description provided for @liveThinking.
+  ///
+  /// In uz, this message translates to:
+  /// **'O‘ylayapman…'**
+  String get liveThinking;
+
+  /// No description provided for @liveSpeaking.
+  ///
+  /// In uz, this message translates to:
+  /// **'Gapiryapman'**
+  String get liveSpeaking;
+
+  /// No description provided for @liveMuted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mikrofon o‘chiq'**
+  String get liveMuted;
+
+  /// No description provided for @liveHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Gapiring — men shu yerdaman'**
+  String get liveHint;
+
+  /// No description provided for @liveKeyboard.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yozish'**
+  String get liveKeyboard;
+
+  /// No description provided for @liveClose.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tugatish'**
+  String get liveClose;
+
+  /// No description provided for @liveTaskRunning.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bajaryapman: {task}'**
+  String liveTaskRunning(String task);
+
+  /// No description provided for @liveTaskStop.
+  ///
+  /// In uz, this message translates to:
+  /// **'Vazifani to‘xtatish'**
+  String get liveTaskStop;
+
   /// No description provided for @signInTitle.
   ///
   /// In uz, this message translates to:
