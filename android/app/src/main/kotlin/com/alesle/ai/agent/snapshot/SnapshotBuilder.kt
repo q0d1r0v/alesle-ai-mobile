@@ -140,7 +140,8 @@ class SnapshotBuilder(
         /** Bounds the walk itself, so a pathological tree cannot stall a step. */
         const val MAX_TRAVERSED = 5_000
 
-        const val MAX_TEXT_CHARS = 200
+        /** Long enough for a message to be read out whole (a chat line, a notification). */
+        const val MAX_TEXT_CHARS = 400
         const val PASSWORD_MASK = "•••"
 
         private val WHITESPACE = Regex("\\s+")
