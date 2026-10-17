@@ -103,7 +103,7 @@ class HandsFreeTest {
     }
 
     @Test
-    fun `no microphone, no engine, and a lost microphone is reported`() {
+    fun `no microphone, no engine, and a microphone taken for good is reported`() {
         assertFalse(HandsFreeEngine(openSource = { null }, quiet = { false }, onUtterance = {}).start())
         val lost = CountDownLatch(1)
         val gone =
@@ -112,8 +112,46 @@ class HandsFreeTest {
 
                 override fun close() = Unit
             }
-        assertTrue(HandsFreeEngine({ gone }, { false }, {}, onSourceLost = { lost.countDown() }).start())
+        val engine = HandsFreeEngine({ gone }, { false }, {}, onSourceLost = { lost.countDown() }, allowed = { false }, reopenMs = 10)
+        assertTrue(engine.start())
         assertTrue(lost.await(2, TimeUnit.SECONDS))
+        engine.stop()
+    }
+
+    @Test
+    fun `a microphone taken by another app pauses listening, which comes back by itself`() {
+        val pauses = java.util.concurrent.LinkedBlockingQueue<Boolean>()
+        var lost = false
+        var opens = 0
+        val taken =
+            object : PcmSource {
+                override fun read(frame: ShortArray) = -1
+
+                override fun close() = Unit
+            }
+        val engine =
+            HandsFreeEngine(
+                openSource = {
+                    opens++
+                    when (opens) {
+                        1 -> taken
+                        2 -> null // still busy
+                        else -> SilentSource()
+                    }
+                },
+                quiet = { false },
+                onUtterance = {},
+                onSourceLost = { lost = true },
+                onPaused = { pauses.add(it) },
+                reopenMs = 10,
+            )
+        assertTrue(engine.start())
+        assertEquals(true, pauses.poll(2, TimeUnit.SECONDS))
+        assertEquals(false, pauses.poll(2, TimeUnit.SECONDS))
+        assertEquals(3, opens)
+        assertFalse(lost)
+        assertTrue(engine.isRunning)
+        engine.stop()
     }
 
     private fun speech(ms: Int): ShortArray = ShortArray(ms * 16) { i -> (6_000 * sin(2 * PI * 220 * i / 16_000)).toInt().toShort() }

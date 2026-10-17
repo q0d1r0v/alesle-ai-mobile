@@ -49,5 +49,9 @@ void main() {
       ListenStatus.off,
       isNot(const ListenStatus(active: true, muted: false)),
     );
+    expect(
+      const ListenStatus(active: true, muted: false, paused: true),
+      isNot(const ListenStatus(active: true, muted: false)),
+    );
   });
 }

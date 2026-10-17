@@ -73,19 +73,29 @@ abstract interface class VoiceRepository {
 
 /// Whether hands-free listening runs, and whether the user muted it.
 final class ListenStatus {
-  const ListenStatus({required this.active, required this.muted});
+  const ListenStatus({
+    required this.active,
+    required this.muted,
+    this.paused = false,
+  });
 
   static const ListenStatus off = ListenStatus(active: false, muted: false);
 
   final bool active;
   final bool muted;
 
-  @override
-  bool operator ==(Object other) =>
-      other is ListenStatus && other.active == active && other.muted == muted;
+  /// Another app holds the microphone; listening comes back by itself.
+  final bool paused;
 
   @override
-  int get hashCode => Object.hash(active, muted);
+  bool operator ==(Object other) =>
+      other is ListenStatus &&
+      other.active == active &&
+      other.muted == muted &&
+      other.paused == paused;
+
+  @override
+  int get hashCode => Object.hash(active, muted, paused);
 }
 
 /// Hands-free listening (SOW 04 §4.3): the microphone stays open and every

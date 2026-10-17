@@ -72,9 +72,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get homeTapToType => 'Bosing va yozing';
 
   @override
-  String get homeExample => 'Masalan: “Onamga qo‘ng‘iroq qil”';
-
-  @override
   String get commandHint => 'Nima qilay?';
 
   @override
@@ -261,22 +258,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get offButton => 'Yoqish';
 
   @override
-  String get homeTapToSpeak => 'Bosing va gapiring';
-
-  @override
-  String get homeListening => 'Eshityapman';
-
-  @override
-  String get homeTapToStop => 'Tugatish uchun bosing';
-
-  @override
-  String get homeUnderstanding => 'Tushunyapman…';
-
-  @override
   String get homeTypeInstead => 'Yozib yuborish';
-
-  @override
-  String get voiceNotHeard => 'Eshitmadim. Yana bir bor ayting.';
 
   @override
   String get voiceUnavailable =>
@@ -284,9 +266,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get voiceMicDenied => 'Mikrofonga ruxsat kerak.';
-
-  @override
-  String get handsFreeLabel => 'Doim tinglash';
 
   @override
   String get handsFreeListening => 'Tinglayapman — shunchaki gapiring';
@@ -339,6 +318,42 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get liveHint => 'Gapiring — men shu yerdaman';
+
+  @override
+  String get homeTalk => 'Gaplashish';
+
+  @override
+  String get homeIdleHint => 'Gaplashish tugmasini bosing yoki yozib yuboring';
+
+  @override
+  String get liveMicBusy => 'Mikrofon band — bo‘shashini kutyapman';
+
+  @override
+  String get liveExamplesTitle => 'Masalan, ayting:';
+
+  @override
+  String get liveExample1 => 'Ertaga soat 7:00 ga budilnik qo‘y';
+
+  @override
+  String get liveExample2 => 'Bugun ob-havo qanday?';
+
+  @override
+  String get liveExample3 => '5 daqiqaga taymer qo‘y';
+
+  @override
+  String get liveExample4 => 'Telegram’ni och';
+
+  @override
+  String get liveExample5 => 'YouTube’da musiqa qo‘y';
+
+  @override
+  String get liveExample6 => 'Slack’dagi oxirgi xabarni o‘qib ber';
+
+  @override
+  String get liveExample7 => 'Wi-Fi sozlamalarini och';
+
+  @override
+  String get liveExample8 => 'Dollar kursi qancha?';
 
   @override
   String get liveKeyboard => 'Yozish';

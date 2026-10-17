@@ -10,7 +10,6 @@ import 'package:alesle_ai/features/home/domain/live.dart';
 import 'package:alesle_ai/features/home/domain/server_health.dart';
 import 'package:alesle_ai/features/home/presentation/home_providers.dart';
 import 'package:alesle_ai/features/home/presentation/home_screen.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -31,6 +30,9 @@ void main() {
     agent = FakeAgentRepository(() async => enabledAgent);
     assistant = FakeAssistantRepository();
     voice = FakeVoiceRepository();
+    // Live stays off unless a test is about it: the microphone was refused
+    // before (settings below), so opening the app neither starts nor asks.
+    voice.microphone = false;
     listen = FakeHandsFreeRepository();
     settings = await testSettingsStore();
   });
@@ -76,27 +78,108 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
   }
 
-  group('hands-free', () {
-    testWidgets('the switch turns listening on; speaking starts a command, '
-        'the orb and the bar mute it', (WidgetTester tester) async {
+  Future<void> settle(WidgetTester tester) async {
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+  }
+
+  group('opening the app', () {
+    testWidgets('starts the live conversation by itself, even after the user '
+        'ended the last one', (WidgetTester tester) async {
+      voice.microphone = true;
+      settings = await testSettingsStore(handsFree: false);
       await pumpHome(tester);
-      expect(find.text('Doim tinglash'), findsOneWidget);
-      expect(find.byKey(const Key('hands-free-mute')), findsNothing);
+      expect(listen.liveLocales, <String>['uz']);
+      expect(voice.asks, 0);
+      listen.live(const LiveStageChanged(LiveStage.listening));
+      await settle(tester);
+      expect(find.byKey(const Key('live-view')), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('hands-free-switch')));
+      // Coming back to the app starts no second conversation.
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await settle(tester);
+      expect(listen.liveLocales, hasLength(1));
+    });
+
+    testWidgets('asks for the microphone only the first time', (
+      WidgetTester tester,
+    ) async {
+      settings = await testSettingsStore(handsFree: null);
+      await pumpHome(tester);
+      expect(voice.asks, 1);
+      expect(find.text('Mikrofonga ruxsat kerak.'), findsOneWidget);
+      expect(settings.read().handsFree, isFalse);
+      expect(find.byKey(const Key('home-talk')), findsOneWidget);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pumpAndSettle();
-      expect(listen.starts, 1);
+      expect(voice.asks, 1);
+      expect(listen.liveLocales, isEmpty);
+    });
+
+    testWidgets('with accessibility off it asks for that and does not listen', (
+      WidgetTester tester,
+    ) async {
+      voice.microphone = true;
+      agent.next = () async => disabledAgent;
+      await pumpHome(tester);
+      expect(find.byKey(const Key('off-view')), findsOneWidget);
+      expect(listen.liveLocales, isEmpty);
+    });
+  });
+
+  group('live off', () {
+    testWidgets('no push-to-talk, no switch, no personal example: Talk and '
+        'typing', (WidgetTester tester) async {
+      await pumpHome(tester);
+      expect(find.text('Bosing va gapiring'), findsNothing);
+      expect(find.byKey(const Key('hands-free-switch')), findsNothing);
+      expect(find.textContaining('Onamga'), findsNothing);
+      expect(
+        find.text('Gaplashish tugmasini bosing yoki yozib yuboring'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('type-instead')), findsOneWidget);
+
+      voice.microphone = true;
+      await tester.tap(find.byKey(const Key('home-talk')));
+      await settle(tester);
+      expect(voice.asks, 1);
+      expect(listen.liveLocales, <String>['uz']);
       expect(settings.read().handsFree, isTrue);
-      expect(find.text('Tinglayapman — shunchaki gapiring'), findsWidgets);
+    });
 
-      // The orb mutes now instead of push-to-talk.
+    testWidgets('the orb starts the conversation too', (
+      WidgetTester tester,
+    ) async {
+      await pumpHome(tester);
+      voice.microphone = true;
       await tester.tap(find.byKey(const Key('orb')));
-      await tester.pumpAndSettle();
+      await settle(tester);
+      expect(listen.liveLocales, <String>['uz']);
+    });
+  });
+
+  group('when Live is not available', () {
+    testWidgets('it listens one command at a time; the orb and the button '
+        'mute it', (WidgetTester tester) async {
+      voice.microphone = true;
+      await pumpHome(tester);
+      listen.live(const LiveStageChanged(LiveStage.fallback));
+      await settle(tester);
+      expect(find.byKey(const Key('live-view')), findsNothing);
+      expect(find.text('Tinglayapman — shunchaki gapiring'), findsOneWidget);
+      expect(find.byKey(const Key('home-talk')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('orb')));
+      await settle(tester);
       expect(listen.mutes, <bool>[true]);
       expect(voice.starts, 0);
       expect(find.text('Mikrofon o‘chiq'), findsWidgets);
       await tester.tap(find.byKey(const Key('hands-free-mute')));
-      await tester.pumpAndSettle();
+      await settle(tester);
       expect(listen.mutes, <bool>[true, false]);
 
       voice.heard = const Transcript(
@@ -110,54 +193,36 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       expect(assistant.commands.single.text, 'Soat ilovasini och');
       expect(assistant.commands.single.handsFree, isTrue);
-      expect(find.text('«Soat ilovasini och»'), findsOneWidget);
       // Nothing shows until the agent takes a step: background talk leaves no trace.
       expect(find.byKey(const Key('hands-free-running-hint')), findsNothing);
       assistant.push(
         const TaskUpdate(TaskUpdateKind.step, text: 'Soatni ochyapman'),
       );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+      await settle(tester);
       expect(find.byKey(const Key('hands-free-running-hint')), findsOneWidget);
-
-      await tester.tap(find.byKey(const Key('hands-free-switch')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(listen.stops, 1);
-      expect(settings.read().handsFree, isFalse);
     });
 
-    testWidgets('on by itself after sign-in when the microphone is allowed', (
+    testWidgets('a mumble below confidence shows nothing as heard', (
       WidgetTester tester,
     ) async {
-      settings = await testSettingsStore(handsFree: null);
+      voice.microphone = true;
       await pumpHome(tester);
-      expect(listen.starts, 1);
-      expect(find.text('Tinglayapman — shunchaki gapiring'), findsWidgets);
+      listen.live(const LiveStageChanged(LiveStage.fallback));
+      voice.heard = const Transcript(
+        text: 'Salom',
+        language: 'uz',
+        confidence: 0.1,
+      );
+      listen.say('/cache/u.wav');
+      await settle(tester);
+      expect(find.byKey(const Key('hands-free-heard')), findsNothing);
     });
-
-    testWidgets(
-      'without the microphone allowed it stays off and asks nothing',
-      (WidgetTester tester) async {
-        settings = await testSettingsStore(handsFree: null);
-        voice.microphone = false;
-        listen.startWorks = false;
-        await pumpHome(tester);
-        expect(listen.starts, 0);
-        expect(find.text('Doim tinglash'), findsOneWidget);
-        expect(find.byType(SnackBar), findsNothing);
-      },
-    );
   });
 
   group('live conversation', () {
-    Future<void> settle(WidgetTester tester) async {
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-    }
-
     testWidgets('like a call: who talks, the words of the turn, phone work as '
         'a chip, and mute, type or end', (WidgetTester tester) async {
+      voice.microphone = true;
       settings = await testSettingsStore(handsFree: true);
       await pumpHome(tester);
       expect(listen.liveLocales, hasLength(1));
@@ -183,6 +248,10 @@ void main() {
       expect(find.text('Gapiryapman'), findsOneWidget);
       expect(find.text('Salom'), findsNothing);
       expect(find.text('Salom! Yordam beraymi?'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('live-example-0')),
+        findsNothing,
+      );
 
       // Phone work: a chip, never the result screen.
       listen.live(const LiveTaskRun(callId: 'c1', command: 'Soatni och'));
@@ -222,18 +291,59 @@ void main() {
       await settle(tester);
       expect(listen.stops, 1);
       expect(find.byKey(const Key('live-view')), findsNothing);
-      expect(find.byKey(const Key('hands-free-switch')), findsOneWidget);
+      expect(find.byKey(const Key('home-talk')), findsOneWidget);
     });
 
-    testWidgets('when Live is not available, home is as before', (
+    testWidgets('everyday examples: tapping one says it', (
       WidgetTester tester,
     ) async {
-      settings = await testSettingsStore(handsFree: true);
+      voice.microphone = true;
       await pumpHome(tester);
-      listen.live(const LiveStageChanged(LiveStage.fallback));
+      listen.live(const LiveStageChanged(LiveStage.listening));
       await settle(tester);
-      expect(find.byKey(const Key('live-view')), findsNothing);
-      expect(find.byKey(const Key('hands-free-bar')), findsOneWidget);
+      expect(find.text('Masalan, ayting:'), findsOneWidget);
+      for (int i = 0; i < 3; i++) {
+        expect(find.byKey(ValueKey<String>('live-example-$i')), findsOneWidget);
+      }
+      final Finder first = find.byKey(const ValueKey<String>('live-example-0'));
+      final String example = tester
+          .widget<Text>(find.descendant(of: first, matching: find.byType(Text)))
+          .data!;
+      await tester.tap(first);
+      await settle(tester);
+      expect(listen.typed, <String>[example]);
+      expect(
+        find.byKey(const ValueKey<String>('live-example-0')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('the orb moves with the voice; a busy microphone is told', (
+      WidgetTester tester,
+    ) async {
+      voice.microphone = true;
+      await pumpHome(tester);
+      listen.live(const LiveStageChanged(LiveStage.hearing));
+      listen.live(const LiveLevel(0.6));
+      await settle(tester);
+      AlesleOrb orb = tester.widget<AlesleOrb>(find.byType(AlesleOrb));
+      expect(orb.level, 0.6);
+      expect(orb.state, OrbState.listening);
+
+      listen.report(
+        const ListenStatus(active: true, muted: false, paused: true),
+      );
+      await settle(tester);
+      expect(
+        find.text('Mikrofon band — bo‘shashini kutyapman'),
+        findsOneWidget,
+      );
+      orb = tester.widget<AlesleOrb>(find.byType(AlesleOrb));
+      expect(orb.state, OrbState.idle);
+
+      listen.report(const ListenStatus(active: true, muted: false));
+      await settle(tester);
+      expect(find.text('Eshityapman…'), findsOneWidget);
     });
   });
 
@@ -243,8 +353,7 @@ void main() {
     ) async {
       await pumpHome(tester);
       expect(find.text('Xayrli kech'), findsOneWidget);
-      expect(find.text('Bosing va gapiring'), findsOneWidget);
-      expect(find.text('Masalan: “Onamga qo‘ng‘iroq qil”'), findsOneWidget);
+      expect(find.text('Gaplashish'), findsOneWidget);
       expect(find.byType(AlesleOrb), findsOneWidget);
       expect(find.byKey(const Key('server-problem')), findsNothing);
       expect(find.byKey(const Key('off-view')), findsNothing);
@@ -270,9 +379,9 @@ void main() {
 
     testWidgets('speaks Russian and English', (WidgetTester tester) async {
       await pumpHome(tester, locale: const Locale('ru'));
-      expect(find.text('Нажмите и говорите'), findsOneWidget);
+      expect(find.text('Поговорить'), findsOneWidget);
       await pumpHome(tester, locale: const Locale('en'));
-      expect(find.text('Tap and speak'), findsOneWidget);
+      expect(find.text('Talk'), findsOneWidget);
     });
 
     testWidgets('asks to turn accessibility on and opens the settings', (
@@ -357,11 +466,11 @@ void main() {
       expect(assistant.commands.single.confirmSensitiveActions, isFalse);
     });
 
-    testWidgets('the example chip opens the command sheet too', (
+    testWidgets('the sheet sends nothing empty, and sends on the keyboard', (
       WidgetTester tester,
     ) async {
       await pumpHome(tester);
-      await tester.tap(find.byKey(const Key('example-chip')));
+      await tester.tap(find.byKey(const Key('type-instead')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('command-field')), findsOneWidget);
       // Nothing typed: nothing to send.
@@ -430,7 +539,7 @@ void main() {
 
       await tester.tap(find.byKey(const Key('done-button')));
       await tester.pumpAndSettle();
-      expect(find.text('Bosing va gapiring'), findsOneWidget);
+      expect(find.byKey(const Key('home-talk')), findsOneWidget);
     });
 
     testWidgets('a quick answer shows what was said and the answer', (
@@ -516,112 +625,7 @@ void main() {
     });
   });
 
-  group('voice', () {
-    testWidgets('tap to listen, tap to finish: the transcript opens editable', (
-      WidgetTester tester,
-    ) async {
-      await pumpHome(tester);
-      await tester.tap(find.byKey(const Key('orb')));
-      await tester.pump();
-      expect(voice.starts, 1);
-      expect(find.text('Eshityapman'), findsOneWidget);
-      expect(
-        tester.widget<AlesleOrb>(find.byType(AlesleOrb)).state,
-        OrbState.listening,
-      );
-
-      await tester.tap(find.byKey(const Key('voice-stop-chip')));
-      await tester.pumpAndSettle();
-      expect(voice.languages, <String?>['uz']);
-      final TextField field = tester.widget(
-        find.byKey(const Key('command-field')),
-      );
-      expect(field.controller?.text, 'Onamga qo‘ng‘iroq qil');
-
-      await tester.enterText(
-        find.byKey(const Key('command-field')),
-        'Onamga qo‘ng‘iroq qil, iltimos',
-      );
-      await tester.tap(find.byKey(const Key('send-button')));
-      await tester.pump();
-      expect(assistant.commands.single.text, 'Onamga qo‘ng‘iroq qil, iltimos');
-    });
-
-    testWidgets('hold to talk: listens while held, finishes on release', (
-      WidgetTester tester,
-    ) async {
-      await pumpHome(tester);
-      final TestGesture finger = await tester.startGesture(
-        tester.getCenter(find.byKey(const Key('orb'))),
-      );
-      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
-      await tester.pump();
-      expect(voice.starts, 1);
-      expect(find.text('Eshityapman'), findsOneWidget);
-
-      await finger.up();
-      await tester.pumpAndSettle();
-      expect(voice.languages, <String?>['uz']);
-      final TextField field = tester.widget(
-        find.byKey(const Key('command-field')),
-      );
-      expect(field.controller?.text, 'Onamga qo‘ng‘iroq qil');
-    });
-
-    testWidgets('tells the user when the microphone is not allowed', (
-      WidgetTester tester,
-    ) async {
-      voice.microphone = false;
-      await pumpHome(tester);
-      await tester.tap(find.byKey(const Key('orb')));
-      await tester.pump();
-      expect(find.text('Mikrofonga ruxsat kerak.'), findsOneWidget);
-      expect(voice.starts, 0);
-    });
-
-    testWidgets('asks again when nothing was heard', (
-      WidgetTester tester,
-    ) async {
-      voice.heard = const Transcript(text: ' ', language: 'uz', confidence: 0);
-      await pumpHome(tester);
-      await tester.tap(find.byKey(const Key('orb')));
-      await tester.pump();
-      await tester.tap(find.byKey(const Key('orb')));
-      await tester.pumpAndSettle();
-      expect(find.text('Eshitmadim. Yana bir bor ayting.'), findsOneWidget);
-      expect(find.byKey(const Key('command-field')), findsNothing);
-    });
-
-    testWidgets('a too-short tap gives nothing to send', (
-      WidgetTester tester,
-    ) async {
-      voice.heard = null;
-      await pumpHome(tester);
-      await tester.tap(find.byKey(const Key('orb')));
-      await tester.pump();
-      await tester.tap(find.byKey(const Key('orb')));
-      await tester.pumpAndSettle();
-      expect(find.text('Eshitmadim. Yana bir bor ayting.'), findsOneWidget);
-    });
-
-    testWidgets('says plainly when the speech service is down', (
-      WidgetTester tester,
-    ) async {
-      await pumpHome(tester);
-      await tester.tap(find.byKey(const Key('orb')));
-      await tester.pump();
-      voice.failure = const ServerFailure(
-        code: ErrorCode.voiceUnavailable,
-        statusCode: 503,
-      );
-      await tester.tap(find.byKey(const Key('orb')));
-      await tester.pumpAndSettle();
-      expect(
-        find.text('Ovoz xizmati hozir ishlamayapti. Yozib yuboring.'),
-        findsOneWidget,
-      );
-    });
-
+  group('spoken replies', () {
     testWidgets('reads the reply aloud', (WidgetTester tester) async {
       await pumpHome(tester);
       await sendCommand(tester, 'Poytaxt?');

@@ -178,41 +178,61 @@ void main() {
     expect(state().on, isFalse);
   });
 
-  test(
-    'resume: on unless turned off, never asking for the microphone',
-    () async {
-      // Turned off by the user: stays off.
-      await controller().resume(appLocale: 'uz');
-      expect(listen.starts, 0);
+  test('resume: on every time, even after the user turned it off; asks for the '
+      'microphone only the first time', () async {
+    // Turned off by the user last time: on again all the same.
+    await controller().resume(appLocale: 'uz');
+    expect(listen.starts, 1);
+    expect(state().phase, HandsFreePhase.listening);
+    expect(voice.asks, 0);
 
-      // Never chosen: on by itself, with the microphone already allowed.
-      await settings.write(const AppSettings(onboardingDone: true));
-      container.invalidate(appSettingsProvider);
-      expect(container.read(appSettingsProvider).handsFree, isNull);
-      await controller().resume(appLocale: 'uz');
-      expect(listen.starts, 1);
-      expect(state().phase, HandsFreePhase.listening);
+    // Already listening (muted from the notification): just shows it.
+    listen.current = const ListenStatus(active: true, muted: true);
+    await controller().resume(appLocale: 'uz');
+    expect(listen.starts, 1);
+    expect(state().phase, HandsFreePhase.muted);
 
-      // Already listening (muted from the notification): just shows it.
-      listen.current = const ListenStatus(active: true, muted: true);
-      await controller().resume(appLocale: 'uz');
-      expect(listen.starts, 1);
-      expect(state().phase, HandsFreePhase.muted);
+    // No permission, and refused before: stays off and asks nothing.
+    listen.current = ListenStatus.off;
+    voice.microphone = false;
+    await controller().resume(appLocale: 'uz');
+    expect(listen.starts, 1);
+    expect(voice.asks, 0);
+    expect(voice.grantedChecks, greaterThan(0));
 
-      // No microphone permission yet: stays off and asks nothing.
-      listen.current = ListenStatus.off;
-      voice.microphone = false;
-      await controller().resume(appLocale: 'uz');
-      expect(listen.starts, 1);
-      expect(voice.grantedChecks, greaterThan(0));
+    // Never asked: asks once; a refusal is remembered, so it is not asked again.
+    await settings.write(const AppSettings(onboardingDone: true));
+    container.invalidate(appSettingsProvider);
+    expect(container.read(appSettingsProvider).handsFree, isNull);
+    await controller().resume(appLocale: 'uz');
+    expect(voice.asks, 1);
+    expect(state().problem, HandsFreeProblem.microphoneDenied);
+    expect(container.read(appSettingsProvider).handsFree, isFalse);
+    await controller().resume(appLocale: 'uz');
+    expect(voice.asks, 1);
 
-      // A failing service: quietly off, no message.
-      voice.microphone = true;
-      listen.failure = const UnexpectedFailure('x');
-      await controller().resume(appLocale: 'uz');
-      expect(state().problem, isNull);
-    },
-  );
+    // A failing service: quietly off, no message.
+    controller().clearProblem();
+    voice.microphone = true;
+    listen.failure = const UnexpectedFailure('x');
+    await controller().resume(appLocale: 'uz');
+    expect(state().problem, isNull);
+  });
+
+  test('a busy microphone and the voice level show in the state', () async {
+    await controller().turnOn(appLocale: 'uz');
+    listen.report(const ListenStatus(active: true, muted: false, paused: true));
+    await flush();
+    expect(state().micBusy, isTrue);
+    expect(state().phase, HandsFreePhase.listening);
+    listen.live(const LiveLevel(0.4));
+    await flush();
+    expect(state().level, 0.4);
+    listen.report(const ListenStatus(active: true, muted: false));
+    await flush();
+    expect(state().micBusy, isFalse);
+  });
+
   group('live conversation', () {
     Future<void> talking() async {
       await controller().turnOn(appLocale: 'uz');

@@ -23,10 +23,19 @@ enum OrbState {
 }
 
 class AlesleOrb extends StatefulWidget {
-  const AlesleOrb({super.key, this.state = OrbState.idle, this.size = 200});
+  const AlesleOrb({
+    super.key,
+    this.state = OrbState.idle,
+    this.size = 200,
+    this.level = 0,
+  });
 
   final OrbState state;
   final double size;
+
+  /// How loud the voice is now, 0..1: while listening the core and the halo
+  /// swell with it, so the user sees they are heard.
+  final double level;
 
   @override
   State<AlesleOrb> createState() => _AlesleOrbState();
@@ -83,33 +92,47 @@ class _AlesleOrbState extends State<AlesleOrb>
           glow: const Color(0x52D9730F),
           icon: Icons.priority_high_rounded,
         ),
-        _ => DecoratedBox(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white,
-            boxShadow: <BoxShadow>[
-              if (widget.state == OrbState.listening)
-                BoxShadow(
-                  color: AlesleColors.violetGlow.withValues(alpha: 0.18),
-                  spreadRadius: size * 0.08,
+        _ => TweenAnimationBuilder<double>(
+          // Level updates come a few times a second: ease between them.
+          tween: Tween<double>(
+            // A gentle curve: ordinary speech already moves the orb clearly.
+            end: widget.state == OrbState.listening
+                ? math.sqrt(widget.level.clamp(0.0, 1.0))
+                : 0,
+          ),
+          duration: const Duration(milliseconds: 120),
+          builder: (BuildContext context, double level, Widget? child) =>
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  boxShadow: <BoxShadow>[
+                    if (widget.state == OrbState.listening)
+                      BoxShadow(
+                        color: AlesleColors.violetGlow.withValues(
+                          alpha: 0.18 + 0.27 * level,
+                        ),
+                        spreadRadius: size * (0.08 + 0.14 * level),
+                      ),
+                    BoxShadow(
+                      color: AlesleColors.violet.withValues(alpha: 0.30),
+                      blurRadius: size * 0.25,
+                      offset: Offset(0, size * 0.1),
+                    ),
+                  ],
                 ),
-              BoxShadow(
-                color: AlesleColors.violet.withValues(alpha: 0.30),
-                blurRadius: size * 0.25,
-                offset: Offset(0, size * 0.1),
+                child: AnimatedBuilder(
+                  animation: _spin,
+                  builder: (BuildContext context, Widget? child) => CustomPaint(
+                    painter: _OrbPainter(
+                      working: widget.state == OrbState.working,
+                      turn: _spin.value,
+                      listening: widget.state == OrbState.listening,
+                      level: level,
+                    ),
+                  ),
+                ),
               ),
-            ],
-          ),
-          child: AnimatedBuilder(
-            animation: _spin,
-            builder: (BuildContext context, Widget? child) => CustomPaint(
-              painter: _OrbPainter(
-                working: widget.state == OrbState.working,
-                turn: _spin.value,
-                listening: widget.state == OrbState.listening,
-              ),
-            ),
-          ),
         ),
       },
     );
@@ -154,11 +177,13 @@ class _OrbPainter extends CustomPainter {
     required this.working,
     required this.turn,
     required this.listening,
+    this.level = 0,
   });
 
   final bool working;
   final double turn;
   final bool listening;
+  final double level;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -208,7 +233,8 @@ class _OrbPainter extends CustomPainter {
       );
     }
 
-    final double core = radius * (working ? 0.18 : (listening ? 0.30 : 0.26));
+    final double core =
+        radius * (working ? 0.18 : (listening ? 0.30 + 0.12 * level : 0.26));
     canvas.drawCircle(
       center,
       core,
@@ -222,5 +248,8 @@ class _OrbPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_OrbPainter old) =>
-      old.working != working || old.turn != turn || old.listening != listening;
+      old.working != working ||
+      old.turn != turn ||
+      old.listening != listening ||
+      old.level != level;
 }

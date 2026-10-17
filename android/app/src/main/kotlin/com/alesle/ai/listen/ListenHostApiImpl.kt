@@ -17,7 +17,7 @@ class ListenHostApiImpl(
     override fun startListening(): ListenStateMessage {
         val accepted = start(context)
         val state = HandsFree.state
-        return ListenStateMessage(active = state.active || accepted, muted = state.muted)
+        return ListenStateMessage(active = state.active || accepted, muted = state.muted, paused = state.paused)
     }
 
     override fun stopListening() = stop(context)
@@ -86,4 +86,4 @@ interface LiveControl {
     }
 }
 
-fun ListenState.toMessage(): ListenStateMessage = ListenStateMessage(active = active, muted = muted)
+fun ListenState.toMessage(): ListenStateMessage = ListenStateMessage(active = active, muted = muted, paused = paused)

@@ -82,7 +82,9 @@ void main() {
           assistantRepositoryProvider.overrideWithValue(
             FakeAssistantRepository(),
           ),
-          voiceRepositoryProvider.overrideWithValue(FakeVoiceRepository()),
+          voiceRepositoryProvider.overrideWithValue(
+            FakeVoiceRepository()..microphone = false,
+          ),
         ],
         child: const AlesleApp(),
       ),
@@ -90,7 +92,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(HomeScreen), findsOneWidget);
-    expect(find.text('Нажмите и говорите'), findsOneWidget);
+    expect(find.text('Поговорить'), findsOneWidget);
   });
 
   testWidgets('a long press on the title opens the agent console (debug)', (
@@ -112,7 +114,9 @@ void main() {
           assistantRepositoryProvider.overrideWithValue(
             FakeAssistantRepository(),
           ),
-          voiceRepositoryProvider.overrideWithValue(FakeVoiceRepository()),
+          voiceRepositoryProvider.overrideWithValue(
+            FakeVoiceRepository()..microphone = false,
+          ),
         ],
         child: const AlesleApp(),
       ),
@@ -165,13 +169,15 @@ void main() {
           assistantRepositoryProvider.overrideWithValue(
             FakeAssistantRepository(),
           ),
-          voiceRepositoryProvider.overrideWithValue(FakeVoiceRepository()),
+          voiceRepositoryProvider.overrideWithValue(
+            FakeVoiceRepository()..microphone = false,
+          ),
         ],
         child: const AlesleApp(),
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Tap and speak'), findsOneWidget);
+    expect(find.text('Talk'), findsOneWidget);
   });
 
   group('signing in', () {
@@ -209,7 +215,9 @@ void main() {
             assistantRepositoryProvider.overrideWithValue(
               FakeAssistantRepository(),
             ),
-            voiceRepositoryProvider.overrideWithValue(FakeVoiceRepository()),
+            voiceRepositoryProvider.overrideWithValue(
+              FakeVoiceRepository()..microphone = false,
+            ),
             sessionStoreProvider.overrideWithValue(store),
             initialSessionProvider.overrideWithValue(null),
             incomingLinksProvider.overrideWithValue(links.stream),
@@ -401,7 +409,9 @@ void main() {
             initialSessionProvider.overrideWithValue(testSession()),
             incomingLinksProvider.overrideWithValue(links.stream),
             assistantRepositoryProvider.overrideWithValue(assistant),
-            voiceRepositoryProvider.overrideWithValue(FakeVoiceRepository()),
+            voiceRepositoryProvider.overrideWithValue(
+              FakeVoiceRepository()..microphone = false,
+            ),
             billingRepositoryProvider.overrideWithValue(billing),
           ],
           child: const AlesleApp(),
@@ -533,7 +543,9 @@ void main() {
             ),
             ...signedInOverrides(),
             assistantRepositoryProvider.overrideWithValue(assistant),
-            voiceRepositoryProvider.overrideWithValue(FakeVoiceRepository()),
+            voiceRepositoryProvider.overrideWithValue(
+              FakeVoiceRepository()..microphone = false,
+            ),
             billingRepositoryProvider.overrideWithValue(
               FakeBillingRepository(),
             ),
@@ -594,7 +606,9 @@ void main() {
             appSettingsStoreProvider.overrideWithValue(store),
             ...signedInOverrides(),
             assistantRepositoryProvider.overrideWithValue(assistant),
-            voiceRepositoryProvider.overrideWithValue(FakeVoiceRepository()),
+            voiceRepositoryProvider.overrideWithValue(
+              FakeVoiceRepository()..microphone = false,
+            ),
             billingRepositoryProvider.overrideWithValue(
               FakeBillingRepository(),
             ),

@@ -55,11 +55,13 @@ void main() {
   });
 
   test('start, stop, mute and status go to the service', () async {
-    when(
-      api.startListening,
-    ).thenAnswer((_) async => ListenStateMessage(active: true, muted: false));
-    when(api.listenState)
-        .thenAnswer((_) async => ListenStateMessage(active: true, muted: true));
+    when(api.startListening).thenAnswer(
+      (_) async =>
+          ListenStateMessage(active: true, muted: false, paused: false),
+    );
+    when(api.listenState).thenAnswer(
+      (_) async => ListenStateMessage(active: true, muted: true, paused: false),
+    );
     when(api.stopListening).thenAnswer((_) async {});
     when(() => api.setMuted(true)).thenAnswer((_) async {});
     expect(
@@ -90,19 +92,26 @@ void main() {
 
     repository.statusChanges.listen(states.add);
     repository.utterances.listen(paths.add);
-    repository.onListenState(ListenStateMessage(active: true, muted: true));
+    repository.onListenState(
+      ListenStateMessage(active: true, muted: true, paused: false),
+    );
+    repository.onListenState(
+      ListenStateMessage(active: true, muted: false, paused: true),
+    );
     repository.onUtterance('${dir.path}/b.wav');
     await Future<void>.delayed(Duration.zero);
     expect(states, <ListenStatus>[
       const ListenStatus(active: true, muted: true),
+      const ListenStatus(active: true, muted: false, paused: true),
     ]);
     expect(paths, <String>['${dir.path}/b.wav']);
   });
 
   test('a live conversation gets the server and a token; signed out it is plain hands-free', () async {
-    when(
-      () => api.startLive(any()),
-    ).thenAnswer((_) async => ListenStateMessage(active: true, muted: false));
+    when(() => api.startLive(any())).thenAnswer(
+      (_) async =>
+          ListenStateMessage(active: true, muted: false, paused: false),
+    );
     expect(
       await repository.startLive(locale: 'uz'),
       const ListenStatus(active: true, muted: false),
@@ -114,9 +123,10 @@ void main() {
     expect(config.locale, 'uz');
 
     tokens.token = null;
-    when(
-      api.startListening,
-    ).thenAnswer((_) async => ListenStateMessage(active: true, muted: false));
+    when(api.startListening).thenAnswer(
+      (_) async =>
+          ListenStateMessage(active: true, muted: false, paused: false),
+    );
     await repository.startLive(locale: 'uz');
     verify(api.startListening).called(1);
   });
@@ -181,7 +191,10 @@ void main() {
       )
       ..onLiveEvent(LiveEvent(kind: LiveEventKind.taskAmend, text: 'ham'))
       ..onLiveEvent(LiveEvent(kind: LiveEventKind.taskStop))
-      ..onLiveEvent(LiveEvent(kind: LiveEventKind.end));
+      ..onLiveEvent(LiveEvent(kind: LiveEventKind.end))
+      ..onLiveEvent(LiveEvent(kind: LiveEventKind.level, level: 0.5))
+      ..onLiveEvent(LiveEvent(kind: LiveEventKind.level, level: 3))
+      ..onLiveEvent(LiveEvent(kind: LiveEventKind.level));
     await Future<void>.delayed(Duration.zero);
     expect(updates, <LiveUpdate>[
       const LiveStageChanged(LiveStage.speaking),
@@ -191,6 +204,9 @@ void main() {
       const LiveTaskAmend('ham'),
       const LiveTaskStop(),
       const LiveEnded(),
+      const LiveLevel(0.5),
+      const LiveLevel(1),
+      const LiveLevel(0),
     ]);
   });
 

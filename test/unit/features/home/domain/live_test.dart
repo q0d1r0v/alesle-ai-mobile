@@ -31,6 +31,7 @@ void main() {
             const LiveTaskAmend('stop'),
           ),
           (const LiveEnded(), const LiveEnded(), const LiveTaskStop()),
+          (const LiveLevel(0.5), const LiveLevel(0.5), const LiveLevel(0.6)),
         ];
     for (final (LiveUpdate a, LiveUpdate same, LiveUpdate other) in cases) {
       expect(a, same);

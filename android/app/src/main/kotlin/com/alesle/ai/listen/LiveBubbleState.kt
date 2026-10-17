@@ -3,7 +3,7 @@ package com.alesle.ai.listen
 import com.alesle.ai.agent.generated.LivePhase
 
 /** How the bubble looks: what the conversation is doing right now. */
-enum class BubbleLook { CONNECTING, LISTENING, HEARING, THINKING, SPEAKING, MUTED }
+enum class BubbleLook { CONNECTING, LISTENING, HEARING, THINKING, SPEAKING, MUTED, PAUSED }
 
 /** Everything the bubble depends on, gathered from the process-wide holders. */
 data class BubbleInputs(
@@ -16,6 +16,8 @@ data class BubbleInputs(
     val appVisible: Boolean,
     /** A task works the screen: its overlay (with STOP) is shown instead, and nothing may cover its taps. */
     val taskRunning: Boolean,
+    /** Another app holds the microphone; listening comes back by itself. */
+    val paused: Boolean = false,
 )
 
 /** Decides whether the live bubble shows and how; pure, so it is tested without windows. */
@@ -24,6 +26,7 @@ object LiveBubbleState {
         if (!inputs.listening || inputs.appVisible || inputs.taskRunning) return null
         if (inputs.phase == LivePhase.LIMIT_REACHED) return null
         if (inputs.muted) return BubbleLook.MUTED
+        if (inputs.paused) return BubbleLook.PAUSED
         return when (inputs.phase) {
             LivePhase.CONNECTING, LivePhase.UNAUTHORIZED -> BubbleLook.CONNECTING
             LivePhase.HEARING -> BubbleLook.HEARING

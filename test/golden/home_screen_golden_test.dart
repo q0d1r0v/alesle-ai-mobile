@@ -23,6 +23,7 @@ void main() {
     WidgetTester tester,
     FakeAgentRepository agent, {
     FakeHandsFreeRepository? listen,
+    bool microphone = false,
   }) async {
     tester.view.physicalSize = const Size(1080, 1920);
     tester.view.devicePixelRatio = 2.625;
@@ -43,7 +44,9 @@ void main() {
         handsFreeRepositoryProvider.overrideWithValue(
           listen ?? FakeHandsFreeRepository(),
         ),
-        voiceRepositoryProvider.overrideWithValue(FakeVoiceRepository()),
+        voiceRepositoryProvider.overrideWithValue(
+          FakeVoiceRepository()..microphone = microphone,
+        ),
       ],
     );
     await tester.pumpAndSettle();
@@ -65,6 +68,25 @@ void main() {
     );
   });
 
+  testWidgets('home — live, listening, with examples', (
+    WidgetTester tester,
+  ) async {
+    final FakeHandsFreeRepository listen = FakeHandsFreeRepository();
+    await pumpAt(
+      tester,
+      FakeAgentRepository(() async => enabledAgent),
+      listen: listen,
+      microphone: true,
+    );
+    listen.live(const LiveStageChanged(LiveStage.listening));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await expectLater(
+      find.byType(HomeScreen),
+      matchesGoldenFile('goldens/home_live_examples.png'),
+    );
+  });
+
   testWidgets('home — live conversation', (WidgetTester tester) async {
     settings = await testSettingsStore(handsFree: true);
     final FakeHandsFreeRepository listen = FakeHandsFreeRepository();
@@ -72,6 +94,7 @@ void main() {
       tester,
       FakeAgentRepository(() async => enabledAgent),
       listen: listen,
+      microphone: true,
     );
     listen
       ..live(const LiveStageChanged(LiveStage.speaking))

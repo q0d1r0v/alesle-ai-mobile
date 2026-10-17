@@ -179,6 +179,10 @@ enum LiveEventKind {
   /// The conversation is over (the user said goodbye, or ended it from the
   /// bubble): turn hands-free off.
   end,
+
+  /// How loud the conversation is now, [LiveEvent.level] 0..1 (the user's
+  /// voice, or Alesle's while it speaks), a few times a second, for the orb.
+  level,
 }
 
 enum InstallOutcome {
@@ -503,7 +507,11 @@ class DeviceSetupMessage {
 }
 
 class ListenStateMessage {
-  ListenStateMessage({required this.active, required this.muted});
+  ListenStateMessage({
+    required this.active,
+    required this.muted,
+    required this.paused,
+  });
 
   /// The microphone service runs.
   bool active;
@@ -511,8 +519,12 @@ class ListenStateMessage {
   /// The user muted it: nothing is heard until unmuted.
   bool muted;
 
+  /// Another app holds the microphone (a call, a voice message); listening
+  /// comes back by itself once it is free.
+  bool paused;
+
   List<Object?> _toList() {
-    return <Object?>[active, muted];
+    return <Object?>[active, muted, paused];
   }
 
   Object encode() {
@@ -524,6 +536,7 @@ class ListenStateMessage {
     return ListenStateMessage(
       active: result[0]! as bool,
       muted: result[1]! as bool,
+      paused: result[2]! as bool,
     );
   }
 
@@ -536,7 +549,9 @@ class ListenStateMessage {
     if (identical(this, other)) {
       return true;
     }
-    return _deepEquals(active, other.active) && _deepEquals(muted, other.muted);
+    return _deepEquals(active, other.active) &&
+        _deepEquals(muted, other.muted) &&
+        _deepEquals(paused, other.paused);
   }
 
   @override
@@ -545,7 +560,7 @@ class ListenStateMessage {
 
   @override
   String toString() {
-    return 'ListenStateMessage(active: $active, muted: $muted)';
+    return 'ListenStateMessage(active: $active, muted: $muted, paused: $paused)';
   }
 }
 
@@ -613,6 +628,7 @@ class LiveEvent {
     this.text,
     this.isFinal,
     this.callId,
+    this.level,
   });
 
   LiveEventKind kind;
@@ -627,8 +643,10 @@ class LiveEvent {
 
   String? callId;
 
+  double? level;
+
   List<Object?> _toList() {
-    return <Object?>[kind, phase, role, text, isFinal, callId];
+    return <Object?>[kind, phase, role, text, isFinal, callId, level];
   }
 
   Object encode() {
@@ -644,6 +662,7 @@ class LiveEvent {
       text: result[3] as String?,
       isFinal: result[4] as bool?,
       callId: result[5] as String?,
+      level: result[6] as double?,
     );
   }
 
@@ -661,7 +680,8 @@ class LiveEvent {
         _deepEquals(role, other.role) &&
         _deepEquals(text, other.text) &&
         _deepEquals(isFinal, other.isFinal) &&
-        _deepEquals(callId, other.callId);
+        _deepEquals(callId, other.callId) &&
+        _deepEquals(level, other.level);
   }
 
   @override
@@ -670,7 +690,7 @@ class LiveEvent {
 
   @override
   String toString() {
-    return 'LiveEvent(kind: $kind, phase: $phase, role: $role, text: $text, isFinal: $isFinal, callId: $callId)';
+    return 'LiveEvent(kind: $kind, phase: $phase, role: $role, text: $text, isFinal: $isFinal, callId: $callId, level: $level)';
   }
 }
 

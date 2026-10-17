@@ -72,9 +72,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeTapToType => 'Tap and type';
 
   @override
-  String get homeExample => 'Try “Call Mom”';
-
-  @override
   String get commandHint => 'What should I do?';
 
   @override
@@ -259,22 +256,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get offButton => 'Turn on';
 
   @override
-  String get homeTapToSpeak => 'Tap and speak';
-
-  @override
-  String get homeListening => 'Listening';
-
-  @override
-  String get homeTapToStop => 'Tap to finish';
-
-  @override
-  String get homeUnderstanding => 'Understanding…';
-
-  @override
   String get homeTypeInstead => 'Type instead';
-
-  @override
-  String get voiceNotHeard => 'I didn’t catch that. Please say it again.';
 
   @override
   String get voiceUnavailable =>
@@ -282,9 +264,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get voiceMicDenied => 'Microphone access is needed.';
-
-  @override
-  String get handsFreeLabel => 'Always listen';
 
   @override
   String get handsFreeListening => 'Listening — just speak';
@@ -337,6 +316,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveHint => 'Just talk — I\'m here';
+
+  @override
+  String get homeTalk => 'Talk';
+
+  @override
+  String get homeIdleHint => 'Tap Talk, or type instead';
+
+  @override
+  String get liveMicBusy => 'Microphone busy — waiting for it';
+
+  @override
+  String get liveExamplesTitle => 'Try saying:';
+
+  @override
+  String get liveExample1 => 'Set an alarm for 7:00 tomorrow';
+
+  @override
+  String get liveExample2 => 'What’s the weather today?';
+
+  @override
+  String get liveExample3 => 'Set a timer for 5 minutes';
+
+  @override
+  String get liveExample4 => 'Open Telegram';
+
+  @override
+  String get liveExample5 => 'Play music on YouTube';
+
+  @override
+  String get liveExample6 => 'Read my latest Slack message';
+
+  @override
+  String get liveExample7 => 'Open Wi-Fi settings';
+
+  @override
+  String get liveExample8 => 'What’s the dollar rate?';
 
   @override
   String get liveKeyboard => 'Type';

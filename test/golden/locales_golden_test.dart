@@ -60,6 +60,9 @@ void main() {
             handsFreeRepositoryProvider.overrideWithValue(
               FakeHandsFreeRepository(),
             ),
+            voiceRepositoryProvider.overrideWithValue(
+              FakeVoiceRepository()..microphone = false,
+            ),
           ],
         );
         await tester.pumpAndSettle();

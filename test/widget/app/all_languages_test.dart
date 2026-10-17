@@ -38,6 +38,9 @@ void main() {
   Future<List<Override>> overrides() async => <Override>[
     assistantRepositoryProvider.overrideWithValue(FakeAssistantRepository()),
     handsFreeRepositoryProvider.overrideWithValue(FakeHandsFreeRepository()),
+    voiceRepositoryProvider.overrideWithValue(
+      FakeVoiceRepository()..microphone = false,
+    ),
     healthRepositoryProvider.overrideWithValue(
       FakeHealthRepository(() async => readyHealth),
     ),

@@ -20,11 +20,17 @@ class HandsFreeEngine(
     private val openSource: () -> PcmSource?,
     private val quiet: () -> Boolean,
     private val onUtterance: (ShortArray) -> Unit,
+    /** The microphone is gone for good (the permission was taken away). */
     private val onSourceLost: () -> Unit = {},
     private val tuning: VoiceActivityDetector.Tuning = VoiceActivityDetector.Tuning(),
     /** Live voice: speech as it is heard (see [VoiceActivityDetector.SpeechStream]). */
     private val stream: VoiceActivityDetector.SpeechStream? = null,
     private val strict: () -> Boolean = { false },
+    /** Another app holds the microphone (a call, a voice message): true while waiting for it back. */
+    private val onPaused: (Boolean) -> Unit = {},
+    /** Whether the microphone may still be used; false ends listening instead of waiting. */
+    private val allowed: () -> Boolean = { true },
+    private val reopenMs: Long = REOPEN_MS,
 ) {
     private val injected = ConcurrentLinkedQueue<ShortArray>()
 
@@ -69,25 +75,62 @@ class HandsFreeEngine(
         }
     }
 
-    private fun loop(source: PcmSource) {
+    private fun loop(first: PcmSource) {
         val detector = VoiceActivityDetector(onUtterance, tuning, stream, strict)
         val frame = ShortArray(VoiceActivityDetector.FRAME_SAMPLES)
+        var source: PcmSource? = first
         try {
             while (running) {
-                val read = source.read(frame)
-                if (read < 0) {
-                    if (running) onSourceLost()
-                    return
+                val current = source ?: reopen() ?: return
+                source = current
+                if (current.read(frame) < 0) {
+                    current.close()
+                    source = null
+                    detector.reset()
+                    VoiceLevel.quietMic()
+                    continue
                 }
                 val next = injected.poll() ?: frame.copyOf()
                 if (quiet()) {
                     detector.reset()
+                    VoiceLevel.quietMic()
                     continue
                 }
+                VoiceLevel.hearMic(next)
                 detector.accept(next)
             }
+        } catch (e: InterruptedException) {
+            // Stopped while waiting for the microphone.
         } finally {
-            source.close()
+            source?.close()
+            VoiceLevel.quietMic()
         }
+    }
+
+    /**
+     * The microphone was taken (or refused): wait for it, trying again every
+     * [reopenMs], instead of ending the conversation. Null when listening
+     * ends: stopped, or the microphone may no longer be used.
+     */
+    private fun reopen(): PcmSource? {
+        onPaused(true)
+        while (running) {
+            if (!allowed()) {
+                onSourceLost()
+                return null
+            }
+            Thread.sleep(reopenMs)
+            if (!running) return null
+            val source = openSource()
+            if (source != null) {
+                onPaused(false)
+                return source
+            }
+        }
+        return null
+    }
+
+    companion object {
+        const val REOPEN_MS = 2_000L
     }
 }

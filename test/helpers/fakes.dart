@@ -125,8 +125,12 @@ final class FakeVoiceRepository implements VoiceRepository {
   final List<String?> languages = <String?>[];
   final List<String> spoken = <String>[];
 
+  /// Times the permission dialog was asked for.
+  int asks = 0;
+
   @override
   Future<bool> ensureMicrophone() async {
+    asks++;
     if (failure case final Failure value) throw value;
     return microphone;
   }

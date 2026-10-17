@@ -76,6 +76,7 @@ class LivePlayer(
         generation++
         queue.clear()
         runCatching { track?.pause() }
+        VoiceLevel.quietVoice()
         if (active) {
             active = false
             speaking(false)
@@ -132,6 +133,7 @@ class LivePlayer(
                         lastHead = -1
                     } ?: continue
                 if (target.playState != AudioTrack.PLAYSTATE_PLAYING) target.play()
+                VoiceLevel.hearVoice(chunk.pcm)
                 target.write(chunk.pcm, 0, chunk.pcm.size)
                 written += chunk.pcm.size / BYTES_PER_FRAME
                 stalled = 0
@@ -159,6 +161,7 @@ class LivePlayer(
         synchronized(this) {
             if (at != generation || queue.isNotEmpty() || !active) return
             active = false
+            VoiceLevel.quietVoice()
             speaking(false)
         }
         onDrained?.invoke()

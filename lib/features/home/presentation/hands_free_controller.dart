@@ -36,6 +36,8 @@ final class HandsFreeState {
     this.live,
     this.said,
     this.reply,
+    this.level = 0,
+    this.micBusy = false,
   });
 
   final HandsFreePhase phase;
@@ -54,6 +56,12 @@ final class HandsFreeState {
   /// Alesle's words in the live conversation, this turn.
   final String? reply;
 
+  /// How loud the conversation is now, 0..1, so the orb moves with the voice.
+  final double level;
+
+  /// Another app holds the microphone; listening comes back by itself.
+  final bool micBusy;
+
   bool get on => phase != HandsFreePhase.off;
 
   /// The screen shows the conversation, not the one-command-at-a-time home.
@@ -69,6 +77,8 @@ final class HandsFreeState {
     String? reply,
     bool clearReply = false,
     bool clearSaid = false,
+    double? level,
+    bool? micBusy,
   }) => HandsFreeState(
     phase: phase ?? this.phase,
     heard: heard ?? this.heard,
@@ -76,6 +86,8 @@ final class HandsFreeState {
     live: live ?? this.live,
     said: clearSaid ? null : (said ?? this.said),
     reply: clearReply ? null : (reply ?? this.reply),
+    level: level ?? this.level,
+    micBusy: micBusy ?? this.micBusy,
   );
 }
 
@@ -134,9 +146,14 @@ class HandsFreeController extends Notifier<HandsFreeState> {
   /// Turns hands-free on (and remembers it). The app must be in front.
   Future<void> turnOn({required String appLocale}) async {
     _appLocale = appLocale;
+    // The dialog's return resumes the app: that resume must not ask again.
+    if (_asking) return;
+    _asking = true;
     try {
       if (!await _voice.ensureMicrophone()) {
         state = state.copyWith(problem: HandsFreeProblem.microphoneDenied);
+        // Refused: opening the app does not ask again; "Talk" does.
+        await _remember(on: false);
         return;
       }
       if (!await _startListening()) {
@@ -146,14 +163,28 @@ class HandsFreeController extends Notifier<HandsFreeState> {
       await _remember(on: true);
     } on Failure {
       state = state.copyWith(problem: HandsFreeProblem.startFailed);
+    } finally {
+      _asking = false;
     }
   }
 
+  bool _asking = false;
+
+  /// A start on its way: the permission dialog's return resumes the app, and
+  /// that must not start a second conversation.
+  bool _starting = false;
+
   Future<bool> _startListening() async {
-    final ListenStatus status = await _listen.startLive(locale: _appLocale);
-    if (!status.active) return false;
-    _onStatus(status);
-    return true;
+    if (_starting) return true;
+    _starting = true;
+    try {
+      final ListenStatus status = await _listen.startLive(locale: _appLocale);
+      if (!status.active) return false;
+      _onStatus(status);
+      return true;
+    } finally {
+      _starting = false;
+    }
   }
 
   Future<void> turnOff() async {
@@ -166,22 +197,28 @@ class HandsFreeController extends Notifier<HandsFreeState> {
     await _remember(on: false);
   }
 
-  /// Back in the app: hands-free is on unless the user turned it off. It
-  /// listens again only with the microphone already allowed: opening the app
-  /// never pops a permission dialog (the switch asks).
+  /// Back in the app: the live conversation starts by itself, every time,
+  /// even after the user ended the last one. The microphone permission is
+  /// asked only the first time; after a refusal the "Talk" button asks.
   Future<void> resume({required String appLocale}) async {
     _appLocale = appLocale;
-    if (ref.read(appSettingsProvider).handsFree == false) return;
+    // Back from the permission dialog: the start that asked goes on.
+    if (_asking) return;
     try {
       final ListenStatus status = await _listen.status();
       if (status.active) {
         _onStatus(status);
         return;
       }
-      if (!await _voice.microphoneGranted()) return;
-      await _startListening();
+      if (await _voice.microphoneGranted()) {
+        await _startListening();
+        return;
+      }
+      if (ref.read(appSettingsProvider).handsFree == null) {
+        await turnOn(appLocale: appLocale);
+      }
     } on Failure {
-      // Quietly off; the switch still works.
+      // Quietly off; "Talk" still works.
     }
   }
 
@@ -245,6 +282,8 @@ class HandsFreeController extends Notifier<HandsFreeState> {
         unawaited(ref.read(homeTaskProvider.notifier).stop());
       case LiveEnded():
         unawaited(turnOff());
+      case LiveLevel(:final double level):
+        if (level != state.level) state = state.copyWith(level: level);
     }
   }
 
@@ -340,9 +379,13 @@ class HandsFreeController extends Notifier<HandsFreeState> {
       state = HandsFreeState(problem: state.problem);
       return;
     }
-    if (state.phase == HandsFreePhase.understanding && !status.muted) return;
+    if (state.phase == HandsFreePhase.understanding && !status.muted) {
+      state = state.copyWith(micBusy: status.paused);
+      return;
+    }
     state = state.copyWith(
       phase: status.muted ? HandsFreePhase.muted : HandsFreePhase.listening,
+      micBusy: status.paused,
     );
   }
 

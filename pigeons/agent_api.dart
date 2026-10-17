@@ -192,13 +192,21 @@ abstract class DeviceHostApi {
 // ── Hands-free listening (SOW 04 §4.3) ──────────────────────────────────────
 
 class ListenStateMessage {
-  ListenStateMessage({required this.active, required this.muted});
+  ListenStateMessage({
+    required this.active,
+    required this.muted,
+    required this.paused,
+  });
 
   /// The microphone service runs.
   final bool active;
 
   /// The user muted it: nothing is heard until unmuted.
   final bool muted;
+
+  /// Another app holds the microphone (a call, a voice message); listening
+  /// comes back by itself once it is free.
+  final bool paused;
 }
 
 @HostApi()
@@ -308,6 +316,10 @@ enum LiveEventKind {
   /// The conversation is over (the user said goodbye, or ended it from the
   /// bubble): turn hands-free off.
   end,
+
+  /// How loud the conversation is now, [LiveEvent.level] 0..1 (the user's
+  /// voice, or Alesle's while it speaks), a few times a second, for the orb.
+  level,
 }
 
 class LiveEvent {
@@ -318,6 +330,7 @@ class LiveEvent {
     this.text,
     this.isFinal,
     this.callId,
+    this.level,
   });
 
   final LiveEventKind kind;
@@ -326,6 +339,7 @@ class LiveEvent {
   final String? text;
   final bool? isFinal;
   final String? callId;
+  final double? level;
 }
 
 // ── App updates (Sprint 8, SOW 02 §3) ───────────────────────────────────────

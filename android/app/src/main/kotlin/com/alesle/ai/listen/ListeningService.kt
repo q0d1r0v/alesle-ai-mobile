@@ -73,6 +73,13 @@ class ListeningService : Service() {
                     onSourceLost = { shutDown() },
                     stream = LiveVoice,
                     strict = { LiveVoice.strict },
+                    onPaused = { paused ->
+                        HandsFree.update(HandsFree.state.copy(paused = paused))
+                        updateNotification()
+                    },
+                    allowed = {
+                        ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+                    },
                 )
             if (!created.start()) {
                 shutDown()
@@ -81,7 +88,7 @@ class ListeningService : Service() {
             engine = created
             HandsFree.update(HandsFree.state.copy(active = true))
         }
-        notify(HandsFree.state.muted)
+        updateNotification()
         return START_NOT_STICKY
     }
 
@@ -97,7 +104,7 @@ class ListeningService : Service() {
 
     private fun goForeground(): Boolean =
         try {
-            val notification = build(HandsFree.state.muted)
+            val notification = build(HandsFree.state)
             startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
             true
         } catch (e: RuntimeException) {
@@ -127,17 +134,24 @@ class ListeningService : Service() {
         HandsFree.deliver(file.absolutePath)
     }
 
-    private fun notify(muted: Boolean) {
-        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, build(muted))
+    private fun updateNotification() {
+        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, build(HandsFree.state))
     }
 
-    private fun build(muted: Boolean): Notification {
+    private fun build(state: ListenState): Notification {
+        val muted = state.muted
+        val title =
+            when {
+                muted -> R.string.notification_listening_muted
+                state.paused -> R.string.notification_listening_paused
+                else -> R.string.notification_listening
+            }
         val toggle = if (muted) action(ACTION_UNMUTE, REQUEST_UNMUTE) else action(ACTION_MUTE, REQUEST_MUTE)
         val launch = packageManager.getLaunchIntentForPackage(packageName)
         return NotificationCompat
             .Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_alesle)
-            .setContentTitle(getString(if (muted) R.string.notification_listening_muted else R.string.notification_listening))
+            .setContentTitle(getString(title))
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setSilent(true)

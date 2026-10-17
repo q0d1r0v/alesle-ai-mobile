@@ -115,6 +115,9 @@ final class HandsFreeRepositoryImpl
       LiveEventKind.taskAmend => LiveTaskAmend(event.text ?? ''),
       LiveEventKind.taskStop => const LiveTaskStop(),
       LiveEventKind.end => const LiveEnded(),
+      LiveEventKind.level => LiveLevel(
+        (event.level ?? 0).clamp(0.0, 1.0).toDouble(),
+      ),
     };
     if (update != null) _live.add(update);
   }
@@ -141,8 +144,11 @@ final class HandsFreeRepositoryImpl
     await _live.close();
   }
 
-  static ListenStatus _of(ListenStateMessage message) =>
-      ListenStatus(active: message.active, muted: message.muted);
+  static ListenStatus _of(ListenStateMessage message) => ListenStatus(
+    active: message.active,
+    muted: message.muted,
+    paused: message.paused,
+  );
 
   Future<T> _platform<T>(Future<T> Function() call) async {
     try {

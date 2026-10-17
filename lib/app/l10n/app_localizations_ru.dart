@@ -72,9 +72,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get homeTapToType => 'Нажмите и напишите';
 
   @override
-  String get homeExample => 'Например: «Позвони маме»';
-
-  @override
   String get commandHint => 'Что сделать?';
 
   @override
@@ -259,22 +256,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get offButton => 'Включить';
 
   @override
-  String get homeTapToSpeak => 'Нажмите и говорите';
-
-  @override
-  String get homeListening => 'Слушаю';
-
-  @override
-  String get homeTapToStop => 'Нажмите, чтобы закончить';
-
-  @override
-  String get homeUnderstanding => 'Распознаю…';
-
-  @override
   String get homeTypeInstead => 'Написать текстом';
-
-  @override
-  String get voiceNotHeard => 'Не расслышал. Скажите ещё раз.';
 
   @override
   String get voiceUnavailable =>
@@ -282,9 +264,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get voiceMicDenied => 'Нужен доступ к микрофону.';
-
-  @override
-  String get handsFreeLabel => 'Слушать всегда';
 
   @override
   String get handsFreeListening => 'Слушаю — просто говорите';
@@ -337,6 +316,42 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get liveHint => 'Говорите — я здесь';
+
+  @override
+  String get homeTalk => 'Поговорить';
+
+  @override
+  String get homeIdleHint => 'Нажмите «Поговорить» или напишите';
+
+  @override
+  String get liveMicBusy => 'Микрофон занят — жду, пока освободится';
+
+  @override
+  String get liveExamplesTitle => 'Например, скажите:';
+
+  @override
+  String get liveExample1 => 'Поставь будильник на 7:00 завтра';
+
+  @override
+  String get liveExample2 => 'Какая сегодня погода?';
+
+  @override
+  String get liveExample3 => 'Поставь таймер на 5 минут';
+
+  @override
+  String get liveExample4 => 'Открой Telegram';
+
+  @override
+  String get liveExample5 => 'Включи музыку на YouTube';
+
+  @override
+  String get liveExample6 => 'Прочитай последнее сообщение в Slack';
+
+  @override
+  String get liveExample7 => 'Открой настройки Wi-Fi';
+
+  @override
+  String get liveExample8 => 'Какой курс доллара?';
 
   @override
   String get liveKeyboard => 'Написать';

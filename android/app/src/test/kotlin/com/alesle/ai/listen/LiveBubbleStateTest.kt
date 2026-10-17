@@ -19,6 +19,8 @@ class LiveBubbleStateTest {
         assertEquals(BubbleLook.LISTENING, LiveBubbleState.look(base.copy(phase = LivePhase.FALLBACK)))
         assertEquals(BubbleLook.LISTENING, LiveBubbleState.look(base.copy(phase = null)))
         assertEquals(BubbleLook.MUTED, LiveBubbleState.look(base.copy(muted = true, phase = LivePhase.SPEAKING)))
+        assertEquals(BubbleLook.PAUSED, LiveBubbleState.look(base.copy(paused = true, phase = LivePhase.HEARING)))
+        assertEquals(BubbleLook.MUTED, LiveBubbleState.look(base.copy(muted = true, paused = true)))
     }
 
     @Test

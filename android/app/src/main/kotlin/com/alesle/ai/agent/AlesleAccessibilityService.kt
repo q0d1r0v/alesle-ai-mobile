@@ -23,6 +23,7 @@ import com.alesle.ai.agent.snapshot.SnapshotContext
 import com.alesle.ai.agent.vision.Screenshot
 import com.alesle.ai.agent.vision.ScreenshotSource
 import com.alesle.ai.agent.vision.ServiceScreenshotSource
+import com.alesle.ai.listen.LiveBubble
 import com.alesle.ai.listen.LiveBubbleWindow
 
 /**
@@ -73,6 +74,8 @@ class AlesleAccessibilityService :
         intentLauncher =
             IntentLauncher(ContentResolverContacts(contentResolver), PackageManagerApps(packageManager), ContextActivityStarter(this))
         instance = this
+        // A conversation may already be on (the service came back after HyperOS or an update dropped it).
+        LiveBubble.refresh()
     }
 
     /**

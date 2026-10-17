@@ -123,3 +123,17 @@ final class LiveEnded extends LiveUpdate {
   @override
   int get hashCode => 1;
 }
+
+/// How loud the conversation is now, 0..1 (the user's voice, or Alesle's
+/// while it speaks), for the orb.
+final class LiveLevel extends LiveUpdate {
+  const LiveLevel(this.level);
+
+  final double level;
+
+  @override
+  bool operator ==(Object other) => other is LiveLevel && other.level == level;
+
+  @override
+  int get hashCode => level.hashCode;
+}

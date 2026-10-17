@@ -1,6 +1,5 @@
 package com.alesle.ai.listen
 
-import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -12,6 +11,7 @@ import android.graphics.RectF
 import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
@@ -19,7 +19,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.WindowManager
-import android.view.animation.LinearInterpolator
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.view.isVisible
@@ -27,10 +26,12 @@ import com.alesle.ai.AppVisibility
 import com.alesle.ai.MainActivity
 import com.alesle.ai.R
 import com.alesle.ai.agent.AlesleAccessibilityService
+import com.alesle.ai.agent.generated.LiveEventKind
 import com.alesle.ai.agent.overlay.localized
 import com.alesle.ai.agent.task.AgentTaskController
 import kotlin.math.abs
 import kotlin.math.hypot
+import kotlin.math.sqrt
 
 /**
  * The live conversation outside Alesle's screen (design: Gemini Live's
@@ -50,6 +51,12 @@ object LiveBubble {
     private var installed = false
     private var taskRunning = false
 
+    /** Windows refused in a row; a few more tries follow, then the next change tries again. */
+    private var refusals = 0
+
+    /** The last decision, logged only when it changes (no content: flags and the look). */
+    private var lastReport: String? = null
+
     /** Where the user left it, for the next time it shows (null: the default spot). */
     internal var position: Pair<Int, Int>? = null
 
@@ -59,7 +66,8 @@ object LiveBubble {
             if (installed) return@post
             installed = true
             HandsFree.onState { refresh() }
-            LiveVoice.onEvent { refresh() }
+            // The level changes many times a second; the orb reads it as it draws.
+            LiveVoice.onEvent { if (it.kind != LiveEventKind.LEVEL) refresh() }
             AppVisibility.onChange { refresh() }
             AgentTaskController.get(context.applicationContext).onRunning { running ->
                 main.post {
@@ -71,25 +79,54 @@ object LiveBubble {
         }
     }
 
-    private fun refresh() {
+    /** Shows, updates or hides the bubble; also called when the accessibility service (re)connects. */
+    fun refresh() {
         if (Looper.myLooper() != Looper.getMainLooper()) {
             main.post(::refresh)
             return
         }
         val state = HandsFree.state
-        val look =
-            LiveBubbleState.look(
-                BubbleInputs(
-                    listening = state.active,
-                    muted = state.muted,
-                    phase = LiveVoice.phase,
-                    appVisible = AppVisibility.visible,
-                    taskRunning = taskRunning,
-                ),
+        val inputs =
+            BubbleInputs(
+                listening = state.active,
+                muted = state.muted,
+                phase = LiveVoice.phase,
+                appVisible = AppVisibility.visible,
+                taskRunning = taskRunning,
+                paused = state.paused,
             )
-        val window = AlesleAccessibilityService.instance?.liveBubble ?: return
-        if (look == null) window.hide() else window.show(look, state.muted, LiveVoice.locale)
+        val look = LiveBubbleState.look(inputs)
+        val window = AlesleAccessibilityService.instance?.liveBubble
+        report(inputs, look, window != null)
+        if (window == null) return
+        if (look == null) {
+            refusals = 0
+            window.hide()
+            return
+        }
+        if (window.show(look, state.muted, LiveVoice.locale)) {
+            refusals = 0
+        } else if (++refusals <= MAX_REFUSALS) {
+            main.postDelayed(::refresh, RETRY_MS)
+        }
     }
+
+    private fun report(
+        inputs: BubbleInputs,
+        look: BubbleLook?,
+        service: Boolean,
+    ) {
+        val line =
+            "look=$look listening=${inputs.listening} muted=${inputs.muted} paused=${inputs.paused} " +
+                "phase=${inputs.phase} appVisible=${inputs.appVisible} task=${inputs.taskRunning} service=$service"
+        if (line == lastReport) return
+        lastReport = line
+        Log.i(TAG, line)
+    }
+
+    private const val TAG = "AlesleBubble"
+    private const val RETRY_MS = 1_000L
+    private const val MAX_REFUSALS = 5
 }
 
 /** The bubble's window, owned by the accessibility service that may draw it. */
@@ -103,14 +140,16 @@ class LiveBubbleWindow(
     private var muteLabel: TextView? = null
     private var params: WindowManager.LayoutParams? = null
 
+    /** False when the window could not be added (the service's token is not ready yet). */
     fun show(
         look: BubbleLook,
         muted: Boolean,
         locale: String?,
-    ) {
-        if (root == null && !add(locale)) return
+    ): Boolean {
+        if (root == null && !add(locale)) return false
         orb?.let { if (it.look != look) it.look = look }
         muteLabel?.setText(if (muted) R.string.notification_listening_unmute else R.string.notification_listening_mute)
+        return true
     }
 
     fun hide() {
@@ -313,37 +352,40 @@ class LiveBubbleWindow(
         }
     }
 
-    /** The orb: a violet sphere whose ring breathes, pulses or spins with the conversation. */
+    /**
+     * The orb: a violet sphere that moves with the voice. While listening it
+     * swells with what the microphone hears and sends out ripples when the
+     * user speaks; while Alesle speaks it follows Alesle's voice; it spins
+     * while thinking and rests grey when muted or the microphone is busy.
+     */
     private class OrbView(
         context: Context,
     ) : View(context) {
         private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
+        private val glow = Paint(Paint.ANTI_ALIAS_FLAG)
         private val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+        private val ripple = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
         private val arc = RectF()
-        private var t = 0f
-        private val animator =
-            ValueAnimator.ofFloat(0f, 1f).apply {
-                duration = CYCLE_MS
-                repeatCount = ValueAnimator.INFINITE
-                interpolator = LinearInterpolator()
-                addUpdateListener {
-                    t = it.animatedValue as Float
-                    invalidate()
-                }
-            }
+
+        /** Redraws every frame while it moves. Frames, not an animator: it keeps moving with system animations turned off. */
+        private var moving = false
+
+        /** The level as drawn: eased toward the live one, so the orb moves smoothly. */
+        private var shown = 0f
+
+        /** When each ripple started (uptime ms). */
+        private val ripples = ArrayList<Long>()
+        private var lastRipple = 0L
 
         var look: BubbleLook = BubbleLook.LISTENING
             set(value) {
                 field = value
-                animator.duration =
-                    when (value) {
-                        BubbleLook.HEARING, BubbleLook.SPEAKING -> FAST_MS
-                        else -> CYCLE_MS
-                    }
-                if (value == BubbleLook.MUTED) {
-                    animator.cancel()
-                } else if (!animator.isStarted) {
-                    animator.start()
+                if (value.still) {
+                    moving = false
+                    ripples.clear()
+                    shown = 0f
+                } else if (isAttachedToWindow) {
+                    move()
                 }
                 invalidate()
             }
@@ -354,39 +396,77 @@ class LiveBubbleWindow(
 
         override fun onAttachedToWindow() {
             super.onAttachedToWindow()
-            if (look != BubbleLook.MUTED) animator.start()
+            if (!look.still) move()
         }
 
         override fun onDetachedFromWindow() {
-            animator.cancel()
+            moving = false
             super.onDetachedFromWindow()
         }
 
-        fun stop() = animator.cancel()
+        fun stop() {
+            moving = false
+        }
+
+        private fun move() {
+            if (moving) return
+            moving = true
+            postInvalidateOnAnimation()
+        }
 
         override fun onDraw(canvas: Canvas) {
             val cx = width / 2f
             val cy = height / 2f
             val full = minOf(width, height) / 2f
+            val now = SystemClock.uptimeMillis()
+            val cycle = if (look == BubbleLook.HEARING || look == BubbleLook.SPEAKING) FAST_MS else CYCLE_MS
+            val t = (now % cycle) / cycle.toFloat()
             val wave = (kotlin.math.sin(t * 2 * Math.PI) * 0.5 + 0.5).toFloat()
-            val core =
-                full *
-                    when (look) {
-                        BubbleLook.SPEAKING -> 0.62f + 0.12f * wave
-                        BubbleLook.HEARING -> 0.66f + 0.08f * wave
-                        BubbleLook.LISTENING -> 0.66f + 0.04f * wave
-                        else -> 0.66f
-                    }
-            fill.color =
+            val voiced = look == BubbleLook.LISTENING || look == BubbleLook.HEARING || look == BubbleLook.SPEAKING
+            val target =
                 when (look) {
-                    BubbleLook.MUTED -> MUTED_GREY
+                    BubbleLook.SPEAKING -> VoiceLevel.voice
+                    BubbleLook.LISTENING, BubbleLook.HEARING -> VoiceLevel.mic
+                    else -> 0f
+                }
+            // A gentle curve: ordinary speech already moves the orb clearly.
+            shown += (sqrt(target) - shown) * EASE
+            if (voiced && shown > RIPPLE_AT && now - lastRipple > RIPPLE_EVERY_MS) {
+                ripples += now
+                lastRipple = now
+            }
+            ripples.removeAll { now - it > RIPPLE_MS }
+
+            val core = if (voiced) full * (0.48f + 0.04f * wave + 0.3f * shown) else full * 0.6f
+            val color =
+                when (look) {
+                    BubbleLook.MUTED, BubbleLook.PAUSED -> MUTED_GREY
                     BubbleLook.CONNECTING -> VIOLET_SOFT
+                    BubbleLook.HEARING -> VIOLET_DEEP
                     else -> VIOLET
                 }
+
+            // Ripples: rings that leave the orb while someone speaks.
+            for (start in ripples) {
+                val p = (now - start) / RIPPLE_MS.toFloat()
+                // Light lilac: seen on dark and light screens alike.
+                ripple.color = LILAC
+                ripple.alpha = (230 * (1f - p)).toInt().coerceIn(0, 255)
+                ripple.strokeWidth = full * 0.08f * (1f - p) + 1.5f
+                canvas.drawCircle(cx, cy, core + (full * 0.97f - core) * p, ripple)
+            }
+            // A soft halo that grows with the voice.
+            if (voiced && shown > 0.02f) {
+                glow.color = LILAC
+                glow.alpha = (150 * shown).toInt().coerceIn(0, 255)
+                canvas.drawCircle(cx, cy, minOf(full, core + full * 0.22f * shown), glow)
+            }
+            fill.color = color
             canvas.drawCircle(cx, cy, core, fill)
+
             ring.strokeWidth = full * 0.1f
-            ring.color = if (look == BubbleLook.MUTED) MUTED_GREY else VIOLET_SOFT
-            arc.set(cx - full * 0.88f, cy - full * 0.88f, cx + full * 0.88f, cy + full * 0.88f)
+            ring.color = VIOLET_SOFT
+            arc.set(cx - full * 0.86f, cy - full * 0.86f, cx + full * 0.86f, cy + full * 0.86f)
             when (look) {
                 BubbleLook.THINKING, BubbleLook.CONNECTING -> canvas.drawArc(arc, t * 360f, 100f, false, ring)
                 BubbleLook.MUTED -> {
@@ -395,28 +475,48 @@ class LiveBubbleWindow(
                     val d = core * 0.5f
                     canvas.drawLine(cx - d, cy - d, cx + d, cy + d, ring)
                 }
-                else -> {
-                    ring.alpha = (255 * (1f - abs(wave - 0.5f) * 1.2f)).toInt().coerceIn(40, 255)
-                    canvas.drawCircle(cx, cy, full * 0.88f, ring)
+                BubbleLook.PAUSED -> {
+                    // Two bars: waiting for the microphone.
+                    ring.color = Color.WHITE
+                    ring.strokeWidth = full * 0.12f
+                    val h = core * 0.45f
+                    val gap = core * 0.22f
+                    canvas.drawLine(cx - gap, cy - h, cx - gap, cy + h, ring)
+                    canvas.drawLine(cx + gap, cy - h, cx + gap, cy + h, ring)
                 }
+                else ->
+                    if (ripples.isEmpty()) {
+                        // At rest: a ring that breathes, so the orb still shows it listens.
+                        ring.alpha = (255 * (1f - abs(wave - 0.5f) * 1.2f)).toInt().coerceIn(40, 255)
+                        canvas.drawCircle(cx, cy, full * 0.86f, ring)
+                    }
             }
+            if (moving) postInvalidateOnAnimation()
         }
+
+        private val BubbleLook.still: Boolean get() = this == BubbleLook.MUTED || this == BubbleLook.PAUSED
 
         companion object {
             private const val CYCLE_MS = 1_600L
             private const val FAST_MS = 700L
+            private const val EASE = 0.35f
+            private const val RIPPLE_AT = 0.35f
+            private const val RIPPLE_EVERY_MS = 220L
+            private const val RIPPLE_MS = 900L
         }
     }
 
     private companion object {
         const val TAG = "AlesleBubble"
-        const val ORB_DP = 56
+        const val ORB_DP = 64
         const val MARGIN_DP = 8
         const val START_Y = 0.35f
         val INK = Color.rgb(0x15, 0x15, 0x1D)
         val CAPSULE_GREY = Color.rgb(0xEE, 0xEE, 0xF2)
         val VIOLET = Color.rgb(0x85, 0x68, 0xDB)
         val VIOLET_SOFT = Color.argb(0xB0, 0xA0, 0x89, 0xF0)
+        val VIOLET_DEEP = Color.rgb(0x6C, 0x4B, 0xD6)
+        val LILAC = Color.rgb(0xC4, 0xB5, 0xFF)
         val MUTED_GREY = Color.rgb(0x8A, 0x8B, 0x99)
     }
 }

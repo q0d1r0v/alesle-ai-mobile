@@ -9,6 +9,7 @@
     <string name="notification_channel_listening">Ovozli rejim</string>
     <string name="notification_listening">Alesle sizni tinglayapti</string>
     <string name="notification_listening_muted">Mikrofon o\'chirilgan</string>
+    <string name="notification_listening_paused">Mikrofon band — bo\'shashini kutyapman</string>
     <string name="notification_listening_mute">Ovozsiz</string>
     <string name="notification_listening_unmute">Tinglash</string>
     <string name="notification_listening_off">O\'chirish</string>

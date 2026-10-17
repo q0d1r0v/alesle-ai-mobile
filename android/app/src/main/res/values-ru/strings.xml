@@ -8,6 +8,7 @@
     <string name="notification_channel_listening">Голосовой режим</string>
     <string name="notification_listening">Alesle слушает вас</string>
     <string name="notification_listening_muted">Микрофон выключен</string>
+    <string name="notification_listening_paused">Микрофон занят — жду, пока освободится</string>
     <string name="notification_listening_mute">Без звука</string>
     <string name="notification_listening_unmute">Слушать</string>
     <string name="notification_listening_off">Выключить</string>

@@ -7,6 +7,8 @@ import java.util.concurrent.CopyOnWriteArrayList
 data class ListenState(
     val active: Boolean,
     val muted: Boolean,
+    /** Another app holds the microphone; listening resumes when it is free. */
+    val paused: Boolean = false,
 )
 
 /**

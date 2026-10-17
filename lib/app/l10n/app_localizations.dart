@@ -214,12 +214,6 @@ abstract class AppLocalizations {
   /// **'Bosing va yozing'**
   String get homeTapToType;
 
-  /// No description provided for @homeExample.
-  ///
-  /// In uz, this message translates to:
-  /// **'Masalan: “Onamga qo‘ng‘iroq qil”'**
-  String get homeExample;
-
   /// No description provided for @commandHint.
   ///
   /// In uz, this message translates to:
@@ -574,41 +568,11 @@ abstract class AppLocalizations {
   /// **'Yoqish'**
   String get offButton;
 
-  /// No description provided for @homeTapToSpeak.
-  ///
-  /// In uz, this message translates to:
-  /// **'Bosing va gapiring'**
-  String get homeTapToSpeak;
-
-  /// No description provided for @homeListening.
-  ///
-  /// In uz, this message translates to:
-  /// **'Eshityapman'**
-  String get homeListening;
-
-  /// No description provided for @homeTapToStop.
-  ///
-  /// In uz, this message translates to:
-  /// **'Tugatish uchun bosing'**
-  String get homeTapToStop;
-
-  /// No description provided for @homeUnderstanding.
-  ///
-  /// In uz, this message translates to:
-  /// **'Tushunyapman…'**
-  String get homeUnderstanding;
-
   /// No description provided for @homeTypeInstead.
   ///
   /// In uz, this message translates to:
   /// **'Yozib yuborish'**
   String get homeTypeInstead;
-
-  /// No description provided for @voiceNotHeard.
-  ///
-  /// In uz, this message translates to:
-  /// **'Eshitmadim. Yana bir bor ayting.'**
-  String get voiceNotHeard;
 
   /// No description provided for @voiceUnavailable.
   ///
@@ -621,12 +585,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Mikrofonga ruxsat kerak.'**
   String get voiceMicDenied;
-
-  /// No description provided for @handsFreeLabel.
-  ///
-  /// In uz, this message translates to:
-  /// **'Doim tinglash'**
-  String get handsFreeLabel;
 
   /// No description provided for @handsFreeListening.
   ///
@@ -723,6 +681,78 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Gapiring — men shu yerdaman'**
   String get liveHint;
+
+  /// No description provided for @homeTalk.
+  ///
+  /// In uz, this message translates to:
+  /// **'Gaplashish'**
+  String get homeTalk;
+
+  /// No description provided for @homeIdleHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Gaplashish tugmasini bosing yoki yozib yuboring'**
+  String get homeIdleHint;
+
+  /// No description provided for @liveMicBusy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mikrofon band — bo‘shashini kutyapman'**
+  String get liveMicBusy;
+
+  /// No description provided for @liveExamplesTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Masalan, ayting:'**
+  String get liveExamplesTitle;
+
+  /// No description provided for @liveExample1.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ertaga soat 7:00 ga budilnik qo‘y'**
+  String get liveExample1;
+
+  /// No description provided for @liveExample2.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bugun ob-havo qanday?'**
+  String get liveExample2;
+
+  /// No description provided for @liveExample3.
+  ///
+  /// In uz, this message translates to:
+  /// **'5 daqiqaga taymer qo‘y'**
+  String get liveExample3;
+
+  /// No description provided for @liveExample4.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telegram’ni och'**
+  String get liveExample4;
+
+  /// No description provided for @liveExample5.
+  ///
+  /// In uz, this message translates to:
+  /// **'YouTube’da musiqa qo‘y'**
+  String get liveExample5;
+
+  /// No description provided for @liveExample6.
+  ///
+  /// In uz, this message translates to:
+  /// **'Slack’dagi oxirgi xabarni o‘qib ber'**
+  String get liveExample6;
+
+  /// No description provided for @liveExample7.
+  ///
+  /// In uz, this message translates to:
+  /// **'Wi-Fi sozlamalarini och'**
+  String get liveExample7;
+
+  /// No description provided for @liveExample8.
+  ///
+  /// In uz, this message translates to:
+  /// **'Dollar kursi qancha?'**
+  String get liveExample8;
 
   /// No description provided for @liveKeyboard.
   ///

@@ -287,7 +287,12 @@ enum class LiveEventKind(val raw: Int) {
    * The conversation is over (the user said goodbye, or ended it from the
    * bubble): turn hands-free off.
    */
-  END(5);
+  END(5),
+  /**
+   * How loud the conversation is now, [LiveEvent.level] 0..1 (the user's
+   * voice, or Alesle's while it speaks), a few times a second, for the orb.
+   */
+  LEVEL(6);
 
   companion object {
     fun ofRaw(raw: Int): LiveEventKind? {
@@ -580,20 +585,27 @@ data class ListenStateMessage (
   /** The microphone service runs. */
   val active: Boolean,
   /** The user muted it: nothing is heard until unmuted. */
-  val muted: Boolean
+  val muted: Boolean,
+  /**
+   * Another app holds the microphone (a call, a voice message); listening
+   * comes back by itself once it is free.
+   */
+  val paused: Boolean
 )
  {
   companion object {
     fun fromList(pigeonVar_list: List<Any?>): ListenStateMessage {
       val active = pigeonVar_list[0] as Boolean
       val muted = pigeonVar_list[1] as Boolean
-      return ListenStateMessage(active, muted)
+      val paused = pigeonVar_list[2] as Boolean
+      return ListenStateMessage(active, muted, paused)
     }
   }
   fun toList(): List<Any?> {
     return listOf(
       active,
       muted,
+      paused,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -604,17 +616,18 @@ data class ListenStateMessage (
       return true
     }
     val other = other as ListenStateMessage
-    return AgentApiPigeonUtils.deepEquals(this.active, other.active) && AgentApiPigeonUtils.deepEquals(this.muted, other.muted)
+    return AgentApiPigeonUtils.deepEquals(this.active, other.active) && AgentApiPigeonUtils.deepEquals(this.muted, other.muted) && AgentApiPigeonUtils.deepEquals(this.paused, other.paused)
   }
 
   override fun hashCode(): Int {
     var result = javaClass.hashCode()
     result = 31 * result + AgentApiPigeonUtils.deepHash(this.active)
     result = 31 * result + AgentApiPigeonUtils.deepHash(this.muted)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.paused)
     return result
   }
   override fun toString(): String {
-    return "ListenStateMessage(active=$active, muted=$muted)"
+    return "ListenStateMessage(active=$active, muted=$muted, paused=$paused)"
   }
 }
 
@@ -675,7 +688,8 @@ data class LiveEvent (
   val role: String? = null,
   val text: String? = null,
   val isFinal: Boolean? = null,
-  val callId: String? = null
+  val callId: String? = null,
+  val level: Double? = null
 )
  {
   companion object {
@@ -686,7 +700,8 @@ data class LiveEvent (
       val text = pigeonVar_list[3] as String?
       val isFinal = pigeonVar_list[4] as Boolean?
       val callId = pigeonVar_list[5] as String?
-      return LiveEvent(kind, phase, role, text, isFinal, callId)
+      val level = pigeonVar_list[6] as Double?
+      return LiveEvent(kind, phase, role, text, isFinal, callId, level)
     }
   }
   fun toList(): List<Any?> {
@@ -697,6 +712,7 @@ data class LiveEvent (
       text,
       isFinal,
       callId,
+      level,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -707,7 +723,7 @@ data class LiveEvent (
       return true
     }
     val other = other as LiveEvent
-    return AgentApiPigeonUtils.deepEquals(this.kind, other.kind) && AgentApiPigeonUtils.deepEquals(this.phase, other.phase) && AgentApiPigeonUtils.deepEquals(this.role, other.role) && AgentApiPigeonUtils.deepEquals(this.text, other.text) && AgentApiPigeonUtils.deepEquals(this.isFinal, other.isFinal) && AgentApiPigeonUtils.deepEquals(this.callId, other.callId)
+    return AgentApiPigeonUtils.deepEquals(this.kind, other.kind) && AgentApiPigeonUtils.deepEquals(this.phase, other.phase) && AgentApiPigeonUtils.deepEquals(this.role, other.role) && AgentApiPigeonUtils.deepEquals(this.text, other.text) && AgentApiPigeonUtils.deepEquals(this.isFinal, other.isFinal) && AgentApiPigeonUtils.deepEquals(this.callId, other.callId) && AgentApiPigeonUtils.deepEquals(this.level, other.level)
   }
 
   override fun hashCode(): Int {
@@ -718,10 +734,11 @@ data class LiveEvent (
     result = 31 * result + AgentApiPigeonUtils.deepHash(this.text)
     result = 31 * result + AgentApiPigeonUtils.deepHash(this.isFinal)
     result = 31 * result + AgentApiPigeonUtils.deepHash(this.callId)
+    result = 31 * result + AgentApiPigeonUtils.deepHash(this.level)
     return result
   }
   override fun toString(): String {
-    return "LiveEvent(kind=$kind, phase=$phase, role=$role, text=$text, isFinal=$isFinal, callId=$callId)"
+    return "LiveEvent(kind=$kind, phase=$phase, role=$role, text=$text, isFinal=$isFinal, callId=$callId, level=$level)"
   }
 }
 
