@@ -175,6 +175,10 @@ enum LiveEventKind {
 
   /// Stop the running task.
   taskStop,
+
+  /// The conversation is over (the user said goodbye, or ended it from the
+  /// bubble): turn hands-free off.
+  end,
 }
 
 enum InstallOutcome {
@@ -1429,10 +1433,12 @@ class ListenHostApi {
   }
 
   /// How the task a `taskRun` event asked for ended (status as in StepEvent).
+  /// [reason] is the agent's finish reason when it did not get done, so it can be said.
   Future<void> liveTaskResult(
     String callId,
     String status,
     String? reply,
+    String? reason,
   ) async {
     final pigeonVar_channelName =
         'dev.flutter.pigeon.alesle_ai.ListenHostApi.liveTaskResult$pigeonVar_messageChannelSuffix';
@@ -1442,7 +1448,7 @@ class ListenHostApi {
       binaryMessenger: pigeonVar_binaryMessenger,
     );
     final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[callId, status, reply],
+      <Object?>[callId, status, reply, reason],
     );
     final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
 

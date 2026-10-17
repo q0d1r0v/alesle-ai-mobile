@@ -225,7 +225,13 @@ abstract class ListenHostApi {
   void sendLiveText(String text);
 
   /// How the task a `taskRun` event asked for ended (status as in StepEvent).
-  void liveTaskResult(String callId, String status, String? reply);
+  /// [reason] is the agent's finish reason when it did not get done, so it can be said.
+  void liveTaskResult(
+    String callId,
+    String status,
+    String? reply,
+    String? reason,
+  );
 }
 
 @FlutterApi()
@@ -298,6 +304,10 @@ enum LiveEventKind {
 
   /// Stop the running task.
   taskStop,
+
+  /// The conversation is over (the user said goodbye, or ended it from the
+  /// bubble): turn hands-free off.
+  end,
 }
 
 class LiveEvent {

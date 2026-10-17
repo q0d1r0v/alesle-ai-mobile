@@ -203,7 +203,7 @@ void main() {
       expect(find.byKey(const Key('live-task')), findsNothing);
       expect(find.byKey(const Key('done-button')), findsNothing);
       expect(voice.spoken, isEmpty);
-      expect(listen.taskResults.single, ('c1', 'done', 'Soat ochildi'));
+      expect(listen.taskResults.single, ('c1', 'done', 'Soat ochildi', null));
 
       await tester.tap(find.byKey(const Key('live-mute')));
       await settle(tester);

@@ -62,6 +62,13 @@ class AgentTaskController(
 
     private var loop: TaskLoop? = null
     private var stopHandle: AutoCloseable? = null
+    private val runningListeners = java.util.concurrent.CopyOnWriteArrayList<(Boolean) -> Unit>()
+
+    /** Told when a task starts (true) and ends (false), on whichever thread it happened. */
+    fun onRunning(listener: (Boolean) -> Unit): AutoCloseable {
+        runningListeners += listener
+        return AutoCloseable { runningListeners -= listener }
+    }
 
     val isRunning: Boolean
         @Synchronized get() = loop != null
@@ -85,6 +92,7 @@ class AgentTaskController(
             created = built
             stopHandle = StopRequests.register(::stop)
         }
+        runningListeners.forEach { it(true) }
         emit(StepEvent(StepEventKind.STARTED, command))
         created.start()
         return StartTaskResult(started = true)
@@ -118,6 +126,7 @@ class AgentTaskController(
                     stopHandle = null
                     stopService()
                 }
+                runningListeners.forEach { it(false) }
                 val finished = StepEvent(StepEventKind.FINISHED, event.reply, event.status, event.reason)
                 lastFinished = finished
                 emit(finished)

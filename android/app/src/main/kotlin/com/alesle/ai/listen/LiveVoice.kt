@@ -5,6 +5,8 @@ import android.os.Handler
 import android.os.Looper
 import com.alesle.ai.agent.generated.LiveConfig
 import com.alesle.ai.agent.generated.LiveEvent
+import com.alesle.ai.agent.generated.LiveEventKind
+import com.alesle.ai.agent.generated.LivePhase
 import com.alesle.ai.agent.loop.OkHttpLoopSocketFactory
 import com.alesle.ai.update.AppVersion
 import java.util.concurrent.CopyOnWriteArrayList
@@ -23,6 +25,16 @@ object LiveVoice : VoiceActivityDetector.SpeechStream {
 
     val handlesSpeech: Boolean get() = session?.handlesSpeech == true
 
+    /** The conversation's language (BCP-47), for the bubble's words. */
+    @Volatile
+    var locale: String? = null
+        private set
+
+    /** Where the conversation is; null when there is none. */
+    @Volatile
+    var phase: LivePhase? = null
+        private set
+
     /** Alesle is speaking: barge-in needs louder speech than its own echo. */
     val strict: Boolean get() = session?.strict == true
 
@@ -32,6 +44,8 @@ object LiveVoice : VoiceActivityDetector.SpeechStream {
         config: LiveConfig,
     ) {
         session?.stop()
+        locale = config.locale
+        LiveBubble.install(context)
         val version = AppVersion.code(context)
         val url = OkHttpLoopSocketFactory.socketUrl(config.apiBaseUrl, PATH)
         session =
@@ -40,7 +54,7 @@ object LiveVoice : VoiceActivityDetector.SpeechStream {
                 token = config.accessToken,
                 locale = config.locale,
                 sink = LivePlayer(),
-                events = { event -> listeners.forEach { it(event) } },
+                events = ::publish,
                 schedule = { delay, block -> main.postDelayed(block, delay) },
             ).also { it.start() }
     }
@@ -49,6 +63,21 @@ object LiveVoice : VoiceActivityDetector.SpeechStream {
     fun stop() {
         session?.stop()
         session = null
+        phase = null
+    }
+
+    /** Ended by the user outside the app (the bubble): the app turns hands-free off. */
+    fun end(context: Context) {
+        val ending = synchronized(this) { session.also { session = null } }
+        phase = null
+        ending?.end() ?: publish(LiveEvent(kind = LiveEventKind.END))
+        ListeningService.stop(context)
+    }
+
+    private fun publish(event: LiveEvent) {
+        if (event.kind == LiveEventKind.PHASE) phase = event.phase
+        if (event.kind == LiveEventKind.END) phase = null
+        listeners.forEach { it(event) }
     }
 
     fun updateToken(token: String) {
@@ -63,8 +92,9 @@ object LiveVoice : VoiceActivityDetector.SpeechStream {
         callId: String,
         status: String,
         reply: String?,
+        reason: String?,
     ) {
-        session?.taskResult(callId, status, reply)
+        session?.taskResult(callId, status, reply, reason)
     }
 
     fun onEvent(listener: (LiveEvent) -> Unit): AutoCloseable {

@@ -125,7 +125,9 @@ void main() {
     tokens.refreshesTo = 'fresh';
     when(() => api.updateLiveToken('fresh')).thenAnswer((_) async {});
     when(() => api.sendLiveText('Salom')).thenAnswer((_) async {});
-    when(() => api.liveTaskResult('c1', 'done', 'Soat ochildi'))
+    when(() => api.liveTaskResult('c1', 'done', 'Soat ochildi', null))
+        .thenAnswer((_) async {});
+    when(() => api.liveTaskResult('c2', 'failed', null, 'ai_unavailable'))
         .thenAnswer((_) async {});
     await repository.refreshLiveToken();
     expect(tokens.forced, 1);
@@ -136,7 +138,15 @@ void main() {
       status: 'done',
       reply: 'Soat ochildi',
     );
-    verify(() => api.liveTaskResult('c1', 'done', 'Soat ochildi')).called(1);
+    verify(() => api.liveTaskResult('c1', 'done', 'Soat ochildi', null))
+        .called(1);
+    await repository.liveTaskResult(
+      'c2',
+      status: 'failed',
+      reason: 'ai_unavailable',
+    );
+    verify(() => api.liveTaskResult('c2', 'failed', null, 'ai_unavailable'))
+        .called(1);
 
     tokens.refreshesTo = null;
     await repository.refreshLiveToken();
@@ -170,7 +180,8 @@ void main() {
         ),
       )
       ..onLiveEvent(LiveEvent(kind: LiveEventKind.taskAmend, text: 'ham'))
-      ..onLiveEvent(LiveEvent(kind: LiveEventKind.taskStop));
+      ..onLiveEvent(LiveEvent(kind: LiveEventKind.taskStop))
+      ..onLiveEvent(LiveEvent(kind: LiveEventKind.end));
     await Future<void>.delayed(Duration.zero);
     expect(updates, <LiveUpdate>[
       const LiveStageChanged(LiveStage.speaking),
@@ -179,6 +190,7 @@ void main() {
       const LiveTaskRun(callId: 'c1', command: 'Soatni och'),
       const LiveTaskAmend('ham'),
       const LiveTaskStop(),
+      const LiveEnded(),
     ]);
   });
 

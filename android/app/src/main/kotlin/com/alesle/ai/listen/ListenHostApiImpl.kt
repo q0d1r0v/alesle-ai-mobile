@@ -41,7 +41,8 @@ class ListenHostApiImpl(
         callId: String,
         status: String,
         reply: String?,
-    ) = live.taskResult(callId, status, reply)
+        reason: String?,
+    ) = live.taskResult(callId, status, reply, reason)
 }
 
 /** [LiveVoice] behind an interface, for tests. */
@@ -61,6 +62,7 @@ interface LiveControl {
         callId: String,
         status: String,
         reply: String?,
+        reason: String?,
     )
 
     object Default : LiveControl {
@@ -79,7 +81,8 @@ interface LiveControl {
             callId: String,
             status: String,
             reply: String?,
-        ) = LiveVoice.taskResult(callId, status, reply)
+            reason: String?,
+        ) = LiveVoice.taskResult(callId, status, reply, reason)
     }
 }
 

@@ -90,7 +90,8 @@ class ListeningService : Service() {
         engine = null
         LiveVoice.stop()
         if (instance === this) instance = null
-        HandsFree.update(ListenState(active = false, muted = HandsFree.state.muted))
+        // Ended: the next start listens again, not muted from last time.
+        HandsFree.update(ListenState(active = false, muted = false))
         super.onDestroy()
     }
 
@@ -108,7 +109,8 @@ class ListeningService : Service() {
         engine?.stop()
         engine = null
         LiveVoice.stop()
-        HandsFree.update(ListenState(active = false, muted = HandsFree.state.muted))
+        // Ended: the next start listens again, not muted from last time.
+        HandsFree.update(ListenState(active = false, muted = false))
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }

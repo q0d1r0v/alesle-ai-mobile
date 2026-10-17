@@ -19,4 +19,7 @@
         <item quantity="one">%1$d soniyadan keyin bajariladi</item>
         <item quantity="other">%1$d soniyadan keyin bajariladi</item>
     </plurals>
+    <string name="bubble_label">Alesle bilan suhbat</string>
+    <string name="bubble_open">Ochish</string>
+    <string name="bubble_end">Tugatish</string>
 </resources>

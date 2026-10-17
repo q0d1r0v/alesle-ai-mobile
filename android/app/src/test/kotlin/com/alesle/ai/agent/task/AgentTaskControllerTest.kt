@@ -104,6 +104,17 @@ class AgentTaskControllerTest {
     }
 
     @Test
+    fun `tells who listens when a task starts and ends`() {
+        val running = mutableListOf<Boolean>()
+        val handle = controller.onRunning { running += it }
+        controller.start(request())
+        loops.single().events(LoopEvent.Finished("done", null, null))
+        handle.close()
+        controller.start(request())
+        assertEquals(listOf(true, false), running)
+    }
+
+    @Test
     fun `ends with the loop's result and stops the service once`() {
         controller.start(request())
         loops.single().events(LoopEvent.Finished("done", null, "Bajarildi"))

@@ -117,11 +117,13 @@ abstract interface class HandsFreeRepository {
   /// Typed instead of spoken.
   Future<void> sendLiveText(String text);
 
-  /// How the task a [LiveTaskRun] asked for ended.
+  /// How the task a [LiveTaskRun] asked for ended; [reason] says why it
+  /// did not get done, so Alesle can say it.
   Future<void> liveTaskResult(
     String callId, {
     required String status,
     String? reply,
+    String? reason,
   });
 
   Stream<LiveUpdate> get liveUpdates;

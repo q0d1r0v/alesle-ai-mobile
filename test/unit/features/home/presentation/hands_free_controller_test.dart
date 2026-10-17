@@ -280,8 +280,8 @@ void main() {
         ),
       );
       await flush();
-      expect(listen.taskResults, <(String, String, String?)>[
-        ('c1', 'done', 'Soat ochildi'),
+      expect(listen.taskResults, <(String, String, String?, String?)>[
+        ('c1', 'done', 'Soat ochildi', null),
       ]);
       expect(container.read(homeTaskProvider), isA<TaskIdle>());
     });
@@ -298,8 +298,8 @@ void main() {
         const TaskUpdate(TaskUpdateKind.finished, status: 'done', text: 'OK'),
       );
       await flush();
-      expect(listen.taskResults, <(String, String, String?)>[
-        ('amend-1', 'done', 'OK'),
+      expect(listen.taskResults, <(String, String, String?, String?)>[
+        ('amend-1', 'done', 'OK', null),
       ]);
 
       assistant.failure = const UnexpectedFailure('x');
@@ -316,10 +316,86 @@ void main() {
       );
       listen.live(const LiveTaskRun(callId: 'c2', command: 'Telegramni och'));
       await flush();
-      expect(listen.taskResults, <(String, String, String?)>[
-        ('c2', 'failed', 'accessibility_off'),
+      expect(listen.taskResults, <(String, String, String?, String?)>[
+        ('c2', 'failed', null, 'accessibility_off'),
       ]);
       expect(container.read(homeTaskProvider), isA<TaskIdle>());
+    });
+
+    test('requests made while a task runs wait their turn, in order', () async {
+      await talking();
+      listen
+        ..live(const LiveTaskRun(callId: 'c1', command: 'Telegramni och'))
+        ..live(const LiveTaskRun(callId: 'c2', command: 'Alisherni och'))
+        ..live(const LiveTaskRun(callId: 'c3', command: 'Salom deb yoz'));
+      await flush();
+      expect(assistant.commands.map((TaskCommand c) => c.text), <String>[
+        'Telegramni och',
+      ]);
+      assistant.push(
+        const TaskUpdate(
+          TaskUpdateKind.finished,
+          status: 'failed',
+          reason: 'ai_unavailable',
+        ),
+      );
+      await flush();
+      expect(listen.taskResults.single, (
+        'c1',
+        'failed',
+        null,
+        'ai_unavailable',
+      ));
+      expect(assistant.commands.last.text, 'Alisherni och');
+      assistant.push(
+        const TaskUpdate(TaskUpdateKind.finished, status: 'done', text: 'OK'),
+      );
+      await flush();
+      expect(assistant.commands.last.text, 'Salom deb yoz');
+      expect(listen.taskResults.last, ('c2', 'done', 'OK', null));
+    });
+
+    test('a stop drops the waiting requests too', () async {
+      await talking();
+      listen
+        ..live(const LiveTaskRun(callId: 'c1', command: 'Telegramni och'))
+        ..live(const LiveTaskRun(callId: 'c2', command: 'Alisherni och'));
+      await flush();
+      listen.live(const LiveTaskStop());
+      await flush();
+      assistant.push(
+        const TaskUpdate(TaskUpdateKind.finished, status: 'stopped'),
+      );
+      await flush();
+      expect(assistant.commands, hasLength(1));
+    });
+
+    test(
+      'a task from the screen still running: the request goes after it',
+      () async {
+        await talking();
+        assistant.nextStart = const TaskStart(
+          started: false,
+          reason: 'already_running',
+        );
+        listen.live(const LiveTaskRun(callId: 'c1', command: 'Soatni och'));
+        await flush();
+        expect(listen.taskResults, isEmpty);
+        assistant.nextStart = const TaskStart(started: true);
+        assistant.push(
+          const TaskUpdate(TaskUpdateKind.finished, status: 'done'),
+        );
+        await flush();
+        expect(assistant.commands.last.text, 'Soatni och');
+      },
+    );
+
+    test('a goodbye turns hands-free off', () async {
+      await talking();
+      listen.live(const LiveEnded());
+      await flush();
+      expect(state().on, isFalse);
+      expect(container.read(appSettingsProvider).handsFree, isFalse);
     });
 
     test('a refused token is refreshed; a used-up plan is a problem', () async {

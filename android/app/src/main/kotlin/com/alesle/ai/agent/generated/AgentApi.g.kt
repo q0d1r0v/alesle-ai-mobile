@@ -282,7 +282,12 @@ enum class LiveEventKind(val raw: Int) {
   /** Change the running task with [LiveEvent.text]. */
   TASK_AMEND(3),
   /** Stop the running task. */
-  TASK_STOP(4);
+  TASK_STOP(4),
+  /**
+   * The conversation is over (the user said goodbye, or ended it from the
+   * bubble): turn hands-free off.
+   */
+  END(5);
 
   companion object {
     fun ofRaw(raw: Int): LiveEventKind? {
@@ -1328,8 +1333,11 @@ interface ListenHostApi {
   fun updateLiveToken(accessToken: String)
   /** Typed instead of spoken. */
   fun sendLiveText(text: String)
-  /** How the task a `taskRun` event asked for ended (status as in StepEvent). */
-  fun liveTaskResult(callId: String, status: String, reply: String?)
+  /**
+   * How the task a `taskRun` event asked for ended (status as in StepEvent).
+   * [reason] is the agent's finish reason when it did not get done, so it can be said.
+   */
+  fun liveTaskResult(callId: String, status: String, reply: String?, reason: String?)
 
   companion object {
     /** The codec used by ListenHostApi. */
@@ -1465,8 +1473,9 @@ interface ListenHostApi {
             val callIdArg = args[0] as String
             val statusArg = args[1] as String
             val replyArg = args[2] as String?
+            val reasonArg = args[3] as String?
             val wrapped: List<Any?> = try {
-              api.liveTaskResult(callIdArg, statusArg, replyArg)
+              api.liveTaskResult(callIdArg, statusArg, replyArg, reasonArg)
               listOf(null)
             } catch (exception: Throwable) {
               AgentApiPigeonUtils.wrapError(exception)

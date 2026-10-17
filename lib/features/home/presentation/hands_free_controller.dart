@@ -101,6 +101,10 @@ class HandsFreeController extends Notifier<HandsFreeState> {
   /// The live conversation's request the running task answers.
   String? _liveCall;
 
+  /// Requests the model made while a task ran: (callId, command), in order.
+  /// One task works the screen at a time; the next starts when it ends.
+  final List<(String, String)> _waiting = <(String, String)>[];
+
   /// Changes heard with no task running, started as tasks of their own.
   int _amendCalls = 0;
 
@@ -237,7 +241,10 @@ class HandsFreeController extends Notifier<HandsFreeState> {
       case LiveTaskAmend(:final String text):
         unawaited(_amendForLive(text));
       case LiveTaskStop():
+        _waiting.clear();
         unawaited(ref.read(homeTaskProvider.notifier).stop());
+      case LiveEnded():
+        unawaited(turnOff());
     }
   }
 
@@ -255,6 +262,12 @@ class HandsFreeController extends Notifier<HandsFreeState> {
   }
 
   Future<void> _runForLive(String callId, String command) async {
+    if (_liveCall != null) {
+      _waiting.add((callId, command));
+      return;
+    }
+    // Taken before the await: a request that comes meanwhile waits its turn.
+    _liveCall = callId;
     final TaskStart start = await ref
         .read(homeTaskProvider.notifier)
         .start(
@@ -268,25 +281,53 @@ class HandsFreeController extends Notifier<HandsFreeState> {
             direct: true,
           ),
         );
-    if (start.started) {
-      _liveCall = callId;
+    if (start.started) return;
+    _liveCall = null;
+    if (start.reason == 'already_running') {
+      // A task started from the screen runs: this one goes when it ends.
+      _waiting.insert(0, (callId, command));
       return;
     }
-    await _report(callId, 'failed', start.reason);
+    await _report(callId, 'failed', reason: start.reason);
   }
 
   void _onTask(TaskUpdate update) {
+    if (update.kind != TaskUpdateKind.finished) return;
     final String? callId = _liveCall;
-    if (callId == null || update.kind != TaskUpdateKind.finished) return;
     _liveCall = null;
-    unawaited(
-      _report(callId, update.status ?? 'failed', update.text ?? update.reason),
-    );
+    if (callId != null) {
+      unawaited(
+        _report(
+          callId,
+          update.status ?? 'failed',
+          reply: update.text,
+          reason: update.reason,
+        ),
+      );
+    }
+    // After the task screen has settled on this end, the next one starts.
+    if (_waiting.isNotEmpty) unawaited(Future<void>(_startNext));
   }
 
-  Future<void> _report(String callId, String status, String? reply) async {
+  Future<void> _startNext() async {
+    if (_waiting.isEmpty || _liveCall != null || !state.on) return;
+    final (String callId, String command) = _waiting.removeAt(0);
+    await _runForLive(callId, command);
+  }
+
+  Future<void> _report(
+    String callId,
+    String status, {
+    String? reply,
+    String? reason,
+  }) async {
     try {
-      await _listen.liveTaskResult(callId, status: status, reply: reply);
+      await _listen.liveTaskResult(
+        callId,
+        status: status,
+        reply: reply,
+        reason: reason,
+      );
     } on Failure {
       // The conversation is gone; nobody is waiting for it.
     }
@@ -295,6 +336,7 @@ class HandsFreeController extends Notifier<HandsFreeState> {
   void _onStatus(ListenStatus status) {
     if (!status.active) {
       _liveCall = null;
+      _waiting.clear();
       state = HandsFreeState(problem: state.problem);
       return;
     }

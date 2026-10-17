@@ -91,7 +91,8 @@ final class HandsFreeRepositoryImpl
     String callId, {
     required String status,
     String? reply,
-  }) => _platform(() => _api.liveTaskResult(callId, status, reply));
+    String? reason,
+  }) => _platform(() => _api.liveTaskResult(callId, status, reply, reason));
 
   @override
   void onLiveEvent(LiveEvent event) {
@@ -113,6 +114,7 @@ final class HandsFreeRepositoryImpl
       ),
       LiveEventKind.taskAmend => LiveTaskAmend(event.text ?? ''),
       LiveEventKind.taskStop => const LiveTaskStop(),
+      LiveEventKind.end => const LiveEnded(),
     };
     if (update != null) _live.add(update);
   }

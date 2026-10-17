@@ -23,6 +23,7 @@ import com.alesle.ai.agent.snapshot.SnapshotContext
 import com.alesle.ai.agent.vision.Screenshot
 import com.alesle.ai.agent.vision.ScreenshotSource
 import com.alesle.ai.agent.vision.ServiceScreenshotSource
+import com.alesle.ai.listen.LiveBubbleWindow
 
 /**
  * The agent's eyes and hands on the device.
@@ -58,8 +59,13 @@ class AlesleAccessibilityService :
     override var intentLauncher: IntentLauncher? = null
         private set
 
+    /** The live conversation's floating orb, drawn by this service; null until connected. */
+    var liveBubble: LiveBubbleWindow? = null
+        private set
+
     override fun onServiceConnected() {
         super.onServiceConnected()
+        liveBubble = LiveBubbleWindow(this)
         val thread = HandlerThread("alesle-gestures").apply { start() }
         gestureThread = thread
         deviceControl = ServiceDeviceControl(this, Handler(thread.looper), ::capture)
@@ -75,11 +81,15 @@ class AlesleAccessibilityService :
      */
     override fun onUnbind(intent: Intent?): Boolean {
         if (instance === this) instance = null
+        liveBubble?.hide()
+        liveBubble = null
         return super.onUnbind(intent)
     }
 
     override fun onDestroy() {
         if (instance === this) instance = null
+        liveBubble?.hide()
+        liveBubble = null
         deviceControl = null
         screenshots = null
         intentLauncher = null

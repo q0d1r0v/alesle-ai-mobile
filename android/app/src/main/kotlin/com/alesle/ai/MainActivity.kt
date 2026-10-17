@@ -1,71 +1,45 @@
 package com.alesle.ai
 
-import com.alesle.ai.agent.AccessibilityStatus
-import com.alesle.ai.agent.AgentHostApiImpl
-import com.alesle.ai.agent.generated.AgentEventsApi
-import com.alesle.ai.agent.generated.AgentHostApi
+import android.content.Context
 import com.alesle.ai.agent.generated.DeviceHostApi
-import com.alesle.ai.agent.generated.ListenEventsApi
-import com.alesle.ai.agent.generated.ListenHostApi
 import com.alesle.ai.agent.generated.UpdateHostApi
-import com.alesle.ai.agent.task.AgentTaskController
 import com.alesle.ai.device.AudioPlayer
 import com.alesle.ai.device.DeviceHostApiImpl
 import com.alesle.ai.device.PermissionGate
 import com.alesle.ai.device.VoiceRecorder
-import com.alesle.ai.listen.HandsFree
-import com.alesle.ai.listen.ListenHostApiImpl
-import com.alesle.ai.listen.ListeningService
-import com.alesle.ai.listen.LiveVoice
-import com.alesle.ai.listen.toMessage
 import com.alesle.ai.update.UpdateHostApiImpl
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
-import java.io.File
 
+/**
+ * Alesle's screen on the process-wide engine ([AppEngine]). Only what needs
+ * this activity (permission dialogs, the recorder, updates) is wired here;
+ * closing the screen leaves the engine, hands-free and Live running until the
+ * user turns them off (the notification, the bubble, or saying goodbye).
+ */
 class MainActivity : FlutterActivity() {
-    private val scope = MainScope()
     private val permissions by lazy { PermissionGate(applicationContext) { this } }
     private val recorder by lazy { VoiceRecorder(applicationContext) }
     private val player by lazy { AudioPlayer() }
-    private var handsFree: List<AutoCloseable> = emptyList()
+
+    override fun provideFlutterEngine(context: Context): FlutterEngine = AppEngine.get(context)
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        AppEngine.bridge(flutterEngine, applicationContext)
         val messenger = flutterEngine.dartExecutor.binaryMessenger
-        val tasks = AgentTaskController.get(applicationContext)
-        AgentHostApi.setUp(
-            messenger,
-            AgentHostApiImpl(
-                context = applicationContext,
-                accessibilityStatus = AccessibilityStatus(applicationContext),
-                tasks = tasks,
-            ),
-        )
         DeviceHostApi.setUp(messenger, DeviceHostApiImpl(applicationContext, permissions, recorder, player))
         UpdateHostApi.setUp(messenger, UpdateHostApiImpl(applicationContext))
-        val events = AgentEventsApi(messenger)
-        tasks.listener = { event ->
-            // Pigeon sends on the platform thread; a Dart side that is gone is fine to miss.
-            scope.launch { runCatching { events.onStepEvent(event) } }
-        }
-        ListenHostApi.setUp(messenger, ListenHostApiImpl(applicationContext))
-        val listen = ListenEventsApi(messenger)
-        handsFree.forEach(AutoCloseable::close)
-        handsFree =
-            listOf(
-                HandsFree.onState { state -> scope.launch { runCatching { listen.onListenState(state.toMessage()) } } },
-                LiveVoice.onEvent { event -> scope.launch { runCatching { listen.onLiveEvent(event) } } },
-                HandsFree.onUtterance { path ->
-                    scope.launch {
-                        // No Dart to take it: the audio is not kept.
-                        runCatching { listen.onUtterance(path) }.onFailure { File(path).delete() }
-                    }
-                },
-            )
+    }
+
+    override fun onStart() {
+        super.onStart()
+        AppVisibility.set(true)
+    }
+
+    override fun onStop() {
+        AppVisibility.set(false)
+        super.onStop()
     }
 
     override fun onRequestPermissionsResult(
@@ -78,18 +52,9 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
-        AgentTaskController.get(applicationContext).listener = null
-        handsFree.forEach(AutoCloseable::close)
-        handsFree = emptyList()
-        // Nobody left to hear: the microphone closes with the app.
-        ListeningService.stop(applicationContext)
-        scope.cancel()
+        // The device and update calls stay registered (the next screen replaces them):
+        // Dart keeps running, and a call with no handler would fail instead of degrading.
         recorder.cancel()
-        player.stop()
-        AgentHostApi.setUp(flutterEngine.dartExecutor.binaryMessenger, null)
-        DeviceHostApi.setUp(flutterEngine.dartExecutor.binaryMessenger, null)
-        UpdateHostApi.setUp(flutterEngine.dartExecutor.binaryMessenger, null)
-        ListenHostApi.setUp(flutterEngine.dartExecutor.binaryMessenger, null)
         super.cleanUpFlutterEngine(flutterEngine)
     }
 }

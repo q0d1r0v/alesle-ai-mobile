@@ -186,9 +186,9 @@ final class FakeHandsFreeRepository implements HandsFreeRepository {
   int tokenRefreshes = 0;
   final List<String> typed = <String>[];
 
-  /// Task results reported to the live conversation: (callId, status, reply).
-  final List<(String, String, String?)> taskResults =
-      <(String, String, String?)>[];
+  /// Task results reported to the live conversation: (callId, status, reply, reason).
+  final List<(String, String, String?, String?)> taskResults =
+      <(String, String, String?, String?)>[];
 
   /// What start() reports; inactive when the microphone would not open.
   bool startWorks = true;
@@ -254,9 +254,10 @@ final class FakeHandsFreeRepository implements HandsFreeRepository {
     String callId, {
     required String status,
     String? reply,
+    String? reason,
   }) async {
     if (failure case final Failure value) throw value;
-    taskResults.add((callId, status, reply));
+    taskResults.add((callId, status, reply, reason));
   }
 
   void live(LiveUpdate update) => liveController.add(update);

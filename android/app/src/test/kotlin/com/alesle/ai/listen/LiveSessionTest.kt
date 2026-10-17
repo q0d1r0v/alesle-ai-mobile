@@ -257,6 +257,64 @@ class LiveSessionTest {
     }
 
     @Test
+    fun `a failed task reports its reason`() {
+        val s = ready()
+        session.taskResult("c1", "failed", null, "ai_unavailable")
+        assertEquals(
+            JSONObject()
+                .put("type", "task.result")
+                .put("callId", "c1")
+                .put("status", "failed")
+                .put("reason", "ai_unavailable")
+                .toString(),
+            s.sent.last().toString(),
+        )
+    }
+
+    @Test
+    fun `a goodbye hangs up once the farewell has played`() {
+        val s = ready()
+        s.server("""{"type":"live.end"}""")
+        assertTrue(events.none { it.kind == LiveEventKind.END })
+        s.server("""{"type":"audio","data":"AAEC"}""")
+        s.server("""{"type":"turn.done"}""")
+        // Still playing the farewell.
+        assertTrue(events.none { it.kind == LiveEventKind.END })
+        sink.drain()
+        assertEquals(LiveEventKind.END, events.last().kind)
+        assertTrue(s.closed)
+        assertFalse(session.handlesSpeech)
+    }
+
+    @Test
+    fun `a goodbye with no farewell ends after the turn, or at the latest after the grace time`() {
+        var s = ready()
+        s.server("""{"type":"live.end"}""")
+        s.server("""{"type":"turn.done"}""")
+        assertEquals(LiveEventKind.END, events.last().kind)
+        assertEquals(1, events.count { it.kind == LiveEventKind.END })
+
+        val other =
+            LiveSession({ token ->
+                com.alesle.ai.agent.loop.LoopSocketFactory { l ->
+                    FakeSocket(token, l).also { sockets += it }
+                }
+            }, "t", "uz", FakeSink(), {
+                events +=
+                    it
+            }, { d, b -> scheduled += d to b })
+        other.start()
+        s = socket
+        s.listener.onOpen()
+        s.server("""{"type":"live.ready"}""")
+        s.server("""{"type":"live.end"}""")
+        val (delay, grace) = scheduled.last()
+        assertEquals(LiveSession.END_GRACE_MS, delay)
+        grace()
+        assertEquals(2, events.count { it.kind == LiveEventKind.END })
+    }
+
+    @Test
     fun `junk from the server is ignored`() {
         val s = ready()
         val before = events.size

@@ -53,6 +53,12 @@ class LiveSession(
     /** Counts turns, so a watchdog for an old one does nothing. */
     private var turn = 0
 
+    /** The user said goodbye: hang up once the farewell has played. */
+    private var ending = false
+
+    /** A turn ended after the goodbye: the farewell, if any, has all arrived. */
+    private var farewellDone = false
+
     init {
         sink.onDrained = ::onDrained
     }
@@ -106,11 +112,21 @@ class LiveSession(
         callId: String,
         status: String,
         reply: String?,
+        reason: String? = null,
     ) {
         if (!ready) return
         val frame = JSONObject().put("type", "task.result").put("callId", callId).put("status", status)
         if (!reply.isNullOrBlank()) frame.put("reply", reply.take(MAX_REPLY))
+        if (!reason.isNullOrBlank()) frame.put("reason", reason.take(MAX_REASON))
         send(frame)
+    }
+
+    /** The conversation is over: the app turns hands-free off. */
+    @Synchronized
+    fun end() {
+        if (stopped) return
+        stop()
+        events(LiveEvent(kind = LiveEventKind.END))
     }
 
     // ── Speech from the detector ────────────────────────────────────────────
@@ -271,8 +287,23 @@ class LiveSession(
                 events(LiveEvent(kind = LiveEventKind.CAPTION, role = role, text = words, isFinal = frame.optBoolean("final")))
             }
             "turn.done" -> {
+                if (ending) farewellDone = true
                 if (hearing) return
-                if (sink.playing) turnDone = true else setPhase(LivePhase.LISTENING)
+                if (sink.playing) {
+                    turnDone = true
+                } else if (ending) {
+                    end()
+                } else {
+                    setPhase(LivePhase.LISTENING)
+                }
+            }
+            "live.end" -> {
+                if (ending) return
+                ending = true
+                // Whatever happens to the farewell, the call ends soon.
+                val at = connection
+                schedule(END_GRACE_MS) { whenCurrent(at) { end() } }
+                if (!sink.playing && farewellDone) end()
             }
             "interrupted" -> sink.stop()
             "ignored" -> if (!hearing && !sink.playing) setPhase(LivePhase.LISTENING)
@@ -300,6 +331,10 @@ class LiveSession(
 
     @Synchronized
     private fun onDrained() {
+        if (ending && farewellDone && !hearing) {
+            end()
+            return
+        }
         if (!turnDone || hearing) return
         turnDone = false
         if (ready) setPhase(LivePhase.LISTENING)
@@ -322,6 +357,10 @@ class LiveSession(
         const val RETRY_MS = 1_000L
         const val RETRY_AFTER_FALLBACK_MS = 120_000L
         const val ANSWER_TIMEOUT_MS = 12_000L
+
+        /** After a goodbye: the most the farewell may take. */
+        const val END_GRACE_MS = 8_000L
         private const val MAX_REPLY = 2_000
+        private const val MAX_REASON = 80
     }
 }

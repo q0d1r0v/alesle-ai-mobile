@@ -112,3 +112,14 @@ final class LiveTaskStop extends LiveUpdate {
   @override
   int get hashCode => 0;
 }
+
+/// The conversation is over: the user said goodbye, or ended it outside the app.
+final class LiveEnded extends LiveUpdate {
+  const LiveEnded();
+
+  @override
+  bool operator ==(Object other) => other is LiveEnded;
+
+  @override
+  int get hashCode => 1;
+}

@@ -20,4 +20,7 @@
         <item quantity="many">Выполню через %1$d секунд</item>
         <item quantity="other">Выполню через %1$d секунды</item>
     </plurals>
+    <string name="bubble_label">Разговор с Alesle</string>
+    <string name="bubble_open">Открыть</string>
+    <string name="bubble_end">Завершить</string>
 </resources>

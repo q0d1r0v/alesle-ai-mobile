@@ -18,4 +18,7 @@
         <item quantity="one">Going ahead in %1$d second</item>
         <item quantity="other">Going ahead in %1$d seconds</item>
     </plurals>
+    <string name="bubble_label">Talking with Alesle</string>
+    <string name="bubble_open">Open</string>
+    <string name="bubble_end">End</string>
 </resources>
